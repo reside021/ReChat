@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="50dp"
+    android:paddingBottom="10dp">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Выберите действие"
+        android:textSize="22sp"
+        android:layout_marginVertical="20dp"
+        android:layout_gravity="center"/>
+    <Button
+        android:id="@+id/delThisChat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/deletethischat"
+        android:background="@drawable/view_back"
+        android:textSize="15sp"
+        android:layout_gravity="center"
+        android:gravity="center"/>
+</LinearLayout>

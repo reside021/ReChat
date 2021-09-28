@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="user_name">Unnamed User</string>
+    <string name="galleryuse">Сменить аватар</string>
+    <string name="imageopen">Открыть</string>
+    <string name="profile">Profile</string>
+    <string name="chat">Chat</string>
+    <string name="friends">Friends</string>
+    <string name="beOnline">Видимость для всех</string>
+    <string name="deletethischat">Удалить этот чат</string>
+</resources>

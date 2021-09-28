@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:id="@+id/avatarUser"
+            android:layout_margin="10dp"
+            android:background="@drawable/user_photo"
+            app:civ_border_width="2dp"
+            app:civ_border_color="@color/black" />
+        <TextView
+            android:id="@+id/userName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="username"
+            android:textSize="25sp"
+            android:textColor="@color/black"
+            android:layout_marginVertical="15dp"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.1"
+            android:text="1"
+            android:textSize="30sp"
+            android:textColor="@color/black"
+            android:layout_marginVertical="15dp"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/idUser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="id"
+        android:textSize="1sp"
+        android:layout_gravity="center"/>
+</LinearLayout>

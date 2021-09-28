@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="50dp">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Выберите действие"
+        android:textSize="22sp"
+        android:layout_marginVertical="20dp"
+        android:layout_gravity="center"/>
+    <TextView
+        android:id="@+id/changeAvatar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/galleryuse"
+        android:textSize="22sp"
+        android:textColor="@color/black"
+        android:background="@drawable/view_back"
+        android:gravity="center"
+        android:layout_margin="5dp"
+        android:padding="5dp"/>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/imageopen"
+        android:textSize="22sp"
+        android:textColor="@color/black"
+        android:background="@drawable/view_back"
+        android:gravity="center"
+        android:padding="5dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="5dp"/>
+
+</LinearLayout>
