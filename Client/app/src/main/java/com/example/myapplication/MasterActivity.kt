@@ -82,7 +82,7 @@ class MasterActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT).show()
             }
         }
-        initWebSocket()
+//        initWebSocket()
     }
 
 
@@ -107,7 +107,6 @@ class MasterActivity : AppCompatActivity() {
         profileTab.setBackgroundColor(0)
         friendsTab.setBackgroundColor(0)
         val listUserChat = sqliteHelper.getAllUsers()
-        Log.d("QQQQQ", "${listUserChat.size}")
         val myAdapterForChat = MyAdapterForChat(listUserChat)
         val listViewChat = findViewById<ListView>(R.id.listViewChat)
         listViewChat.adapter = myAdapterForChat
@@ -158,39 +157,55 @@ class MasterActivity : AppCompatActivity() {
 //    }
 
 
-    private fun initWebSocket(){
-        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
+//    private fun initWebSocket(){
+//        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
+//
+//        val chatservUri: URI? = URI(WEB_SOCKET_URL)
+//        createWebSocketClient(chatservUri)
+////        webSocketClient.setSocketFactory(socketFactory)
+//        webSocketClient.connect()
+//    }
 
-        val chatservUri: URI? = URI(WEB_SOCKET_URL)
-        createWebSocketClient(chatservUri)
-//        webSocketClient.setSocketFactory(socketFactory)
-        webSocketClient.connect()
-    }
+//    private fun createWebSocketClient(chatservURI: URI?){
+//        webSocketClient = object : WebSocketClient(chatservURI){
+//            override fun onOpen(handshakedata: ServerHandshake?) {
+//                Log.i("__CHAT__", "onOpen");
+//                this@MasterActivity.runOnUiThread { setName() }
+//            }
+//
+//            override fun onClose(code: Int, reason: String?, remote: Boolean) {
+//                Log.i("__CHAT__", "onClose");
+//            }
+//
+//            override fun onMessage(message: String?) {
+//                Log.i("__CHAT__", "onMessage: $message");
+//                parseMessage(message)
+//            }
+//
+//            override fun onError(ex: Exception?) {
+//                Log.i("__CHAT__", "onException: $ex");
+//            }
+//        }
+//    }
 
-    private fun createWebSocketClient(chatservURI: URI?){
-        webSocketClient = object : WebSocketClient(chatservURI){
-            override fun onOpen(handshakedata: ServerHandshake?) {
-                Log.i("__CHAT__", "onOpen");
-                this@MasterActivity.runOnUiThread { setName() }
-            }
 
-            override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                Log.i("__CHAT__", "onClose");
-            }
-
-            override fun onMessage(message: String?) {
-                Log.i("__CHAT__", "onMessage: $message");
-                parseMessage(message)
-            }
-
-            override fun onError(ex: Exception?) {
-                Log.i("__CHAT__", "onException: $ex");
-            }
+    private fun func(idUser : String, textMSG : String){
+        val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+        if(!sp.getBoolean("active",false)) return
+        if(sp.getString("idActive","NONE") != idUser ||
+                sp.getString("idActive","NONE") != "0") return
+        try{
+            val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            val newView = inflater.inflate(R.layout.message_from, null)
+            val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
+            textInMessage.text = textMSG
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            ChatPeople.mainWindowOuter.addView(newView, lp)
+        } catch (ex : Exception){
         }
     }
 
-
-    public fun parseMessage(message: String?){
+    fun parseMessage(message: String?){
         when (message?.substringBefore("::")) {
             "FC" -> {
                 val tag = message.substringAfter("::")
@@ -203,8 +218,9 @@ class MasterActivity : AppCompatActivity() {
                 val id = idWithMsg.substringBefore("::")
                 val msg = idWithMsg.substringAfter("::")
                 sqliteHelper.addMsgInTable(id, OTHER_MSG, msg,"0")
-                val chatPeople = ChatPeople()
-                chatPeople.onReceiveMsg(id, msg)
+                this@MasterActivity.runOnUiThread {
+                    func(id, msg)
+                }
             }
             "ONLINE" -> {
                 val idWithName = message.substringAfter("::")

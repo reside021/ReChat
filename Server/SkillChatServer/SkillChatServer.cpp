@@ -1,9 +1,21 @@
 ﻿#include <iostream>
 #include <uwebsockets/App.h>
 #include <map>
+
+// [UUID] для создания уникального uuid
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
+
+// [SQL] Для работы с бд
+#include <windows.h>
+#include <sqlext.h>
+#include <sqltypes.h>
+#include <sql.h>
+#define SQL_RESULT_LEN 255
+#define SQL_RETURN_CODE_LEN 1000
+
+
 using namespace std;
 
 
@@ -31,13 +43,16 @@ ws.send("SET_NAME::vasya");
  */
 
 map<string, string> userNames;
-// ограничить длину имени (безопасность памяти)
+// ограничить длину имени ( для безопасности памяти)
 
+
+// [SERVER] - константы для сервера
 const string BROADCAST_CHANNEL = "broadcast";
 const string MESSAGE_TO = "MESSAGE_TO::";
 const string SET_NAME = "SET_NAME::";
 const string OFFLINE = "OFFLINE::";
 const string ONLINE = "ONLINE::";
+const string SIGNUP = "signup::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -91,7 +106,10 @@ bool isMessageTo(string message) {
     return message.find(MESSAGE_TO) == 0;
 }
 
-string messageFrom(string user_id, string sender, string message) {
+string messageFromUser(string user_id, string sender, string message) {
+    return "MESSAGE_FROM::" + user_id + "::[" + sender + "] " + message;
+}
+string messageFromGlobal(string user_id, string sender, string message) {
     return "MESSAGE_FROM::" + user_id + "::[" + sender + "] " + message;
 }
 
@@ -101,9 +119,132 @@ string generateUUID() {
     return to_string(u).substr(0, 8);
 }
 
+
+
+bool isSignNewUser(string message) {
+    return message.find(SIGNUP) == 0;
+}
+
+string parseNewUserLogin(string message) {
+    string rest = message.substr(SIGNUP.size());
+    int pos = rest.find("::");
+    return rest.substr(0, pos); 
+}
+
+string parseNewUserPassword(string message) {
+    string rest = message.substr(SIGNUP.size());
+    int pos = rest.find("::"); 
+    rest = rest.substr(pos + 2);
+    pos = rest.find("::");
+    return rest.substr(0, pos);
+}
+
+string parseNewUserNickname(string message) {
+    string rest = message.substr(SIGNUP.size());
+    int pos = rest.find("::");
+    rest = rest.substr(pos + 2);
+    pos = rest.find("::");
+    return rest.substr(pos + 2);
+}
+
+
+// [SQL] определение хендлов и переменных
+SQLHANDLE sqlConnHandle;
+SQLHANDLE sqlStmtHandle;
+SQLHANDLE sqlEnvHandle;
+SQLWCHAR retconstring[SQL_RETURN_CODE_LEN];
+const string SQL_MSG = "[SQL_PART] ";
+
+// [SQL] закрытие соединения и осовбождение ресурсов
+void completed() {
+    SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
+    SQLDisconnect(sqlConnHandle);
+    SQLFreeHandle(SQL_HANDLE_DBC, sqlConnHandle);
+    SQLFreeHandle(SQL_HANDLE_ENV, sqlEnvHandle);
+}
+
+void connectToDB() {
+    // [SQL] инициализация
+    sqlConnHandle = NULL;
+    sqlStmtHandle = NULL;
+    // [SQL] allocations
+    if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlEnvHandle)) completed();
+    if (SQL_SUCCESS != SQLSetEnvAttr(sqlEnvHandle, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)) completed();
+    if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_DBC, sqlEnvHandle, &sqlConnHandle)) completed();
+
+    // [SQL] Попытка подключения к sql server
+    // [SQL] Используется защищенное подключение по порту 1433
+    // [SQL] не используется подключение по имени/паролю из соображений безопасности
+
+    switch (SQLDriverConnect(sqlConnHandle,
+        NULL,
+        //(SQLWCHAR*)L"DRIVER={SQL Server};SERVER=localhost, 1433;DATABASE=ReChat;UID=username;PWD=password;",
+        (SQLWCHAR*)L"DRIVER={SQL Server};SERVER=localhost, 1433;DATABASE=ReChat;Trusted=true;",
+        SQL_NTS,
+        retconstring,
+        1024,
+        NULL,
+        SQL_DRIVER_NOPROMPT)) {
+    case SQL_SUCCESS:
+        cout << SQL_MSG + "Successfully connected to SQL Server\n";
+        break;
+    case SQL_SUCCESS_WITH_INFO:
+        cout << SQL_MSG + "Successfully connected to SQL Server\n";
+        break;
+    case SQL_INVALID_HANDLE:
+        cout << SQL_MSG + "Could not connect to SQL Server\n";
+        completed();
+    case SQL_ERROR:
+        cout << SQL_MSG + "Could not connect to SQL Server\n";
+        completed();
+    default:
+        break;
+    }
+    // [SQL] Если присутствует проблема подключения, то приложение закроется
+    if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_STMT, sqlConnHandle, &sqlStmtHandle)) completed();
+
+    // [SQL] Выполение SQL-запроса, если бдует ошибка, то приложение закроется, иначе выдаст результат запроса
+    if (SQL_SUCCESS != SQLExecDirect(sqlStmtHandle, (SQLWCHAR*)L"SELECT @@VERSION", SQL_NTS)) {
+        cout << SQL_MSG + "Error querying SQL Server\n";
+        completed();
+    }
+    else {
+        // [SQL] объявление выходных данных
+        SQLCHAR sqlResult[SQL_RESULT_LEN];
+        SQLINTEGER ptrSqlVersion;
+        while (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
+            SQLGetData(sqlStmtHandle, 1, SQL_CHAR, sqlResult, SQL_RESULT_LEN, &ptrSqlVersion);
+        }
+        cout << SQL_MSG + "Query Result:\n\n";
+        cout << sqlResult << endl;
+    }
+}
+
+std::wstring s2ws(const std::string& s)
+{
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    wchar_t* buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+}
+
+bool addNewUserInDB(string login, string pass, string nickname) {
+    string query = "insert into UsersData values(" + login + "," + pass + "," + nickname + ")";
+    return true;
+   // std::wstring stemp = s2ws(query);
+   // SQLWCHAR* result = (SQLWCHAR*)stemp.c_str();
+    //wstring query = L"insert into UsersData values(" + to_wstring()
+
+   // return SQL_SUCCESS == SQLExecDirect(sqlStmtHandle, (SQLWCHAR*)stemp, SQL_NTS));
+}
+
 int main() {
-    
-    //unsigned int last_user_id = 10; // последний идентификатор пользователя
+   
+    // unsigned int last_user_id = 10; // последний идентификатор пользователя
     // сделать UUID / GUID
 
     int userID = 1;
@@ -157,13 +298,15 @@ int main() {
                     // подготовить данные и отправить их
                     string receiverId = parseUserId(strMessage);
                     string text = parseUserText(strMessage);
-                    // userData->user_id == отправитель
-                    string outgoingMessage = messageFrom(authorId, userData-> name, text);
                     // отправить получателю
                     if (receiverId == "0") {
+                        // userData->user_id == отправитель
+                        string outgoingMessage = messageFromGlobal("0", userData->name, text);
                         ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                     else {
+                        // userData->user_id == отправитель
+                        string outgoingMessage = messageFromUser(authorId, userData->name, text);
                         ws->publish("user#" + receiverId, outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                     ws->send("Message sent", uWS::OpCode::TEXT);
@@ -181,6 +324,17 @@ int main() {
                         ws->publish("user#" + authorId, "ERROR SET NAME", uWS::OpCode::TEXT, false);
                     }
                 }
+                if (isSignNewUser(strMessage)) {
+                    string loginUser = parseNewUserLogin(strMessage);
+                    string passUser = parseNewUserPassword(strMessage);
+                    string nickName = parseNewUserNickname(strMessage) + "_" + authorId;
+                    cout << endl << loginUser;
+                    cout << endl << passUser;
+                    cout << endl << nickName;
+                    cout << endl;
+                }
+
+
                 // сообщить, кто вообще онлайн
             },
             .close = [](auto* ws , int /*code*/, string_view /*message*/) {
@@ -196,5 +350,6 @@ int main() {
                     // если все ок, вывести сообщение
                     cout << "Listening on port " << 9001 << std::endl;
                 }
+                connectToDB(); // подключение к бд
                 }).run(); // запуск
 }
