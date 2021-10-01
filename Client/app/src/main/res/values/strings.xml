@@ -8,4 +8,7 @@
     <string name="friends">Friends</string>
     <string name="beOnline">Видимость для всех</string>
     <string name="deletethischat">Удалить этот чат</string>
+    <string name="checkboxSignup">I agree to the terms of use and privacy policy</string>
+    <string name="serverAccessOK">✅</string>
+    <string name="serverAccessNot">❌</string>
 </resources>
