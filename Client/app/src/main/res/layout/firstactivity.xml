@@ -18,35 +18,35 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-<!--        <LinearLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:orientation="horizontal">-->
-<!--            <Space-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_weight="1"/>-->
-<!--            <TextView-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:textSize="22sp"-->
-<!--                android:text="Server Access: "/>-->
-<!--            <TextView-->
-<!--                android:id="@+id/serverAccess"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:textSize="22sp"/>-->
-<!--            <Space-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_weight="1"/>-->
-<!--        </LinearLayout>-->
-<!--        <Button-->
-<!--            style="@style/btnDlgSignLogin"-->
-<!--            android:text="ReConnect"-->
-<!--            android:layout_gravity="center"-->
-<!--            android:layout_marginVertical="10dp"-->
-<!--            android:onClick="onRestartClick"/>-->
+        <!--        <LinearLayout-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:orientation="horizontal">-->
+        <!--            <Space-->
+        <!--                android:layout_width="0dp"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_weight="1"/>-->
+        <!--            <TextView-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:textSize="22sp"-->
+        <!--                android:text="Server Access: "/>-->
+        <!--            <TextView-->
+        <!--                android:id="@+id/serverAccess"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:textSize="22sp"/>-->
+        <!--            <Space-->
+        <!--                android:layout_width="0dp"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_weight="1"/>-->
+        <!--        </LinearLayout>-->
+        <!--        <Button-->
+        <!--            style="@style/btnDlgSignLogin"-->
+        <!--            android:text="ReConnect"-->
+        <!--            android:layout_gravity="center"-->
+        <!--            android:layout_marginVertical="10dp"-->
+        <!--            android:onClick="onRestartClick"/>-->
         <Space
             android:layout_width="match_parent"
             android:layout_height="0dp"

@@ -92,29 +92,29 @@ class MainActivity : AppCompatActivity() {
             val pass1sign : String = view.findViewById<EditText>(R.id.pass1Sign).text.toString()
             val pass2sign : String = view.findViewById<EditText>(R.id.pass2Sign).text.toString()
             if(loginsign.trim().isEmpty() ||
-                    usernamesign.trim().isEmpty() ||
-                    pass1sign.trim().isEmpty() ||
-                    pass2sign.trim().isEmpty()){
+                usernamesign.trim().isEmpty() ||
+                pass1sign.trim().isEmpty() ||
+                pass2sign.trim().isEmpty()){
                 Toast.makeText(this@MainActivity,
-                        "Все поля должны быть заполнены!",
-                        Toast.LENGTH_SHORT).show()
+                    "Все поля должны быть заполнены!",
+                    Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if(pass1sign != pass2sign){
                 Toast.makeText(this@MainActivity,
-                        "Пароли не совпадают!",
-                        Toast.LENGTH_SHORT).show()
+                    "Пароли не совпадают!",
+                    Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if(!view.findViewById<CheckBox>(R.id.checkBoxPrivacy).isChecked){
                 Toast.makeText(this@MainActivity,
-                        "Вы не дали согласия на обработку данных",
-                        Toast.LENGTH_SHORT).show()
+                    "Вы не дали согласия на обработку данных",
+                    Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             val msgToSrv : String = "signup::$loginsign::$pass1sign::$usernamesign"
-           webSocketClient.send(msgToSrv)
+            webSocketClient.send(msgToSrv)
 //            Toast.makeText(this@MainActivity,
 //                    msgToSrv,
 //                    Toast.LENGTH_SHORT).show()
@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
 
         if(webSocketClient.connection.readyState.ordinal == 0){
             Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
-                    Toast.LENGTH_SHORT).show()
+                Toast.LENGTH_SHORT).show()
         }
     }
     fun onLoginClick(view: View) {
@@ -141,7 +141,7 @@ class MainActivity : AppCompatActivity() {
         }
         if(webSocketClient.connection.readyState.ordinal == 0){
             Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
-                    Toast.LENGTH_SHORT).show()
+                Toast.LENGTH_SHORT).show()
         }
     }
 

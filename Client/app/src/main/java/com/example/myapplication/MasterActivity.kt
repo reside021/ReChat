@@ -63,7 +63,7 @@ class MasterActivity : AppCompatActivity() {
         actionBar?.setDisplayShowCustomEnabled(true)
         actionBar?.setCustomView(R.layout.actionbar)
         view = (getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater)
-                .inflate(R.layout.clearlayout, null)
+            .inflate(R.layout.clearlayout, null)
         profileTab = findViewById(R.id.profile)
         chatTab = findViewById(R.id.chat)
         friendsTab = findViewById(R.id.friends)
@@ -76,10 +76,10 @@ class MasterActivity : AppCompatActivity() {
         switchBeOnline.setOnCheckedChangeListener { _, isChecked ->
             if(isChecked){
                 Toast.makeText(this, "Виден всем",
-                        Toast.LENGTH_SHORT).show()
+                    Toast.LENGTH_SHORT).show()
             }else{
                 Toast.makeText(this, "Виден только друзьям",
-                        Toast.LENGTH_SHORT).show()
+                    Toast.LENGTH_SHORT).show()
             }
         }
 //        initWebSocket()
@@ -118,7 +118,7 @@ class MasterActivity : AppCompatActivity() {
             startActivity(intent)
         }
         listViewChat.onItemLongClickListener = AdapterView.OnItemLongClickListener {
-            parent, view, position, id ->
+                parent, view, position, id ->
             val builder = AlertDialog.Builder(this)
             val dialogInflater = this.layoutInflater
             val dialogView  = dialogInflater.inflate(R.layout.dialog_actions_with_chatchannel, null)
@@ -193,7 +193,7 @@ class MasterActivity : AppCompatActivity() {
         val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         if(!sp.getBoolean("active",false)) return
         if(sp.getString("idActive","NONE") != idUser ||
-                sp.getString("idActive","NONE") != "0") return
+            sp.getString("idActive","NONE") != "0") return
         try{
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             val newView = inflater.inflate(R.layout.message_from, null)
@@ -256,19 +256,19 @@ class MasterActivity : AppCompatActivity() {
         val view  = inflater.inflate(R.layout.dialog_setname, null);
         val nameuser = view.findViewById<EditText>(R.id.nameuser)
         builder.setView(view)
-                .setPositiveButton("OK") { dialog, id ->
-                    setNameSuccess(nameuser.text.toString()
-                    )
-                }
-                .setNegativeButton("Отмена") {
+            .setPositiveButton("OK") { dialog, id ->
+                setNameSuccess(nameuser.text.toString()
+                )
+            }
+            .setNegativeButton("Отмена") {
                     dialog, id -> dialog.dismiss();
-                    if(findViewById<TextView>(R.id.nameofuser).text ==
-                            resources.getString(R.string.user_name)) {
-                        Toast.makeText(this, "Перед началом работы необходимо задать имя!",
-                                Toast.LENGTH_LONG).show()
-                        setName()
-                    }
+                if(findViewById<TextView>(R.id.nameofuser).text ==
+                    resources.getString(R.string.user_name)) {
+                    Toast.makeText(this, "Перед началом работы необходимо задать имя!",
+                        Toast.LENGTH_LONG).show()
+                    setName()
                 }
+            }
         builder.show()
     }
 
@@ -277,17 +277,17 @@ class MasterActivity : AppCompatActivity() {
     }
 
     private fun setNameSuccess(name : String){
-            if(name.isEmpty()){
-                Toast.makeText(this, "Перед началом работы необходимо задать имя!",
-                        Toast.LENGTH_LONG).show()
-                setName()
-                return
-            } else if(name.length > 10){
-                Toast.makeText(this, "Имя короче 10 символов",
-                        Toast.LENGTH_LONG).show()
-                setName()
-                return
-            }
+        if(name.isEmpty()){
+            Toast.makeText(this, "Перед началом работы необходимо задать имя!",
+                Toast.LENGTH_LONG).show()
+            setName()
+            return
+        } else if(name.length > 10){
+            Toast.makeText(this, "Имя короче 10 символов",
+                Toast.LENGTH_LONG).show()
+            setName()
+            return
+        }
         try {
             this@MasterActivity.runOnUiThread {
                 Log.d("QQQQQQ", "SETNAME")
@@ -295,13 +295,13 @@ class MasterActivity : AppCompatActivity() {
                 webSocketClient.send("SET_NAME::$name")
                 nameofuser.text = name;
                 Toast.makeText(this, "Имя успешно изменено",
-                        Toast.LENGTH_SHORT).show()
+                    Toast.LENGTH_SHORT).show()
             }
 
         } catch (ex : Exception){
             Log.d("QQQQq","$ex")
             Toast.makeText(this, "Ошибка изменения имени",
-                    Toast.LENGTH_LONG).show()
+                Toast.LENGTH_LONG).show()
         }
     }
 
