@@ -2,22 +2,22 @@ package com.example.myapplication
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.text.Editable
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatDelegate
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.lang.Exception
 import java.net.URI
 import javax.net.ssl.SSLSocketFactory
-import kotlin.coroutines.coroutineContext
+import kotlinx.serialization.json.Json
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -62,16 +62,42 @@ class MainActivity : AppCompatActivity() {
 
             override fun onMessage(message: String?) {
                 Log.i("__CHAT__", "onMessage: $message");
-//                parseMessage(message)
+                parseMessage(message)
+
             }
 
             override fun onError(ex: Exception?) {
                 Log.i("__CHAT__", "onException: $ex");
-
             }
         }
     }
 
+    fun parseMessage(message: String?){
+        when (message?.substringBefore("::")) {
+            "DBNOTACTIVE" -> {
+                val msg = message.substringAfter("::")
+                    Toast.makeText(this@MainActivity,
+                            msg,
+                            Toast.LENGTH_SHORT).show()
+                }
+//            "RESULTDB" ->{
+//                val statusWithMsg = message.substringAfter("::")
+//                val status = statusWithMsg.substringBefore("::")
+//                val msg = statusWithMsg.substringAfter("::")
+//                if(status == "SUCCESS"){
+//                    Toast.makeText(this@MainActivity,
+//                        msg,
+//                        Toast.LENGTH_SHORT).show()
+//                }
+//                if(status == "ERROR"){
+//                    Toast.makeText(this@MainActivity,
+//                        msg,
+//                        Toast.LENGTH_SHORT).show()
+//                }
+//
+//            }
+        }
+    }
 
 
     fun onSignUpClick(view: View) {
@@ -81,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         builder.setView(view)
         val alertDialog = builder.create();
         alertDialog.show()
-        view.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.cancelBtnSignup).setOnClickListener {
             alertDialog.dismiss()
         }
         view.findViewById<Button>(R.id.signupBtn).setOnClickListener {
@@ -112,36 +138,56 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
-            val msgToSrv : String = "signup::$loginsign::$pass1sign::$usernamesign"
-            webSocketClient.send(msgToSrv)
-//            Toast.makeText(this@MainActivity,
-//                    msgToSrv,
-//                    Toast.LENGTH_SHORT).show()
+            val dataSignUpUser = SignUpUser("SIGNUP::", loginsign, pass1sign, usernamesign)
+            val msg =   Json.encodeToString(dataSignUpUser)
+            webSocketClient.send(msg)
+            alertDialog.dismiss()
         }
-
-
         if(webSocketClient.connection.readyState.ordinal == 0){
             Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
                 Toast.LENGTH_SHORT).show()
         }
+//        val intent = Intent(this, MasterActivity::class.java);
+//        startActivity(intent)
     }
-    fun onLoginClick(view: View) {
+
+    @Serializable
+    data class SignUpUser(
+        val type : String,
+        val loginSignUp : String,
+        val passSignUp : String,
+        val userNameSignUp : String
+    )
+    @Serializable
+    data class LoginDataUser(val type : String, val loginAuth : String, val passAuth : String)
+
+    fun onLoginUserClick(view: View) {
         val builder = AlertDialog.Builder(this)
         val inflater = this.layoutInflater
         val view  = inflater.inflate(R.layout.dialoglogin, null)
         builder.setView(view)
-        val alertDialog = builder.create();
+        val alertDialog = builder.create()
         alertDialog.show()
-        view.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.cancelBtnAuth).setOnClickListener {
             alertDialog.dismiss()
         }
-        view.findViewById<Button>(R.id.loginBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.loginBtnAuth).setOnClickListener {
+//            val imm = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+//            imm.hideSoftInputFromWindow(it.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+            val loginAuth = view.findViewById<EditText>(R.id.loginAuth).text.toString()
+            val passAuth = view.findViewById<EditText>(R.id.passAuth).text.toString()
 
+            if(loginAuth.trim().isEmpty() || passAuth.trim().isEmpty()){
+                return@setOnClickListener
+            }
+            val dataUser = LoginDataUser("AUTH::", loginAuth, passAuth)
+            val msg =   Json.encodeToString(dataUser)
+            webSocketClient.send(msg)
+            alertDialog.dismiss()
         }
         if(webSocketClient.connection.readyState.ordinal == 0){
             Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
-                Toast.LENGTH_SHORT).show()
+                    Toast.LENGTH_SHORT).show()
         }
     }
 

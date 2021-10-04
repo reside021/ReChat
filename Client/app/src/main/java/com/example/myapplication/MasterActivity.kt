@@ -30,7 +30,6 @@ import java.lang.Exception
 import java.net.URI
 import java.text.FieldPosition
 import javax.net.ssl.SSLSocketFactory
-import kotlin.random.Random.Default.Companion
 
 class MasterActivity : AppCompatActivity() {
     companion object {
@@ -153,40 +152,40 @@ class MasterActivity : AppCompatActivity() {
 //    override fun onPause() {
 //        super.onPause()
 //        webSocketClient.close()
-//        sqliteHelper.DelTable()
+////        sqliteHelper.DelTable()
 //    }
 
 
-//    private fun initWebSocket(){
-//        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
-//
-//        val chatservUri: URI? = URI(WEB_SOCKET_URL)
-//        createWebSocketClient(chatservUri)
-////        webSocketClient.setSocketFactory(socketFactory)
-//        webSocketClient.connect()
-//    }
+    private fun initWebSocket(){
+        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
 
-//    private fun createWebSocketClient(chatservURI: URI?){
-//        webSocketClient = object : WebSocketClient(chatservURI){
-//            override fun onOpen(handshakedata: ServerHandshake?) {
-//                Log.i("__CHAT__", "onOpen");
-//                this@MasterActivity.runOnUiThread { setName() }
-//            }
-//
-//            override fun onClose(code: Int, reason: String?, remote: Boolean) {
-//                Log.i("__CHAT__", "onClose");
-//            }
-//
-//            override fun onMessage(message: String?) {
-//                Log.i("__CHAT__", "onMessage: $message");
-//                parseMessage(message)
-//            }
-//
-//            override fun onError(ex: Exception?) {
-//                Log.i("__CHAT__", "onException: $ex");
-//            }
-//        }
-//    }
+        val chatservUri: URI? = URI(WEB_SOCKET_URL)
+        createWebSocketClient(chatservUri)
+//        webSocketClient.setSocketFactory(socketFactory)
+        webSocketClient.connect()
+    }
+
+    private fun createWebSocketClient(chatservURI: URI?){
+        webSocketClient = object : WebSocketClient(chatservURI){
+            override fun onOpen(handshakedata: ServerHandshake?) {
+                Log.i("__CHAT__", "onOpen");
+                this@MasterActivity.runOnUiThread { setName() }
+            }
+
+            override fun onClose(code: Int, reason: String?, remote: Boolean) {
+                Log.i("__CHAT__", "onClose");
+            }
+
+            override fun onMessage(message: String?) {
+                Log.i("__CHAT__", "onMessage: $message");
+                parseMessage(message)
+            }
+
+            override fun onError(ex: Exception?) {
+                Log.i("__CHAT__", "onException: $ex");
+            }
+        }
+    }
 
 
     private fun func(idUser : String, textMSG : String){

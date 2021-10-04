@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <uwebsockets/App.h>
 #include <map>
+#include <nlohmann/json.hpp>
 
 // [UUID] для создания уникального uuid
 #include <boost/uuid/uuid.hpp>
@@ -17,6 +18,7 @@
 
 
 using namespace std;
+using json = nlohmann::json;
 
 
 /*
@@ -52,7 +54,17 @@ const string MESSAGE_TO = "MESSAGE_TO::";
 const string SET_NAME = "SET_NAME::";
 const string OFFLINE = "OFFLINE::";
 const string ONLINE = "ONLINE::";
-const string SIGNUP = "signup::";
+const string SIGNUP = "SIGNUP::";
+const string DBSERVER = "DBSERVER";
+const string F2A = "2FA";
+const string FORDB = "FORDB::";
+const string INFO = "INFO::";
+const string SQL = "SQL::";
+const string DBNOTACTIVE = "DBNOTACTIVE::";
+const string INSERT = "INSERT::";
+const string AUTH = "AUTH::";
+const string SELECT = "SELECT::";
+const string RESULTDB = "RESULTDB";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -63,6 +75,9 @@ struct PerSocketData {
 
 void updateName(PerSocketData* data) {
     userNames[data->uId] = data->name;
+}
+void updateUid(PerSocketData* data) {
+    userNames[data->uId] = data->uId;
 }
 
 void deleteName(PerSocketData* data) {
@@ -147,100 +162,57 @@ string parseNewUserNickname(string message) {
     return rest.substr(pos + 2);
 }
 
-
-// [SQL] определение хендлов и переменных
-SQLHANDLE sqlConnHandle;
-SQLHANDLE sqlStmtHandle;
-SQLHANDLE sqlEnvHandle;
-SQLWCHAR retconstring[SQL_RETURN_CODE_LEN];
-const string SQL_MSG = "[SQL_PART] ";
-
-// [SQL] закрытие соединения и осовбождение ресурсов
-void completed() {
-    SQLFreeHandle(SQL_HANDLE_STMT, sqlStmtHandle);
-    SQLDisconnect(sqlConnHandle);
-    SQLFreeHandle(SQL_HANDLE_DBC, sqlConnHandle);
-    SQLFreeHandle(SQL_HANDLE_ENV, sqlEnvHandle);
+bool isConnectionServerDB(string message) {
+    return message.find(DBSERVER) == 0;
+}
+bool isTrustServer(string message) {
+    return message.find(F2A) == 0;
 }
 
-void connectToDB() {
-    // [SQL] инициализация
-    sqlConnHandle = NULL;
-    sqlStmtHandle = NULL;
-    // [SQL] allocations
-    if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlEnvHandle)) completed();
-    if (SQL_SUCCESS != SQLSetEnvAttr(sqlEnvHandle, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)) completed();
-    if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_DBC, sqlEnvHandle, &sqlConnHandle)) completed();
-
-    // [SQL] Попытка подключения к sql server
-    // [SQL] Используется защищенное подключение по порту 1433
-    // [SQL] не используется подключение по имени/паролю из соображений безопасности
-
-    switch (SQLDriverConnect(sqlConnHandle,
-        NULL,
-        //(SQLWCHAR*)L"DRIVER={SQL Server};SERVER=localhost, 1433;DATABASE=ReChat;UID=username;PWD=password;",
-        (SQLWCHAR*)L"DRIVER={SQL Server};SERVER=localhost, 1433;DATABASE=ReChat;Trusted=true;",
-        SQL_NTS,
-        retconstring,
-        1024,
-        NULL,
-        SQL_DRIVER_NOPROMPT)) {
-    case SQL_SUCCESS:
-        cout << SQL_MSG + "Successfully connected to SQL Server\n";
-        break;
-    case SQL_SUCCESS_WITH_INFO:
-        cout << SQL_MSG + "Successfully connected to SQL Server\n";
-        break;
-    case SQL_INVALID_HANDLE:
-        cout << SQL_MSG + "Could not connect to SQL Server\n";
-        completed();
-    case SQL_ERROR:
-        cout << SQL_MSG + "Could not connect to SQL Server\n";
-        completed();
-    default:
-        break;
-    }
-    // [SQL] Если присутствует проблема подключения, то приложение закроется
-    if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_STMT, sqlConnHandle, &sqlStmtHandle)) completed();
-
-    // [SQL] Выполение SQL-запроса, если бдует ошибка, то приложение закроется, иначе выдаст результат запроса
-    if (SQL_SUCCESS != SQLExecDirect(sqlStmtHandle, (SQLWCHAR*)L"SELECT @@VERSION", SQL_NTS)) {
-        cout << SQL_MSG + "Error querying SQL Server\n";
-        completed();
-    }
-    else {
-        // [SQL] объявление выходных данных
-        SQLCHAR sqlResult[SQL_RESULT_LEN];
-        SQLINTEGER ptrSqlVersion;
-        while (SQLFetch(sqlStmtHandle) == SQL_SUCCESS) {
-            SQLGetData(sqlStmtHandle, 1, SQL_CHAR, sqlResult, SQL_RESULT_LEN, &ptrSqlVersion);
-        }
-        cout << SQL_MSG + "Query Result:\n\n";
-        cout << sqlResult << endl;
-    }
+bool IsServerDBNotActive() {
+    return userNames.find("999") == userNames.end();
 }
 
-std::wstring s2ws(const std::string& s)
-{
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    wchar_t* buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
+bool isAuthUser(string message) {
+    return message.find(AUTH) == 0;
+}
+string parseUserLogin(string message) {
+    string rest = message.substr(AUTH.size());
+    int pos = rest.find("::");
+    return rest.substr(0, pos);
 }
 
-bool addNewUserInDB(string login, string pass, string nickname) {
-    string query = "insert into UsersData values(" + login + "," + pass + "," + nickname + ")";
-    return true;
-   // std::wstring stemp = s2ws(query);
-   // SQLWCHAR* result = (SQLWCHAR*)stemp.c_str();
-    //wstring query = L"insert into UsersData values(" + to_wstring()
-
-   // return SQL_SUCCESS == SQLExecDirect(sqlStmtHandle, (SQLWCHAR*)stemp, SQL_NTS));
+string parseUserPass(string message) {
+    string rest = message.substr(AUTH.size());
+    int pos = rest.find("::");
+    return rest.substr(pos + 2);
 }
+bool isResultFromDB(string message) {
+    return message.find(RESULTDB) == 0;
+}
+string parseResultDB(string message) {
+    string rest = message.substr(RESULTDB.size());
+    int pos = rest.find("::");
+    return rest.substr(0, pos);
+}
+string parseResultDBAuthor(string message) {
+    string rest = message.substr(RESULTDB.size());
+    int pos = rest.find("::");
+    rest = rest.substr(pos + 2);
+    pos = rest.find("::");
+    return rest.substr(0, pos);
+}
+string parseResultDBName(string message) {
+    int pos = message.rfind("::");
+    string rest = message.substr(0, pos);
+    pos = rest.rfind("::");
+    return rest.substr(pos + 2);
+}
+string parseResultDBuId(string message) {
+    int pos = message.rfind("::");
+    return message.substr(pos + 2);
+}
+
 
 int main() {
    
@@ -283,12 +255,13 @@ int main() {
                 ws->subscribe(userChannel); //  укаждого юзера есть личка
                 ws->subscribe(BROADCAST_CHANNEL); // подписка юзера на общий канал
                 // todo Сообщить всем пользователям, что кто-то онлайн
-
                 ws->publish(userChannel, "FC::" + userData->uId, uWS::OpCode::TEXT, false);
 
             },
             .message = [](auto* ws, string_view message, uWS::OpCode opCode) {
                 string strMessage = string(message);
+                auto jsonData = json::parse(strMessage);
+                
                 PerSocketData* userData = (PerSocketData*)ws->getUserData();
                 string authorId = userData->uId;
                 //ws->send(message, opCode, true); обратная отправка сообщений
@@ -324,15 +297,74 @@ int main() {
                         ws->publish("user#" + authorId, "ERROR SET NAME", uWS::OpCode::TEXT, false);
                     }
                 }
-                if (isSignNewUser(strMessage)) {
-                    string loginUser = parseNewUserLogin(strMessage);
-                    string passUser = parseNewUserPassword(strMessage);
-                    string nickName = parseNewUserNickname(strMessage) + "_" + authorId;
-                    cout << endl << loginUser;
-                    cout << endl << passUser;
-                    cout << endl << nickName;
-                    cout << endl;
+                if (isSignNewUser(jsonData["type"])) {
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE + "Ошибка соединения с сервером данных", uWS::OpCode::TEXT, false);
+                        return;
+                    }
+                    string loginUser = jsonData["loginSignUp"];
+                    string passUser = jsonData["passSignUp"];
+                    string nickName = jsonData["userNameSignUp"];
+                    json jsonOut = {
+                            {"loginUser", loginUser},
+                            {"passUser", passUser},
+                            {"nickName", nickName},
+                            {"authorId", authorId}
+                    };
+                    string outgoingMessage = FORDB + SQL + INSERT + SIGNUP + (string)jsonOut.dump();
+                    cout << endl << outgoingMessage << endl;
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                 }
+                if (isAuthUser(jsonData["type"])) {
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE + "Ошибка соединения с сервером данных", uWS::OpCode::TEXT, false);
+                        return;
+                    }
+                    string loginUser = jsonData["loginAuth"];
+                    string passUser = jsonData["passAuth"];
+                    json jsonOut = {
+                            {"loginUser", loginUser},
+                            {"passUser", passUser},
+                            {"authorId", authorId}
+                    };
+                    string outgoingMessage = FORDB + SQL + SELECT + AUTH + (string)jsonOut.dump();
+                    cout << endl << outgoingMessage << endl;
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
+                if (isConnectionServerDB(jsonData["type"])) {
+                    if (isTrustServer(jsonData["key"])) {
+                        PerSocketData* userData = (PerSocketData*)ws->getUserData();
+                        deleteName(userData);
+                        userData->name = "ServerDB";
+                        userData->uId = "999";
+                        updateName(userData);
+                        string userChannel = "user#" + userData->uId;
+                        ws->subscribe(userChannel);
+                        string outgoingMessage = FORDB + INFO + "The database server has been checked and connected successfully";
+                        ws->publish(userChannel, outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                }
+                if (isResultFromDB(jsonData["type"])) {
+                    if (jsonData["success"]) {
+                        string authorId = jsonData["authorId"];
+                        string name = jsonData["nickName"];
+                        string uId = jsonData["tag"];
+                        cout << endl << authorId;
+                        cout << endl << name;
+                        cout << endl << uId;
+                        string outgoingMsg = "SUCCESS::Успешная авторизация";
+                        ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                    }
+                    else {
+                        string authorId = jsonData["authorId"];
+                        cout << endl << authorId;
+                        string outgoingMsg = "ERROR::Ошибка авторизации\nНеверные данные для входа";
+                        ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                    }
+
+                }
+
+
 
 
                 // сообщить, кто вообще онлайн
@@ -341,7 +373,7 @@ int main() {
                 // вызывается при отключении от сервера
                 PerSocketData* userData = (PerSocketData*)ws->getUserData();
                 ws->publish(BROADCAST_CHANNEL, offline(userData->uId));
-                deleteName(userData);
+                deleteName(userData);   
                 cout << "Users connected: " << userNames.size() << endl;
             }
             })
@@ -350,6 +382,5 @@ int main() {
                     // если все ок, вывести сообщение
                     cout << "Listening on port " << 9001 << std::endl;
                 }
-                connectToDB(); // подключение к бд
                 }).run(); // запуск
 }

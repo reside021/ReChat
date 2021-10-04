@@ -11,12 +11,15 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
         <EditText
+            android:id="@+id/loginAuth"
             style="@style/editTextSignLogin"
-            android:hint="Login"/>
+            android:hint="Login"
+            android:inputType="text"/>
         <EditText
+            android:id="@+id/passAuth"
             style="@style/editTextSignLogin"
             android:hint="Password"
-            android:inputType="textPassword"/>
+            android:inputType="text"/>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -28,19 +31,17 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"/>
             <Button
-                android:id="@+id/cancelBtn"
+                android:id="@+id/cancelBtnAuth"
                 style="@style/btnDlgSignLogin"
-                android:text="Cancel"
-                android:onClick="onCancelClick"/>
+                android:text="Cancel"/>
             <Space
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"/>
             <Button
-                android:id="@+id/loginBtn"
+                android:id="@+id/loginBtnAuth"
                 style="@style/btnDlgSignLogin"
-                android:text="Login"
-                android:onClick="onLoginClick"/>
+                android:text="Login"/>
             <Space
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
