@@ -20,6 +20,7 @@
         <activity android:name=".MasterActivity"/>
         <activity android:name=".FriendsProfile"/>
         <activity android:name=".ChatPeople"/>
+        <activity android:name=".testact"/>
     </application>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA"/>

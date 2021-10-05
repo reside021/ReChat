@@ -2,6 +2,7 @@ package com.example.myapplication
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -62,7 +63,9 @@ class MainActivity : AppCompatActivity() {
 
             override fun onMessage(message: String?) {
                 Log.i("__CHAT__", "onMessage: $message");
-                parseMessage(message)
+                this@MainActivity.runOnUiThread{
+                    parseMessage(message)
+                }
 
             }
 
@@ -79,26 +82,47 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity,
                             msg,
                             Toast.LENGTH_SHORT).show()
+            }
+            "RESULTDB" ->{
+                val statusWithMsg = message.substringAfter("::")
+                val status = statusWithMsg.substringBefore("::")
+                val msg = statusWithMsg.substringAfter("::")
+                if(status == "SUCCESS"){
+                    Toast.makeText(this@MainActivity,
+                        "Успешная авторизация",
+                        Toast.LENGTH_SHORT).show()
+//                    this@MainActivity.runOnUiThread { authorization(msg) }
+                    authorization(msg)
+
                 }
-//            "RESULTDB" ->{
-//                val statusWithMsg = message.substringAfter("::")
-//                val status = statusWithMsg.substringBefore("::")
-//                val msg = statusWithMsg.substringAfter("::")
-//                if(status == "SUCCESS"){
-//                    Toast.makeText(this@MainActivity,
-//                        msg,
-//                        Toast.LENGTH_SHORT).show()
-//                }
-//                if(status == "ERROR"){
-//                    Toast.makeText(this@MainActivity,
-//                        msg,
-//                        Toast.LENGTH_SHORT).show()
-//                }
-//
-//            }
+                if(status == "ERROR"){
+                    Toast.makeText(this@MainActivity,
+                        "Ошибка авторизации\nНеверные данные для входа",
+                        Toast.LENGTH_SHORT).show()
+                }
+
+            }
         }
     }
 
+    private fun authorization(data : String){
+        try {
+            val obj = Json.decodeFromString<DataOfUser>(data)
+            val kek = obj.nickname
+            val lol = obj.tagUser
+            val intent = Intent(this, testact::class.java);
+            intent.putExtra("nickname", obj.nickname)
+            intent.putExtra("tagUser", obj.tagUser)
+            startActivity(intent)
+        } catch (ex : Exception){
+            Toast.makeText(this@MainActivity,
+                    ex.message,
+                    Toast.LENGTH_LONG).show()
+        }
+
+
+
+    }
 
     fun onSignUpClick(view: View) {
         val builder = AlertDialog.Builder(this)
@@ -147,19 +171,26 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
                 Toast.LENGTH_SHORT).show()
         }
-//        val intent = Intent(this, MasterActivity::class.java);
-//        startActivity(intent)
     }
 
     @Serializable
-    data class SignUpUser(
-        val type : String,
-        val loginSignUp : String,
-        val passSignUp : String,
-        val userNameSignUp : String
+    data class DataOfUser(
+            val nickname : String,
+            val tagUser : String
     )
     @Serializable
-    data class LoginDataUser(val type : String, val loginAuth : String, val passAuth : String)
+    data class SignUpUser(
+            val type : String,
+            val loginSignUp : String,
+            val passSignUp : String,
+            val userNameSignUp : String
+    )
+    @Serializable
+    data class LoginDataUser(
+            val type : String,
+            val loginAuth : String,
+            val passAuth : String
+    )
 
     fun onLoginUserClick(view: View) {
         val builder = AlertDialog.Builder(this)

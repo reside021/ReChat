@@ -70,6 +70,10 @@ class MasterActivity : AppCompatActivity() {
         chatTab.setOnClickListener { chatTabClick() }
         friendsTab.setOnClickListener { friendsTabClick() }
         profileTabClick()
+        profileTab.findViewById<TextView>(R.id.nameofuser).text =
+                intent.extras?.getString("nickname")
+        profileTab.findViewById<TextView>(R.id.tagofuser).text =
+                intent.extras?.getString("tagUser")
 
         switchBeOnline = findViewById(R.id.switchBeOnline)
         switchBeOnline.setOnCheckedChangeListener { _, isChecked ->
@@ -156,36 +160,36 @@ class MasterActivity : AppCompatActivity() {
 //    }
 
 
-    private fun initWebSocket(){
-        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
-
-        val chatservUri: URI? = URI(WEB_SOCKET_URL)
-        createWebSocketClient(chatservUri)
-//        webSocketClient.setSocketFactory(socketFactory)
-        webSocketClient.connect()
-    }
-
-    private fun createWebSocketClient(chatservURI: URI?){
-        webSocketClient = object : WebSocketClient(chatservURI){
-            override fun onOpen(handshakedata: ServerHandshake?) {
-                Log.i("__CHAT__", "onOpen");
-                this@MasterActivity.runOnUiThread { setName() }
-            }
-
-            override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                Log.i("__CHAT__", "onClose");
-            }
-
-            override fun onMessage(message: String?) {
-                Log.i("__CHAT__", "onMessage: $message");
-                parseMessage(message)
-            }
-
-            override fun onError(ex: Exception?) {
-                Log.i("__CHAT__", "onException: $ex");
-            }
-        }
-    }
+//    private fun initWebSocket(){
+//        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
+//
+//        val chatservUri: URI? = URI(WEB_SOCKET_URL)
+//        createWebSocketClient(chatservUri)
+////        webSocketClient.setSocketFactory(socketFactory)
+//        webSocketClient.connect()
+//    }
+//
+//    private fun createWebSocketClient(chatservURI: URI?){
+//        webSocketClient = object : WebSocketClient(chatservURI){
+//            override fun onOpen(handshakedata: ServerHandshake?) {
+//                Log.i("__CHAT__", "onOpen");
+//                this@MasterActivity.runOnUiThread { setName() }
+//            }
+//
+//            override fun onClose(code: Int, reason: String?, remote: Boolean) {
+//                Log.i("__CHAT__", "onClose");
+//            }
+//
+//            override fun onMessage(message: String?) {
+//                Log.i("__CHAT__", "onMessage: $message");
+//                parseMessage(message)
+//            }
+//
+//            override fun onError(ex: Exception?) {
+//                Log.i("__CHAT__", "onException: $ex");
+//            }
+//        }
+//    }
 
 
     private fun func(idUser : String, textMSG : String){
@@ -204,41 +208,41 @@ class MasterActivity : AppCompatActivity() {
         }
     }
 
-    fun parseMessage(message: String?){
-        when (message?.substringBefore("::")) {
-            "FC" -> {
-                val tag = message.substringAfter("::")
-                Log.d("QQQQQQQQ","PARSEMESSAGE")
-                setTagProfile(tag)
-
-            }
-            "MESSAGE_FROM" -> {
-                val idWithMsg = message.substringAfter("::")
-                val id = idWithMsg.substringBefore("::")
-                val msg = idWithMsg.substringAfter("::")
-                sqliteHelper.addMsgInTable(id, OTHER_MSG, msg,"0")
-                this@MasterActivity.runOnUiThread {
-                    func(id, msg)
-                }
-            }
-            "ONLINE" -> {
-                val idWithName = message.substringAfter("::")
-                val id = idWithName.substringBefore("::")
-                val name = idWithName.substringAfter("::")
-                listOnlineUser[id] = name
-
-            }
-            "OFFLINE" ->{
-                val idWithName = message.substringAfter("::")
-                val id = idWithName.substringBefore("::")
-                val name = idWithName.substringAfter("::")
-                listOnlineUser.remove(id)
-            }
-            else -> {
-                //что-то сделать
-            }
-        }
-    }
+//    fun parseMessage(message: String?){
+//        when (message?.substringBefore("::")) {
+//            "FC" -> {
+//                val tag = message.substringAfter("::")
+//                Log.d("QQQQQQQQ","PARSEMESSAGE")
+//                setTagProfile(tag)
+//
+//            }
+//            "MESSAGE_FROM" -> {
+//                val idWithMsg = message.substringAfter("::")
+//                val id = idWithMsg.substringBefore("::")
+//                val msg = idWithMsg.substringAfter("::")
+//                sqliteHelper.addMsgInTable(id, OTHER_MSG, msg,"0")
+//                this@MasterActivity.runOnUiThread {
+//                    func(id, msg)
+//                }
+//            }
+//            "ONLINE" -> {
+//                val idWithName = message.substringAfter("::")
+//                val id = idWithName.substringBefore("::")
+//                val name = idWithName.substringAfter("::")
+//                listOnlineUser[id] = name
+//
+//            }
+//            "OFFLINE" ->{
+//                val idWithName = message.substringAfter("::")
+//                val id = idWithName.substringBefore("::")
+//                val name = idWithName.substringAfter("::")
+//                listOnlineUser.remove(id)
+//            }
+//            else -> {
+//                //что-то сделать
+//            }
+//        }
+//    }
 
 
     private fun setTagProfile(tag : String){

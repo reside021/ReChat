@@ -13,13 +13,12 @@
         <EditText
             android:id="@+id/loginAuth"
             style="@style/editTextSignLogin"
-            android:hint="Login"
-            android:inputType="text"/>
+            android:hint="Login"/>
         <EditText
             android:id="@+id/passAuth"
             style="@style/editTextSignLogin"
             android:hint="Password"
-            android:inputType="text"/>
+            android:inputType="textPassword"/>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

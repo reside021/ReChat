@@ -64,7 +64,7 @@ const string DBNOTACTIVE = "DBNOTACTIVE::";
 const string INSERT = "INSERT::";
 const string AUTH = "AUTH::";
 const string SELECT = "SELECT::";
-const string RESULTDB = "RESULTDB";
+const string RESULTDB = "RESULTDB::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -76,13 +76,16 @@ struct PerSocketData {
 void updateName(PerSocketData* data) {
     userNames[data->uId] = data->name;
 }
-void updateUid(PerSocketData* data) {
-    userNames[data->uId] = data->uId;
-}
 
 void deleteName(PerSocketData* data) {
     userNames.erase(data->uId);
 }
+
+void restoreDataUser(string olduId, string newName, string new_uId) {
+    userNames.erase(olduId);
+    userNames[new_uId] = newName;
+}
+
 //ONLINE::19::vasya
 string online(string user_id) {
     string name = userNames[user_id];
@@ -267,39 +270,40 @@ int main() {
                 //ws->send(message, opCode, true); обратная отправка сообщений
                 // вызывается при получении сообщения от пользователя
 
-                if (isMessageTo(strMessage)) {
-                    // подготовить данные и отправить их
-                    string receiverId = parseUserId(strMessage);
-                    string text = parseUserText(strMessage);
-                    // отправить получателю
-                    if (receiverId == "0") {
-                        // userData->user_id == отправитель
-                        string outgoingMessage = messageFromGlobal("0", userData->name, text);
-                        ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
-                    }
-                    else {
-                        // userData->user_id == отправитель
-                        string outgoingMessage = messageFromUser(authorId, userData->name, text);
-                        ws->publish("user#" + receiverId, outgoingMessage, uWS::OpCode::TEXT, false);
-                    }
-                    ws->send("Message sent", uWS::OpCode::TEXT);
-                    cout << "User #" << authorId << " wrote message to " << receiverId << endl;
-                    }
-                if (isSetName(strMessage)) {
-                    if (strMessage.size() < 20) {
-                        string newName = parseName(strMessage);
-                        userData->name = newName;
-                        updateName(userData);
-                        ws->publish(BROADCAST_CHANNEL, online(userData->uId));
-                        cout << "User #" << authorId << " set their name" << endl;
-                    }
-                    else {
-                        ws->publish("user#" + authorId, "ERROR SET NAME", uWS::OpCode::TEXT, false);
-                    }
-                }
+                //if (isMessageTo(strMessage)) {
+                //    // подготовить данные и отправить их
+                //    string receiverId = parseUserId(strMessage);
+                //    string text = parseUserText(strMessage);
+                //    // отправить получателю
+                //    if (receiverId == "0") {
+                //        // userData->user_id == отправитель
+                //        string outgoingMessage = messageFromGlobal("0", userData->name, text);
+                //        ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
+                //    }
+                //    else {
+                //        // userData->user_id == отправитель
+                //        string outgoingMessage = messageFromUser(authorId, userData->name, text);
+                //        ws->publish("user#" + receiverId, outgoingMessage, uWS::OpCode::TEXT, false);
+                //    }
+                //    ws->send("Message sent", uWS::OpCode::TEXT);
+                //    cout << "User #" << authorId << " wrote message to " << receiverId << endl;
+                //    }
+                //if (isSetName(strMessage)) {
+                //    if (strMessage.size() < 20) {
+                //        string newName = parseName(strMessage);
+                //        userData->name = newName;
+                //        updateName(userData);
+                //        ws->publish(BROADCAST_CHANNEL, online(userData->uId));
+                //        cout << "User #" << authorId << " set their name" << endl;
+                //    }
+                //    else {
+                //        ws->publish("user#" + authorId, "ERROR SET NAME", uWS::OpCode::TEXT, false);
+                //    }
+                //}
+
                 if (isSignNewUser(jsonData["type"])) {
                     if (IsServerDBNotActive()) {
-                        ws->publish("user#" + authorId, DBNOTACTIVE + "Ошибка соединения с сервером данных", uWS::OpCode::TEXT, false);
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
                         return;
                     }
                     string loginUser = jsonData["loginSignUp"];
@@ -312,12 +316,12 @@ int main() {
                             {"authorId", authorId}
                     };
                     string outgoingMessage = FORDB + SQL + INSERT + SIGNUP + (string)jsonOut.dump();
-                    cout << endl << outgoingMessage << endl;
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    cout << "User #" << authorId << " has registered" << endl;
                 }
                 if (isAuthUser(jsonData["type"])) {
                     if (IsServerDBNotActive()) {
-                        ws->publish("user#" + authorId, DBNOTACTIVE + "Ошибка соединения с сервером данных", uWS::OpCode::TEXT, false);
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
                         return;
                     }
                     string loginUser = jsonData["loginAuth"];
@@ -328,7 +332,6 @@ int main() {
                             {"authorId", authorId}
                     };
                     string outgoingMessage = FORDB + SQL + SELECT + AUTH + (string)jsonOut.dump();
-                    cout << endl << outgoingMessage << endl;
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                 }
                 if (isConnectionServerDB(jsonData["type"])) {
@@ -349,23 +352,22 @@ int main() {
                         string authorId = jsonData["authorId"];
                         string name = jsonData["nickName"];
                         string uId = jsonData["tag"];
-                        cout << endl << authorId;
-                        cout << endl << name;
-                        cout << endl << uId;
-                        string outgoingMsg = "SUCCESS::Успешная авторизация";
+                        restoreDataUser(authorId, name, uId);
+                        json jsonOut = {
+                            {"nickname", name},
+                            {"tagUser", uId}
+                        };
+                        string outgoingMsg = "SUCCESS::" + (string)jsonOut.dump();
                         ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                        cout << "User #" << authorId << " has been authorized" << endl;
                     }
                     else {
                         string authorId = jsonData["authorId"];
-                        cout << endl << authorId;
-                        string outgoingMsg = "ERROR::Ошибка авторизации\nНеверные данные для входа";
+                        string outgoingMsg = "ERROR::none";
                         ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
                     }
 
                 }
-
-
-
 
                 // сообщить, кто вообще онлайн
             },

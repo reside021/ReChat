@@ -105,7 +105,7 @@ namespace WSClientDB
                 if(passDB == passUser)
                 {
                     result.type = RESULTDB;
-                    result.success = false;
+                    result.success = true;
                     result.authorId = authorUser;
                     result.tag = tagDB;
                     result.nickName = nickDB;
@@ -130,8 +130,8 @@ namespace WSClientDB
                 webSocket.Send(jsonResult);
             }
             sqlCommand.Parameters.Clear();
-            sqlConnection.Close();
-            Console.WriteLine($"[MSG] -> AUTH^Select from UsersData");
+            sqlConnection.Close();  
+            Console.WriteLine($"[MSG] -> AUTH^{nickDB}_{tagDB}");
 
         }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
@@ -153,7 +153,6 @@ namespace WSClientDB
                     if (message.IndexOf(SIGNUP) != -1)
                     {
                         message = message.Substring(SIGNUP.Length);
-                        Console.WriteLine(message);
                         SignUp signUp = JsonConvert.DeserializeObject<SignUp>(message);
                         InsertDataSignUp(signUp.loginUser, signUp.passUser, signUp.nickName, signUp.authorId);
                     }
@@ -164,7 +163,6 @@ namespace WSClientDB
                     if (message.IndexOf(AUTH) != -1)
                     {
                         message = message.Substring(AUTH.Length);
-                        Console.WriteLine(message);
                         Auth auth = JsonConvert.DeserializeObject<Auth>(message);
                         SelectDataForAuth(auth.authorId, auth.loginUser, auth.passUser);
                     }

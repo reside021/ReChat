@@ -34,7 +34,8 @@
             android:layout_height="wrap_content"
             android:text="@string/checkboxSignup"
             android:layout_gravity="center"
-            android:checked="false"/>
+            android:checked="false"
+            android:layout_marginHorizontal="15dp"/>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
