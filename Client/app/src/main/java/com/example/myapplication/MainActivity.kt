@@ -24,11 +24,14 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val WEB_SOCKET_URL = "ws://chatserv.sytes.net:9001"
         lateinit var webSocketClient: WebSocketClient
+        lateinit var sqliteHelper: SqliteHelper
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState)
         setContentView(R.layout.firstactivity)
+        sqliteHelper = SqliteHelper(this)
+        sqliteHelper.clearOnlineTable()
         initWebSocket()
     }
 
@@ -40,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun initWebSocket(){
-        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
+//        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
 
         val chatservUri: URI? = URI(WEB_SOCKET_URL)
         createWebSocketClient(chatservUri)
@@ -91,7 +94,6 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity,
                         "Успешная авторизация",
                         Toast.LENGTH_SHORT).show()
-//                    this@MainActivity.runOnUiThread { authorization(msg) }
                     authorization(msg)
 
                 }
@@ -102,21 +104,34 @@ class MainActivity : AppCompatActivity() {
                 }
 
             }
+            "ONLINE" -> {
+                val idWithName = message.substringAfter("::")
+                val id = idWithName.substringBefore("::")
+                val name = idWithName.substringAfter("::")
+                sqliteHelper.addUserInOnline(id, name)
+
+            }
+            "OFFLINE" ->{
+                val idWithName = message.substringAfter("::")
+                val id = idWithName.substringBefore("::")
+                sqliteHelper.deleteUserFromOnline(id)
+            }
         }
     }
 
     private fun authorization(data : String){
         try {
             val obj = Json.decodeFromString<DataOfUser>(data)
-            val kek = obj.nickname
-            val lol = obj.tagUser
-            val intent = Intent(this, testact::class.java);
-            intent.putExtra("nickname", obj.nickname)
-            intent.putExtra("tagUser", obj.tagUser)
+            val intent = Intent(this, MasterActivity::class.java);
+            val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+            val ed = sp.edit()
+            ed.putString("nickname", obj.nickname)
+            ed.putString("tagUser", obj.tagUser)
+            ed.apply()
             startActivity(intent)
         } catch (ex : Exception){
             Toast.makeText(this@MainActivity,
-                    ex.message,
+                    "Произошла непредвиденная ошибка",
                     Toast.LENGTH_LONG).show()
         }
 
@@ -221,5 +236,6 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT).show()
         }
     }
+
 
 }

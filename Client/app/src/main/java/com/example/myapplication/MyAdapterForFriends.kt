@@ -10,9 +10,9 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 
-class MyAdapterForFriends(_list: MutableMap<String, String>, _sqlitehelper : SqliteHelper) : BaseAdapter() {
-    private val sqliteHelper : SqliteHelper = _sqlitehelper
-    private val list : List<Pair<String, String>> = _list.toList()
+class MyAdapterForFriends() : BaseAdapter() {
+    private val sqliteHelper : SqliteHelper = MainActivity.sqliteHelper
+    private val list : List<Pair<String, String>> = sqliteHelper.getAllUsersOnline().toList()
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
         val context = parent?.context
         val newView : View
@@ -30,7 +30,7 @@ class MyAdapterForFriends(_list: MutableMap<String, String>, _sqlitehelper : Sql
             addChat.setOnClickListener {
                 Toast.makeText(context, "С пользователем создан чат",
                         Toast.LENGTH_SHORT).show()
-                sqliteHelper.addUser(list[position])
+                sqliteHelper.addUserInChat(list[position])
             }
             return newView
         }

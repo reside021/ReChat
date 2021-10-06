@@ -32,9 +32,9 @@ class ChatPeople : AppCompatActivity() {
         animAlpha = AnimationUtils.loadAnimation(this, R.anim.alpha)
         editTextMessage = findViewById(R.id.editTextMessage)
         mainWindowInclude = findViewById(R.id.mainChatWindow)
-        webSocketClient = MasterActivity.webSocketClient
-        sqliteHelper = MasterActivity.sqliteHelper
-        idUser = intent.extras?.getString("id").toString()
+//        webSocketClient = MasterActivity.webSocketClient
+        sqliteHelper = MainActivity.sqliteHelper
+        idUser = intent.extras?.getString("idTag").toString()
     }
 
     override fun onStart() {
@@ -50,7 +50,6 @@ class ChatPeople : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        // Store our shared preference
 
         // Store our shared preference
         val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
@@ -59,23 +58,23 @@ class ChatPeople : AppCompatActivity() {
         ed.apply()
     }
 
-    fun onReceiveMsg(dialogID : String, textMSG : String){
-        if(dialogID != idUser) return
-
-        val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
-        if(!sp.getBoolean("active",false)) return
-
-        try{
-            val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val newView = inflater.inflate(R.layout.message_from, null)
-            val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
-            textInMessage.text = textMSG
-            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            mainWindowInclude.addView(newView, lp)
-        } catch (ex : Exception){
-
-        }
-    }
+//    fun onReceiveMsg(dialogID : String, textMSG : String){
+//        if(dialogID != idUser) return
+//
+//        val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+//        if(!sp.getBoolean("active",false)) return
+//
+//        try{
+//            val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+//            val newView = inflater.inflate(R.layout.message_from, null)
+//            val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
+//            textInMessage.text = textMSG
+//            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+//            mainWindowInclude.addView(newView, lp)
+//        } catch (ex : Exception){
+//
+//        }
+//    }
 
     fun onSendMsgClick(view: View) {
         view.startAnimation(animAlpha)
@@ -85,13 +84,13 @@ class ChatPeople : AppCompatActivity() {
             val newView = inflater.inflate(R.layout.message_to, null)
             val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
             textInMessage.text = textMSG
-            webSocketClient.send("MESSAGE_TO::$idUser::$textMSG")
+//            webSocketClient.send("MESSAGE_TO::$idUser::$textMSG")
             val c: Calendar = Calendar.getInstance()
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
             val strDate: String = sdf.format(c.time)
-//            Toast.makeText(this, strDate,
-//                Toast.LENGTH_SHORT).show()
-            sqliteHelper.addMsgInTable(idUser, ME_MSG, textMSG.toString(), strDate)
+            Toast.makeText(this, strDate,
+                Toast.LENGTH_SHORT).show()
+//            sqliteHelper.addMsgInTable(idUser, ME_MSG, textMSG.toString(), strDate)
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             mainWindowInclude.addView(newView, lp)
         } catch (ex : Exception){

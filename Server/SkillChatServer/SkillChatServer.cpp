@@ -336,7 +336,6 @@ int main() {
                 }
                 if (isConnectionServerDB(jsonData["type"])) {
                     if (isTrustServer(jsonData["key"])) {
-                        PerSocketData* userData = (PerSocketData*)ws->getUserData();
                         deleteName(userData);
                         userData->name = "ServerDB";
                         userData->uId = "999";
@@ -353,6 +352,7 @@ int main() {
                         string name = jsonData["nickName"];
                         string uId = jsonData["tag"];
                         restoreDataUser(authorId, name, uId);
+                        PerSocketData* userData = (PerSocketData*)ws->getUserData();
                         json jsonOut = {
                             {"nickname", name},
                             {"tagUser", uId}
