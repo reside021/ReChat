@@ -8,6 +8,9 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.java_websocket.client.WebSocketClient
 import java.text.SimpleDateFormat
 import java.util.*
@@ -32,7 +35,7 @@ class ChatPeople : AppCompatActivity() {
         animAlpha = AnimationUtils.loadAnimation(this, R.anim.alpha)
         editTextMessage = findViewById(R.id.editTextMessage)
         mainWindowInclude = findViewById(R.id.mainChatWindow)
-//        webSocketClient = MasterActivity.webSocketClient
+        webSocketClient = MainActivity.webSocketClient
         sqliteHelper = MainActivity.sqliteHelper
         idUser = intent.extras?.getString("idTag").toString()
     }
@@ -75,6 +78,12 @@ class ChatPeople : AppCompatActivity() {
 //
 //        }
 //    }
+    @Serializable
+data class Msg(
+        val type : String,
+        val id : String,
+        val text : String
+    )
 
     fun onSendMsgClick(view: View) {
         view.startAnimation(animAlpha)
@@ -84,7 +93,10 @@ class ChatPeople : AppCompatActivity() {
             val newView = inflater.inflate(R.layout.message_to, null)
             val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
             textInMessage.text = textMSG
+            val dataUser = Msg("MESSAGE_TO::", idUser, textMSG.toString())
+            val msg = Json.encodeToString(dataUser)
 //            webSocketClient.send("MESSAGE_TO::$idUser::$textMSG")
+            webSocketClient.send(msg)
             val c: Calendar = Calendar.getInstance()
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
             val strDate: String = sdf.format(c.time)

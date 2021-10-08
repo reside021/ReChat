@@ -28,13 +28,27 @@ namespace WSClientDB
         public string loginUser { get; set; }
         public string passUser { get; set; }
     }
-    public class ResultDB
+    public class ResultDB // for auth of user
     {
         public string type { get; set; } // RESULTBD
+        public string oper{ get; set; } // type oper
         public string authorId { get; set; } // authorId
         public string nickName { get; set; } // name
         public string tag { get; set; } // uId
         public bool success { get; set; } // status
+    }
+    public class NewName
+    {
+        public string tagId { get; set; }
+        public string newName { get; set; }
+    }
+    public class SuccessUpdate
+    {
+        public string type { get; set; }
+        public string oper { get; set; } // type oper
+        public bool success { get; set; }
+        public string tagId { get; set; }
+        public string newName { get; set; }
     }
     class Program
     {
@@ -46,6 +60,8 @@ namespace WSClientDB
         const string SELECT = "SELECT::";
         const string AUTH = "AUTH::";
         const string RESULTDB = "RESULTDB::";
+        const string UPDATE = "UPDATE::";
+        const string NEWNAME = "NEWNAME::";
 
 
         static WebSocket webSocket;
@@ -68,7 +84,7 @@ namespace WSClientDB
         {
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "Insert into UsersData values(@loginuser, @passuser, @nickuser, @taguser)";
+            sqlCommand.CommandText = "Insert into UsersData values(@loginuser, @passuser, @nickuser, @taguser, @isVisible)";
             SqlParameter sqlParameter = new SqlParameter("@loginuser", loginUser);
             sqlCommand.Parameters.Add(sqlParameter);
             SqlParameter sqlParameter1 = new SqlParameter("@passuser", passUser);
@@ -77,6 +93,9 @@ namespace WSClientDB
             sqlCommand.Parameters.Add(sqlParameter2);
             SqlParameter sqlParameter3 = new SqlParameter("@taguser", tagUser);
             sqlCommand.Parameters.Add(sqlParameter3);
+            bool isVisible = false;
+            SqlParameter sqlParameter4 = new SqlParameter("@isVisible", isVisible);
+            sqlCommand.Parameters.Add(sqlParameter4);
             sqlCommand.ExecuteNonQuery();
             sqlCommand.Parameters.Clear();
             sqlConnection.Close();
@@ -105,6 +124,7 @@ namespace WSClientDB
                 if(passDB == passUser)
                 {
                     result.type = RESULTDB;
+                    result.oper = AUTH;
                     result.success = true;
                     result.authorId = authorUser;
                     result.tag = tagDB;
@@ -115,6 +135,7 @@ namespace WSClientDB
                 else
                 {
                     result.type = RESULTDB;
+                    result.type = AUTH;
                     result.success = false;
                     result.authorId = authorUser;
                     string jsonResult = JsonConvert.SerializeObject(result);
@@ -124,6 +145,7 @@ namespace WSClientDB
             else
             {
                 result.type = RESULTDB;
+                result.type = AUTH;
                 result.success = false;
                 result.authorId = authorUser;
                 string jsonResult = JsonConvert.SerializeObject(result);
@@ -133,6 +155,35 @@ namespace WSClientDB
             sqlConnection.Close();  
             Console.WriteLine($"[MSG] -> AUTH^{nickDB}_{tagDB}");
 
+        }
+        private static void UpdateNameOfUser(string tagId, string newName)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "Update UsersData set nickUser = @newnickuser where tagUser = @tagId";
+            SqlParameter sqlParameter = new SqlParameter("@newnickuser", newName);
+            sqlCommand.Parameters.Add(sqlParameter);
+            SqlParameter sqlParameter1 = new SqlParameter("@tagId", tagId);
+            sqlCommand.Parameters.Add(sqlParameter1);
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.tagId = tagId;
+            try
+            {
+                sqlCommand.ExecuteNonQuery(); 
+                successUpdate.success = true;
+                successUpdate.newName = newName;
+            }
+            catch
+            {
+                successUpdate.success = false;
+            }
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            Console.WriteLine($"[MSG] -> UpdateName^{newName}_{tagId}");
         }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
@@ -165,6 +216,16 @@ namespace WSClientDB
                         message = message.Substring(AUTH.Length);
                         Auth auth = JsonConvert.DeserializeObject<Auth>(message);
                         SelectDataForAuth(auth.authorId, auth.loginUser, auth.passUser);
+                    }
+                }
+                if(message.IndexOf(UPDATE) != -1)
+                {
+                    message = message.Substring(UPDATE.Length);
+                    if(message.IndexOf(NEWNAME) != -1)
+                    {
+                        message = message.Substring(NEWNAME.Length);
+                        NewName newName = JsonConvert.DeserializeObject<NewName>(message);
+                        UpdateNameOfUser(newName.tagId, newName.newName);
                     }
                 }
             }

@@ -51,11 +51,12 @@ map<string, string> userNames;
 // [SERVER] - константы для сервера
 const string BROADCAST_CHANNEL = "broadcast";
 const string MESSAGE_TO = "MESSAGE_TO::";
-const string SET_NAME = "SET_NAME::";
+const string SET_NAME = "SETNAME::";
 const string OFFLINE = "OFFLINE::";
 const string ONLINE = "ONLINE::";
 const string SIGNUP = "SIGNUP::";
 const string DBSERVER = "DBSERVER";
+const string CONFIRM = "CONFIRM";
 const string F2A = "2FA";
 const string FORDB = "FORDB::";
 const string INFO = "INFO::";
@@ -65,6 +66,10 @@ const string INSERT = "INSERT::";
 const string AUTH = "AUTH::";
 const string SELECT = "SELECT::";
 const string RESULTDB = "RESULTDB::";
+const string UPDATE = "UPDATE::";
+const string NEWNAME = "NEWNAME::";
+const string SUCCESS = "SUCCESS::";
+const string _ERROR = "ERROR::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -172,6 +177,7 @@ bool isTrustServer(string message) {
     return message.find(F2A) == 0;
 }
 
+
 bool IsServerDBNotActive() {
     return userNames.find("999") == userNames.end();
 }
@@ -264,42 +270,43 @@ int main() {
             .message = [](auto* ws, string_view message, uWS::OpCode opCode) {
                 string strMessage = string(message);
                 auto jsonData = json::parse(strMessage);
-                
                 PerSocketData* userData = (PerSocketData*)ws->getUserData();
                 string authorId = userData->uId;
                 //ws->send(message, opCode, true); обратная отправка сообщений
                 // вызывается при получении сообщения от пользователя
 
-                //if (isMessageTo(strMessage)) {
-                //    // подготовить данные и отправить их
-                //    string receiverId = parseUserId(strMessage);
-                //    string text = parseUserText(strMessage);
-                //    // отправить получателю
-                //    if (receiverId == "0") {
-                //        // userData->user_id == отправитель
-                //        string outgoingMessage = messageFromGlobal("0", userData->name, text);
-                //        ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
-                //    }
-                //    else {
-                //        // userData->user_id == отправитель
-                //        string outgoingMessage = messageFromUser(authorId, userData->name, text);
-                //        ws->publish("user#" + receiverId, outgoingMessage, uWS::OpCode::TEXT, false);
-                //    }
-                //    ws->send("Message sent", uWS::OpCode::TEXT);
-                //    cout << "User #" << authorId << " wrote message to " << receiverId << endl;
-                //    }
-                //if (isSetName(strMessage)) {
-                //    if (strMessage.size() < 20) {
-                //        string newName = parseName(strMessage);
-                //        userData->name = newName;
-                //        updateName(userData);
-                //        ws->publish(BROADCAST_CHANNEL, online(userData->uId));
-                //        cout << "User #" << authorId << " set their name" << endl;
-                //    }
-                //    else {
-                //        ws->publish("user#" + authorId, "ERROR SET NAME", uWS::OpCode::TEXT, false);
-                //    }
-                //}
+                if (isMessageTo(jsonData["type"])) {
+                    // подготовить данные и отправить их
+                   // string receiverId = parseUserId(strMessage);
+                  //  string text = parseUserText(strMessage);
+                    string receiverId = jsonData["id"];
+                    string text = jsonData["text"];
+                    // отправить получателю
+                    if (receiverId == "0") {
+                        // userData->user_id == отправитель
+                        string outgoingMessage = messageFromGlobal("0", userData->name, text);
+                        ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    else {
+                        // userData->user_id == отправитель
+                        string outgoingMessage = messageFromUser(authorId, userData->name, text);
+                        ws->publish("user#" + receiverId, outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    ws->send("Message sent", uWS::OpCode::TEXT);
+                    cout << "User #" << authorId << " wrote message to " << receiverId << endl;
+                    }
+                if (isSetName(jsonData["type"])) {
+                   string newName = jsonData["newUserName"];
+                   userData->name = newName;
+                   updateName(userData);
+                    json jsonOut = {
+                        {"tagId", authorId},
+                        {"newName", jsonData["newUserName"]}
+                    };
+                    string outgoingMessage = FORDB + SQL + UPDATE + NEWNAME + (string)jsonOut.dump();
+                    cout << endl << outgoingMessage << endl;
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
 
                 if (isSignNewUser(jsonData["type"])) {
                     if (IsServerDBNotActive()) {
@@ -320,6 +327,19 @@ int main() {
                     cout << "User #" << authorId << " has registered" << endl;
                 }
                 if (isAuthUser(jsonData["type"])) {
+                    if (jsonData["confirmAuth"]) {
+                        ws->publish(BROADCAST_CHANNEL, offline(userData->uId));
+                        deleteName(userData);
+                        userData->name = jsonData["nickname"];
+                        userData->uId = jsonData["tagUser"];
+                        updateName(userData);
+                        string userChannel = "user#" + userData->uId;
+                        ws->subscribe(userChannel);
+                        ws->publish(BROADCAST_CHANNEL, online(userData->uId));
+                        cout << "User #" << authorId << " has been authorized -> new id: " << userData->uId << endl;
+                        cout << "Users connected: " << userNames.size() << endl;
+                        return;
+                    }
                     if (IsServerDBNotActive()) {
                         ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
                         return;
@@ -347,24 +367,44 @@ int main() {
                     }
                 }
                 if (isResultFromDB(jsonData["type"])) {
-                    if (jsonData["success"]) {
-                        string authorId = jsonData["authorId"];
-                        string name = jsonData["nickName"];
-                        string uId = jsonData["tag"];
-                        restoreDataUser(authorId, name, uId);
-                        PerSocketData* userData = (PerSocketData*)ws->getUserData();
-                        json jsonOut = {
-                            {"nickname", name},
-                            {"tagUser", uId}
-                        };
-                        string outgoingMsg = "SUCCESS::" + (string)jsonOut.dump();
-                        ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
-                        cout << "User #" << authorId << " has been authorized" << endl;
+                    if (jsonData["oper"] == AUTH) {
+                        if (jsonData["success"]) {
+                            string authorId = jsonData["authorId"];
+                            string name = jsonData["nickName"];
+                            string uId = jsonData["tag"];
+                            //restoreDataUser(authorId, name, uId);
+                            json jsonOut = {
+                                {"nickname", name},
+                                {"tagUser", uId}
+                            };
+                            string outgoingMsg = AUTH + SUCCESS + (string)jsonOut.dump();
+                            ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                        }
+                        else {
+                            string authorId = jsonData["authorId"];
+                            string outgoingMsg = AUTH + _ERROR + "none";
+                            ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                        }
                     }
-                    else {
-                        string authorId = jsonData["authorId"];
-                        string outgoingMsg = "ERROR::none";
-                        ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                    if (jsonData["oper"] == UPDATE) {
+                        if (!jsonData["newName"].empty()) {
+                            if (jsonData["success"]) {
+                                string newName = jsonData["newName"];
+                                string authorId = jsonData["tagId"];
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + NEWNAME + newName;
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                                ws->publish(BROADCAST_CHANNEL, offline(authorId));
+                                ws->publish(BROADCAST_CHANNEL, online(authorId));
+                                cout << "User #" << authorId << " set their name" << endl;
+                            }
+                            else {
+                                string authorId = jsonData["tagId"];
+                                string outgoingMsg = RESULTDB + UPDATE + _ERROR + NEWNAME;
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                                ws->publish(BROADCAST_CHANNEL, online(authorId));
+                                cout << "User #" << authorId << " set their name" << endl;
+                            }
+                        }  
                     }
 
                 }

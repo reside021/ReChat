@@ -13,12 +13,17 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.java_websocket.client.WebSocketClient
 import java.lang.Exception
 
 class MasterActivity : AppCompatActivity() {
@@ -36,6 +41,7 @@ class MasterActivity : AppCompatActivity() {
     private lateinit var myAdapterForFriends : MyAdapterForFriends
     private lateinit var sqliteHelper: SqliteHelper
     private lateinit var sp : SharedPreferences
+    private lateinit var webSocketClient : WebSocketClient
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.master)
@@ -51,7 +57,7 @@ class MasterActivity : AppCompatActivity() {
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
 
         sqliteHelper = MainActivity.sqliteHelper
-
+        webSocketClient = MainActivity.webSocketClient
         sqliteHelper.addUserInChat(Pair("0","Global Chat"))
 
         profileTab = findViewById(R.id.profile)
@@ -147,32 +153,43 @@ class MasterActivity : AppCompatActivity() {
     }
 
     fun onNameClick(view: View) {
-//        setName()
-        Toast.makeText(this, "Твое имя", Toast.LENGTH_SHORT).show()
+        val builder = AlertDialog.Builder(this)
+        val inflater = this.layoutInflater
+        val view  = inflater.inflate(R.layout.dialog_setname, null);
+        val newNameUser = view.findViewById<EditText>(R.id.newnameuser).text
+        builder.setView(view)
+                .setPositiveButton("OK") { dialog, id ->
+                    if(newNameUser.isEmpty()){
+                        Toast.makeText(this, "Вы не задали нового имени!",
+                                Toast.LENGTH_LONG).show()
+                        return@setPositiveButton
+                    }
+                    if(webSocketClient.connection.readyState.ordinal == 0){
+                        Toast.makeText(this, "Отсутствует подключение к серверу",
+                                Toast.LENGTH_SHORT).show()
+                        return@setPositiveButton
+                    }
+                    val dataUser = NewName("SETNAME::", newNameUser.toString())
+                    val msg = Json.encodeToString(dataUser)
+                        webSocketClient.send(msg)
+                        dialog.dismiss()
+
+                }
+                .setNegativeButton("Отмена") {
+                    dialog, id -> dialog.dismiss()
+                }
+        builder.show()
     }
 
+    @Serializable
+    data class NewName(
+            val type : String,
+            val newUserName : String
+    )
+
 //    fun setName(){
-//        val builder = AlertDialog.Builder(this)
-//        val inflater = this.layoutInflater
-//        val view  = inflater.inflate(R.layout.dialog_setname, null);
-//        val nameuser = view.findViewById<EditText>(R.id.nameuser)
-//        builder.setView(view)
-//                .setPositiveButton("OK") { dialog, id ->
-//                    setNameSuccess(nameuser.text.toString()
-//                    )
-//                }
-//                .setNegativeButton("Отмена") {
-//                    dialog, id -> dialog.dismiss();
-//                    if(findViewById<TextView>(R.id.nameofuser).text ==
-//                            resources.getString(R.string.user_name)) {
-//                        Toast.makeText(this, "Перед началом работы необходимо задать имя!",
-//                                Toast.LENGTH_LONG).show()
-//                        setName()
-//                    }
-//                }
-//        builder.show()
-//    }
 //
+//    }
 //    private fun setNameSuccess(name : String){
 //        if(name.isEmpty()){
 //            Toast.makeText(this, "Перед началом работы необходимо задать имя!",
@@ -188,7 +205,7 @@ class MasterActivity : AppCompatActivity() {
 //        try {
 //            this@MasterActivity.runOnUiThread {
 //                val nameofuser = findViewById<TextView>(R.id.nameofuser)
-//                testact.webSocketClient.send("SET_NAME::$name")
+//                webSocketClient.send("SET_NAME::$name")
 //                nameofuser.text = name;
 //                Toast.makeText(this, "Имя успешно изменено",
 //                        Toast.LENGTH_SHORT).show()

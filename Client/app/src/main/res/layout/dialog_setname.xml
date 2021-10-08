@@ -13,12 +13,7 @@
         android:layout_gravity="center"
         android:maxLength="20"/>
     <EditText
-        android:id="@+id/nameuser"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:id="@+id/newnameuser"
         android:hint="Имя пользователя"
-        android:textSize="20sp"
-        android:textColor="@color/black"
-        android:paddingHorizontal="10dp"
-        android:digits="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"/>
+        style="@style/editTextSignLogin"/>
 </LinearLayout>

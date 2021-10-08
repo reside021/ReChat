@@ -3,6 +3,7 @@ package com.example.myapplication
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -26,20 +27,22 @@ class MainActivity : AppCompatActivity() {
         lateinit var webSocketClient: WebSocketClient
         lateinit var sqliteHelper: SqliteHelper
     }
+    private lateinit var sp : SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState)
         setContentView(R.layout.firstactivity)
+        sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         sqliteHelper = SqliteHelper(this)
+    }
+
+    override fun onStart() {
+        super.onStart()
         sqliteHelper.clearOnlineTable()
         initWebSocket()
     }
 
 
-    override fun onPause() {
-        super.onPause()
-        webSocketClient.close()
-    }
 
 
     private fun initWebSocket(){
@@ -87,21 +90,47 @@ class MainActivity : AppCompatActivity() {
                             Toast.LENGTH_SHORT).show()
             }
             "RESULTDB" ->{
-                val statusWithMsg = message.substringAfter("::")
+                val typeOperWithMsg = message.substringAfter("::")
+                val typeOper = typeOperWithMsg.substringBefore("::")
+                val statusWithMsg = typeOperWithMsg.substringAfter("::")
                 val status = statusWithMsg.substringBefore("::")
                 val msg = statusWithMsg.substringAfter("::")
-                if(status == "SUCCESS"){
-                    Toast.makeText(this@MainActivity,
-                        "Успешная авторизация",
-                        Toast.LENGTH_SHORT).show()
-                    authorization(msg)
+                if(typeOper == "AUTH"){
+                    if(status == "SUCCESS"){
+                        Toast.makeText(this@MainActivity,
+                                "Успешная авторизация",
+                                Toast.LENGTH_SHORT).show()
+                        authorization(msg)
 
+                    }
+                    if(status == "ERROR"){
+                        Toast.makeText(this@MainActivity,
+                                "Ошибка авторизации\nНеверные данные для входа",
+                                Toast.LENGTH_SHORT).show()
+                    }
                 }
-                if(status == "ERROR"){
-                    Toast.makeText(this@MainActivity,
-                        "Ошибка авторизации\nНеверные данные для входа",
-                        Toast.LENGTH_SHORT).show()
+                if(typeOper == "UPDATE"){
+                    if(status == "SUCCESS"){
+                        if(msg.substringBefore("::") == "NEWNAME"){
+                            val newName = msg.substringAfter("::")
+                            val ed = sp.edit()
+                            ed.putString("nickname", newName)
+                            ed.apply()
+                            Toast.makeText(this@MainActivity,
+                                    "Имя успешно изменено",
+                                    Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    if(status == "ERROR"){
+                        if(msg == "NEWNAME::"){
+                            Toast.makeText(this@MainActivity,
+                                    "Ошибка изменения имени. Попробуйте позже.",
+                                    Toast.LENGTH_SHORT).show()
+                        }
+
+                    }
                 }
+
 
             }
             "ONLINE" -> {
@@ -123,12 +152,16 @@ class MainActivity : AppCompatActivity() {
         try {
             val obj = Json.decodeFromString<DataOfUser>(data)
             val intent = Intent(this, MasterActivity::class.java);
-            val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
             val ed = sp.edit()
             ed.putString("nickname", obj.nickname)
             ed.putString("tagUser", obj.tagUser)
             ed.apply()
-            startActivity(intent)
+            val confirmAuth = ConfirmAuth("AUTH::", true, obj.nickname, obj.tagUser)
+            val msg = Json.encodeToString(confirmAuth)
+            if(webSocketClient.connection.readyState.ordinal != 0){
+                webSocketClient.send(msg)
+                startActivity(intent)
+            }
         } catch (ex : Exception){
             Toast.makeText(this@MainActivity,
                     "Произошла непредвиденная ошибка",
@@ -178,9 +211,14 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val dataSignUpUser = SignUpUser("SIGNUP::", loginsign, pass1sign, usernamesign)
-            val msg =   Json.encodeToString(dataSignUpUser)
-            webSocketClient.send(msg)
-            alertDialog.dismiss()
+            val msg = Json.encodeToString(dataSignUpUser)
+            if(webSocketClient.connection.readyState.ordinal == 0){
+                Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
+                        Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+                webSocketClient.send(msg)
+                alertDialog.dismiss()
         }
         if(webSocketClient.connection.readyState.ordinal == 0){
             Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
@@ -188,6 +226,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @Serializable
+    data class ConfirmAuth(
+            val type : String,
+            val confirmAuth : Boolean,
+            val nickname : String,
+            val tagUser : String
+    )
     @Serializable
     data class DataOfUser(
             val nickname : String,
@@ -203,6 +248,7 @@ class MainActivity : AppCompatActivity() {
     @Serializable
     data class LoginDataUser(
             val type : String,
+            val confirmAuth : Boolean,
             val loginAuth : String,
             val passAuth : String
     )
@@ -218,16 +264,21 @@ class MainActivity : AppCompatActivity() {
             alertDialog.dismiss()
         }
         view.findViewById<Button>(R.id.loginBtnAuth).setOnClickListener {
-//            val imm = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-//            imm.hideSoftInputFromWindow(it.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+            val imm = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(it.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
             val loginAuth = view.findViewById<EditText>(R.id.loginAuth).text.toString()
             val passAuth = view.findViewById<EditText>(R.id.passAuth).text.toString()
 
             if(loginAuth.trim().isEmpty() || passAuth.trim().isEmpty()){
                 return@setOnClickListener
             }
-            val dataUser = LoginDataUser("AUTH::", loginAuth, passAuth)
-            val msg =   Json.encodeToString(dataUser)
+            val dataUser = LoginDataUser("AUTH::", false, loginAuth, passAuth)
+            val msg = Json.encodeToString(dataUser)
+            if(webSocketClient.connection.readyState.ordinal == 0){
+                Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
+                        Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             webSocketClient.send(msg)
             alertDialog.dismiss()
         }
@@ -236,6 +287,5 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT).show()
         }
     }
-
 
 }
