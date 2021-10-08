@@ -83,19 +83,35 @@ class MasterActivity : AppCompatActivity() {
         profileTab.background = ContextCompat.getDrawable(this, R.drawable.bottom_line)
         chatTab.setBackgroundColor(0)
         friendsTab.setBackgroundColor(0)
-        view.findViewById<TextView>(R.id.nameofuser).text =
-                sp.getString("nickname", resources.getString(R.string.user_name))
-        view.findViewById<TextView>(R.id.tagofuser).text =
-                sp.getString("tagUser", null)
+        val nickname = sp.getString("nickname", resources.getString(R.string.user_name))
+        val tagUser = sp.getString("tagUser", null)
+        view.findViewById<TextView>(R.id.nameofuser).text = nickname
+        view.findViewById<TextView>(R.id.tagofuser).text = tagUser
+
 
         val switchBeOnline = view.findViewById<SwitchCompat>(R.id.switchBeOnline)
+        switchBeOnline.isChecked = sp.getBoolean("isVisible", false)
         switchBeOnline.setOnCheckedChangeListener { _, isChecked ->
             if(isChecked){
-                Toast.makeText(this, "Виден всем",
-                        Toast.LENGTH_SHORT).show()
+                if(webSocketClient.connection.readyState.ordinal == 0){
+                    Toast.makeText(this, "Отсутствует подключение к серверу",
+                            Toast.LENGTH_SHORT).show()
+                    switchBeOnline.isChecked = false
+                    return@setOnCheckedChangeListener
+                }
+                val dataUser = UpdateVisible("VISIBLE::",false, isChecked)
+                val msg = Json.encodeToString(dataUser)
+                webSocketClient.send(msg)
             }else{
-                Toast.makeText(this, "Виден только друзьям",
-                        Toast.LENGTH_SHORT).show()
+                if(webSocketClient.connection.readyState.ordinal == 0){
+                    Toast.makeText(this, "Отсутствует подключение к серверу",
+                            Toast.LENGTH_SHORT).show()
+                    switchBeOnline.isChecked = true
+                    return@setOnCheckedChangeListener
+                }
+                val dataUser = UpdateVisible("VISIBLE::", false, isChecked)
+                val msg = Json.encodeToString(dataUser)
+                webSocketClient.send(msg)
             }
         }
     }
@@ -169,7 +185,7 @@ class MasterActivity : AppCompatActivity() {
                                 Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
-                    val dataUser = NewName("SETNAME::", newNameUser.toString())
+                    val dataUser = NewName("SETNAME::", false, newNameUser.toString())
                     val msg = Json.encodeToString(dataUser)
                         webSocketClient.send(msg)
                         dialog.dismiss()
@@ -184,38 +200,15 @@ class MasterActivity : AppCompatActivity() {
     @Serializable
     data class NewName(
             val type : String,
+            val confirmSetname: Boolean,
             val newUserName : String
     )
-
-//    fun setName(){
-//
-//    }
-//    private fun setNameSuccess(name : String){
-//        if(name.isEmpty()){
-//            Toast.makeText(this, "Перед началом работы необходимо задать имя!",
-//                    Toast.LENGTH_LONG).show()
-//            setName()
-//            return
-//        } else if(name.length > 10){
-//            Toast.makeText(this, "Имя короче 10 символов",
-//                    Toast.LENGTH_LONG).show()
-//            setName()
-//            return
-//        }
-//        try {
-//            this@MasterActivity.runOnUiThread {
-//                val nameofuser = findViewById<TextView>(R.id.nameofuser)
-//                webSocketClient.send("SET_NAME::$name")
-//                nameofuser.text = name;
-//                Toast.makeText(this, "Имя успешно изменено",
-//                        Toast.LENGTH_SHORT).show()
-//            }
-//
-//        } catch (ex : Exception){
-//            Toast.makeText(this, "Ошибка изменения имени",
-//                    Toast.LENGTH_LONG).show()
-//        }
-//    }
+    @Serializable
+    data class UpdateVisible(
+            val type : String,
+            val confirmUpVisible : Boolean,
+            val isVisible: Boolean
+    )
     fun changePhotoClick(view: View) {
         val builder = AlertDialog.Builder(this)
         val inflater = this.layoutInflater

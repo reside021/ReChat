@@ -46,11 +46,13 @@ ws.send("SET_NAME::vasya");
 
 map<string, string> userNames;
 // ограничить длину имени ( для безопасности памяти)
+map<string, string> ghostUserNames;
 
 
 // [SERVER] - константы для сервера
 const string BROADCAST_CHANNEL = "broadcast";
 const string MESSAGE_TO = "MESSAGE_TO::";
+const string MESSAGEFROM = "MESSAGE_FROM::";
 const string SET_NAME = "SETNAME::";
 const string OFFLINE = "OFFLINE::";
 const string ONLINE = "ONLINE::";
@@ -70,6 +72,7 @@ const string UPDATE = "UPDATE::";
 const string NEWNAME = "NEWNAME::";
 const string SUCCESS = "SUCCESS::";
 const string _ERROR = "ERROR::";
+const string VISIBLE = "VISIBLE::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -86,6 +89,13 @@ void deleteName(PerSocketData* data) {
     userNames.erase(data->uId);
 }
 
+void updateGhostUser(PerSocketData* data) {
+    ghostUserNames[data->uId] = data->name;
+}
+
+void deleteGhostUser(PerSocketData* data) {
+    ghostUserNames.erase(data->uId);
+}
 void restoreDataUser(string olduId, string newName, string new_uId) {
     userNames.erase(olduId);
     userNames[new_uId] = newName;
@@ -176,8 +186,9 @@ bool isConnectionServerDB(string message) {
 bool isTrustServer(string message) {
     return message.find(F2A) == 0;
 }
-
-
+bool isUpdateVisible(string message) {
+    return message.find(VISIBLE) == 0;
+}
 bool IsServerDBNotActive() {
     return userNames.find("999") == userNames.end();
 }
@@ -221,6 +232,12 @@ string parseResultDBuId(string message) {
     int pos = message.rfind("::");
     return message.substr(pos + 2);
 }
+string parseIsVisible(bool isVisible) {
+    if (isVisible)
+        return "true";
+    else
+        return "false";
+}
 
 
 int main() {
@@ -251,6 +268,7 @@ int main() {
                 userData->name = "UNNAMED";
                 userData->uId = generateUUID();
 ;                for (auto entry : userNames) {
+                    if (ghostUserNames.find(entry.first) != ghostUserNames.end()) break;
                     ws->send(online(entry.first), uWS::OpCode::TEXT);
                 }
                 updateName(userData);
@@ -277,34 +295,49 @@ int main() {
 
                 if (isMessageTo(jsonData["type"])) {
                     // подготовить данные и отправить их
-                   // string receiverId = parseUserId(strMessage);
-                  //  string text = parseUserText(strMessage);
+                    // string receiverId = parseUserId(strMessage);
+                    // string text = parseUserText(strMessage);
                     string receiverId = jsonData["id"];
                     string text = jsonData["text"];
                     // отправить получателю
                     if (receiverId == "0") {
+                        json jsonOut = {
+                            {"authorId", "0"},
+                            {"senderName", userData->name},
+                            {"text", text}
+                        };
+                        string outgoingMessage = MESSAGEFROM + (string)jsonOut.dump();
                         // userData->user_id == отправитель
-                        string outgoingMessage = messageFromGlobal("0", userData->name, text);
                         ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                     else {
+                        json jsonOut = {
+                            {"authorId", authorId},
+                            {"senderName", userData->name},
+                            {"text", text}
+                        };
                         // userData->user_id == отправитель
-                        string outgoingMessage = messageFromUser(authorId, userData->name, text);
+                        string outgoingMessage = MESSAGEFROM + (string)jsonOut.dump();
                         ws->publish("user#" + receiverId, outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                     ws->send("Message sent", uWS::OpCode::TEXT);
                     cout << "User #" << authorId << " wrote message to " << receiverId << endl;
                     }
                 if (isSetName(jsonData["type"])) {
-                   string newName = jsonData["newUserName"];
-                   userData->name = newName;
-                   updateName(userData);
+                    string newName = jsonData["newUserName"];
+                    if (jsonData["confirmSetname"]) {
+                        ws->publish(BROADCAST_CHANNEL, offline(userData->uId));
+                        userData->name = newName;
+                        updateName(userData);
+                        ws->publish(BROADCAST_CHANNEL, online(userData->uId));
+                        cout << "User #" << userData->uId << " set their name" << endl;
+                        return;
+                    }
                     json jsonOut = {
                         {"tagId", authorId},
-                        {"newName", jsonData["newUserName"]}
+                        {"newName", newName}
                     };
                     string outgoingMessage = FORDB + SQL + UPDATE + NEWNAME + (string)jsonOut.dump();
-                    cout << endl << outgoingMessage << endl;
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                 }
 
@@ -335,7 +368,12 @@ int main() {
                         updateName(userData);
                         string userChannel = "user#" + userData->uId;
                         ws->subscribe(userChannel);
-                        ws->publish(BROADCAST_CHANNEL, online(userData->uId));
+                        if (!jsonData["isVisible"]) {
+                            updateGhostUser(userData);
+                        }
+                        else {
+                            ws->publish(BROADCAST_CHANNEL, online(userData->uId));
+                        }
                         cout << "User #" << authorId << " has been authorized -> new id: " << userData->uId << endl;
                         cout << "Users connected: " << userNames.size() << endl;
                         return;
@@ -354,6 +392,32 @@ int main() {
                     string outgoingMessage = FORDB + SQL + SELECT + AUTH + (string)jsonOut.dump();
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                 }
+                if (isUpdateVisible(jsonData["type"])) {
+                    if (jsonData["confirmUpVisible"]) {
+                        if (jsonData["isVisible"]) {
+                            deleteGhostUser(userData);
+                            ws->publish(BROADCAST_CHANNEL, online(userData->uId));
+                            cout << "User #" << authorId << " is visible to everyone" << endl;
+                        }
+                        else {
+                            updateGhostUser(userData);
+                            ws->publish(BROADCAST_CHANNEL, offline(userData->uId));
+                            cout << "User #" << authorId << " became a ghost" << endl;
+                        }
+                        return;
+                    }
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
+                        return;
+                    }
+                    bool isVisible = jsonData["isVisible"];
+                    json jsonOut = {
+                            {"tagUser", authorId},
+                            {"isVisible", isVisible}
+                    };
+                    string outgoingMessage = FORDB + SQL + UPDATE + VISIBLE + (string)jsonOut.dump();
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
                 if (isConnectionServerDB(jsonData["type"])) {
                     if (isTrustServer(jsonData["key"])) {
                         deleteName(userData);
@@ -362,6 +426,7 @@ int main() {
                         updateName(userData);
                         string userChannel = "user#" + userData->uId;
                         ws->subscribe(userChannel);
+                        updateGhostUser(userData);
                         string outgoingMessage = FORDB + INFO + "The database server has been checked and connected successfully";
                         ws->publish(userChannel, outgoingMessage, uWS::OpCode::TEXT, false);
                     }
@@ -372,10 +437,11 @@ int main() {
                             string authorId = jsonData["authorId"];
                             string name = jsonData["nickName"];
                             string uId = jsonData["tag"];
-                            //restoreDataUser(authorId, name, uId);
+                            bool isVisible = jsonData["isVisible"];
                             json jsonOut = {
                                 {"nickname", name},
-                                {"tagUser", uId}
+                                {"tagUser", uId},
+                                {"isVisible", isVisible}
                             };
                             string outgoingMsg = AUTH + SUCCESS + (string)jsonOut.dump();
                             ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
@@ -387,24 +453,35 @@ int main() {
                         }
                     }
                     if (jsonData["oper"] == UPDATE) {
-                        if (!jsonData["newName"].empty()) {
+                        if (jsonData["typeUpdate"] == NEWNAME) {
+                            if (!jsonData["newName"].empty()) {
+                                if (jsonData["success"]) {
+                                    string newName = jsonData["newName"];
+                                    string authorId = jsonData["tagId"];
+                                    string outgoingMsg = RESULTDB + UPDATE + SUCCESS + NEWNAME + newName;
+                                    ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                                }
+                                else {
+                                    string authorId = jsonData["tagId"];
+                                    string outgoingMsg = RESULTDB + UPDATE + _ERROR + NEWNAME;
+                                    ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                                }
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == VISIBLE) {
                             if (jsonData["success"]) {
-                                string newName = jsonData["newName"];
                                 string authorId = jsonData["tagId"];
-                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + NEWNAME + newName;
+                                string isVisible = parseIsVisible(jsonData["isVisible"]);
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + VISIBLE + isVisible;
                                 ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
-                                ws->publish(BROADCAST_CHANNEL, offline(authorId));
-                                ws->publish(BROADCAST_CHANNEL, online(authorId));
-                                cout << "User #" << authorId << " set their name" << endl;
                             }
                             else {
                                 string authorId = jsonData["tagId"];
-                                string outgoingMsg = RESULTDB + UPDATE + _ERROR + NEWNAME;
+                                string outgoingMsg = RESULTDB + UPDATE + _ERROR + VISIBLE;
                                 ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
-                                ws->publish(BROADCAST_CHANNEL, online(authorId));
-                                cout << "User #" << authorId << " set their name" << endl;
                             }
-                        }  
+                        }
+                        
                     }
 
                 }

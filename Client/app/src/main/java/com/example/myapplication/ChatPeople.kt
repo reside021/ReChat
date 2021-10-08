@@ -21,7 +21,6 @@ class ChatPeople : AppCompatActivity() {
         private val ME_MSG = 1
         private val OTHER_MSG = 0
         lateinit var mainWindowOuter: LinearLayout
-
     }
     private lateinit var animAlpha: Animation
     private lateinit var editTextMessage : EditText
@@ -38,6 +37,7 @@ class ChatPeople : AppCompatActivity() {
         webSocketClient = MainActivity.webSocketClient
         sqliteHelper = MainActivity.sqliteHelper
         idUser = intent.extras?.getString("idTag").toString()
+
     }
 
     override fun onStart() {
@@ -79,7 +79,7 @@ class ChatPeople : AppCompatActivity() {
 //        }
 //    }
     @Serializable
-data class Msg(
+    data class Msg(
         val type : String,
         val id : String,
         val text : String
@@ -88,6 +88,11 @@ data class Msg(
     fun onSendMsgClick(view: View) {
         view.startAnimation(animAlpha)
         try{
+            if(webSocketClient.connection.readyState.ordinal == 0){
+                Toast.makeText(this, "Отсутствует подключение к серверу",
+                        Toast.LENGTH_SHORT).show()
+                return
+            }
             val textMSG = editTextMessage.text
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             val newView = inflater.inflate(R.layout.message_to, null)
@@ -95,13 +100,10 @@ data class Msg(
             textInMessage.text = textMSG
             val dataUser = Msg("MESSAGE_TO::", idUser, textMSG.toString())
             val msg = Json.encodeToString(dataUser)
-//            webSocketClient.send("MESSAGE_TO::$idUser::$textMSG")
             webSocketClient.send(msg)
             val c: Calendar = Calendar.getInstance()
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
             val strDate: String = sdf.format(c.time)
-            Toast.makeText(this, strDate,
-                Toast.LENGTH_SHORT).show()
 //            sqliteHelper.addMsgInTable(idUser, ME_MSG, textMSG.toString(), strDate)
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             mainWindowInclude.addView(newView, lp)

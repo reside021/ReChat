@@ -35,6 +35,7 @@ namespace WSClientDB
         public string authorId { get; set; } // authorId
         public string nickName { get; set; } // name
         public string tag { get; set; } // uId
+        public bool isVisible { get; set; } // isVisible for all
         public bool success { get; set; } // status
     }
     public class NewName
@@ -42,13 +43,20 @@ namespace WSClientDB
         public string tagId { get; set; }
         public string newName { get; set; }
     }
+    public class UpdateVisible
+    {
+        public string tagUser { get; set; }
+        public bool isVisible { get; set; }
+    }
     public class SuccessUpdate
     {
         public string type { get; set; }
         public string oper { get; set; } // type oper
+        public string typeUpdate { get; set; } // where updating
         public bool success { get; set; }
         public string tagId { get; set; }
         public string newName { get; set; }
+        public bool isVisible { get; set; }
     }
     class Program
     {
@@ -62,6 +70,7 @@ namespace WSClientDB
         const string RESULTDB = "RESULTDB::";
         const string UPDATE = "UPDATE::";
         const string NEWNAME = "NEWNAME::";
+        const string VISIBLE = "VISIBLE::";
 
 
         static WebSocket webSocket;
@@ -111,6 +120,7 @@ namespace WSClientDB
             sqlCommand.Parameters.Add(sqlParameter);
             SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
             string loginDB = "", passDB = "", nickDB = "", tagDB = "";
+            bool isVisible = false;
             ResultDB result = new ResultDB();
             if (sqlDataReader.HasRows)
             {
@@ -120,6 +130,7 @@ namespace WSClientDB
                     passDB = sqlDataReader.GetString(1);
                     nickDB = sqlDataReader.GetString(2);
                     tagDB = sqlDataReader.GetString(3);
+                    isVisible = sqlDataReader.GetBoolean(4);
                 }
                 if(passDB == passUser)
                 {
@@ -128,6 +139,7 @@ namespace WSClientDB
                     result.success = true;
                     result.authorId = authorUser;
                     result.tag = tagDB;
+                    result.isVisible = isVisible;
                     result.nickName = nickDB;
                     string jsonResult = JsonConvert.SerializeObject(result);
                     webSocket.Send(jsonResult);
@@ -135,7 +147,7 @@ namespace WSClientDB
                 else
                 {
                     result.type = RESULTDB;
-                    result.type = AUTH;
+                    result.oper = AUTH;
                     result.success = false;
                     result.authorId = authorUser;
                     string jsonResult = JsonConvert.SerializeObject(result);
@@ -145,7 +157,7 @@ namespace WSClientDB
             else
             {
                 result.type = RESULTDB;
-                result.type = AUTH;
+                result.oper = AUTH;
                 result.success = false;
                 result.authorId = authorUser;
                 string jsonResult = JsonConvert.SerializeObject(result);
@@ -168,6 +180,7 @@ namespace WSClientDB
             SuccessUpdate successUpdate = new SuccessUpdate();
             successUpdate.type = RESULTDB;
             successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = NEWNAME;
             successUpdate.tagId = tagId;
             try
             {
@@ -184,6 +197,36 @@ namespace WSClientDB
             sqlCommand.Parameters.Clear();
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> UpdateName^{newName}_{tagId}");
+        }
+        private static void UpdateVisibleOfUser(string tagUser, bool isVisible)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "Update UsersData set isVisible = @isVisible where tagUser = @tagUser";
+            SqlParameter sqlParameter = new SqlParameter("@isVisible", isVisible);
+            sqlCommand.Parameters.Add(sqlParameter);
+            SqlParameter sqlParameter1 = new SqlParameter("@tagUser", tagUser);
+            sqlCommand.Parameters.Add(sqlParameter1);
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = VISIBLE;
+            successUpdate.tagId = tagUser;
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+                successUpdate.success = true;
+                successUpdate.isVisible = isVisible;
+            }
+            catch
+            {
+                successUpdate.success = false;
+            }
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            Console.WriteLine($"[MSG] -> VisibleEdit^{tagUser}_{isVisible}");
         }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
@@ -226,6 +269,13 @@ namespace WSClientDB
                         message = message.Substring(NEWNAME.Length);
                         NewName newName = JsonConvert.DeserializeObject<NewName>(message);
                         UpdateNameOfUser(newName.tagId, newName.newName);
+                    }
+                    if(message.IndexOf(VISIBLE) != -1)
+                    {
+                        message = message.Substring(VISIBLE.Length);
+                        Console.WriteLine(message);
+                        UpdateVisible updateVisible = JsonConvert.DeserializeObject<UpdateVisible>(message);
+                        UpdateVisibleOfUser(updateVisible.tagUser, updateVisible.isVisible);
                     }
                 }
             }

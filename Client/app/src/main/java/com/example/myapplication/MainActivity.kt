@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
@@ -89,7 +90,7 @@ class MainActivity : AppCompatActivity() {
                             msg,
                             Toast.LENGTH_SHORT).show()
             }
-            "RESULTDB" ->{
+            "RESULTDB" -> {
                 val typeOperWithMsg = message.substringAfter("::")
                 val typeOper = typeOperWithMsg.substringBefore("::")
                 val statusWithMsg = typeOperWithMsg.substringAfter("::")
@@ -116,9 +117,32 @@ class MainActivity : AppCompatActivity() {
                             val ed = sp.edit()
                             ed.putString("nickname", newName)
                             ed.apply()
-                            Toast.makeText(this@MainActivity,
-                                    "Имя успешно изменено",
-                                    Toast.LENGTH_SHORT).show()
+                            val confirmSetname = ConfirmSetName("SETNAME::", true, newName)
+                            val msg = Json.encodeToString(confirmSetname)
+                            if(webSocketClient.connection.readyState.ordinal != 0){
+                                webSocketClient.send(msg)
+                                Toast.makeText(this@MainActivity,
+                                        "Имя успешно изменено",
+                                        Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        if(msg.substringBefore("::") == "VISIBLE"){
+                            val isVisible = msg.substringAfter("::").toBoolean()
+                            val ed = sp.edit()
+                            ed.putBoolean("isVisible", isVisible)
+                            ed.apply()
+                            val confirmVisible = ConfirmUpVisible("VISIBLE::", true, isVisible)
+                            val msg = Json.encodeToString(confirmVisible)
+                            if(webSocketClient.connection.readyState.ordinal != 0) {
+                                webSocketClient.send(msg)
+                            }
+                            if(isVisible){
+                                Toast.makeText(this@MainActivity, "Виден всем",
+                                        Toast.LENGTH_SHORT).show()
+                            } else{
+                                Toast.makeText(this@MainActivity, "Включен режим призрака",
+                                        Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                     if(status == "ERROR"){
@@ -127,11 +151,12 @@ class MainActivity : AppCompatActivity() {
                                     "Ошибка изменения имени. Попробуйте позже.",
                                     Toast.LENGTH_SHORT).show()
                         }
-
+                        if(msg == "VISIBLE::"){
+                            Toast.makeText(this@MainActivity, "Ошибка изменения статуса",
+                                    Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
-
-
             }
             "ONLINE" -> {
                 val idWithName = message.substringAfter("::")
@@ -145,6 +170,26 @@ class MainActivity : AppCompatActivity() {
                 val id = idWithName.substringBefore("::")
                 sqliteHelper.deleteUserFromOnline(id)
             }
+            "MESSAGE_FROM" -> {
+                val jsonData = message.substringAfter("::")
+                val msg = Json.decodeFromString<MessageFromUser>(jsonData)
+                messagePrint(msg.authorId, msg.senderName, msg.text)
+            }
+        }
+    }
+
+    private fun messagePrint(authorId : String, senderName: String, textMSG : String){
+        val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+        if(!sp.getBoolean("active",false)) return
+        if(sp.getString("idActive","NONE") != authorId) return
+        try{
+            val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            val newView = inflater.inflate(R.layout.message_from, null)
+            val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
+            textInMessage.text = textMSG
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            ChatPeople.mainWindowOuter.addView(newView, lp)
+        } catch (ex : Exception){
         }
     }
 
@@ -155,8 +200,9 @@ class MainActivity : AppCompatActivity() {
             val ed = sp.edit()
             ed.putString("nickname", obj.nickname)
             ed.putString("tagUser", obj.tagUser)
+            ed.putBoolean("isVisible", obj.isVisible)
             ed.apply()
-            val confirmAuth = ConfirmAuth("AUTH::", true, obj.nickname, obj.tagUser)
+            val confirmAuth = ConfirmAuth("AUTH::", true, obj.nickname, obj.tagUser, obj.isVisible)
             val msg = Json.encodeToString(confirmAuth)
             if(webSocketClient.connection.readyState.ordinal != 0){
                 webSocketClient.send(msg)
@@ -167,8 +213,6 @@ class MainActivity : AppCompatActivity() {
                     "Произошла непредвиденная ошибка",
                     Toast.LENGTH_LONG).show()
         }
-
-
 
     }
 
@@ -227,16 +271,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Serializable
+    data class MessageFromUser(
+            val authorId : String,
+            val senderName : String,
+            val text : String
+    )
+    @Serializable
+    data class ConfirmUpVisible(
+            val type : String,
+            val confirmUpVisible : Boolean,
+            val isVisible: Boolean
+    )
+    @Serializable
+    data class ConfirmSetName(
+            val type : String,
+            val confirmSetname: Boolean,
+            val newUserName : String
+    )
+    @Serializable
     data class ConfirmAuth(
             val type : String,
             val confirmAuth : Boolean,
             val nickname : String,
-            val tagUser : String
+            val tagUser : String,
+            val isVisible: Boolean
     )
     @Serializable
     data class DataOfUser(
             val nickname : String,
-            val tagUser : String
+            val tagUser : String,
+            val isVisible : Boolean
     )
     @Serializable
     data class SignUpUser(
