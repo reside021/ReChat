@@ -35,6 +35,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.firstactivity)
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         sqliteHelper = SqliteHelper(this)
+        val ed = sp.edit()
+        ed.putBoolean("isAuth", false)
+        ed.apply()
     }
 
     override fun onStart() {
@@ -171,24 +174,36 @@ class MainActivity : AppCompatActivity() {
                 sqliteHelper.deleteUserFromOnline(id)
             }
             "MESSAGE_FROM" -> {
-                val jsonData = message.substringAfter("::")
-                val msg = Json.decodeFromString<MessageFromUser>(jsonData)
-                messagePrint(msg.authorId, msg.senderName, msg.text)
+                if(sp.getBoolean("isAuth", false)) {
+                    val jsonData = message.substringAfter("::")
+                    val msg = Json.decodeFromString<MessageFromUser>(jsonData)
+                    messagePrint(msg.user, msg.authorId, msg.senderName, msg.text)
+                }
             }
         }
     }
 
-    private fun messagePrint(authorId : String, senderName: String, textMSG : String){
+    private fun messagePrint(user : String, authorId : String, senderName: String, textMSG : String){
         val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         if(!sp.getBoolean("active",false)) return
         if(sp.getString("idActive","NONE") != authorId) return
+
+            val nickname = sp.getString("nickname", resources.getString(R.string.user_name))
+            val tagUser = sp.getString("tagUser", null)
         try{
+            if(user == nickname + "_" + tagUser) return
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             val newView = inflater.inflate(R.layout.message_from, null)
             val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
             textInMessage.text = textMSG
+            val sender = newView.findViewById<TextView>(R.id.senderName)
+            sender.text = senderName
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             ChatPeople.mainWindowOuter.addView(newView, lp)
+            val scrollView = ChatPeople.scrollView
+            scrollView.post(Runnable(){
+                scrollView.fullScroll(View.FOCUS_DOWN)
+            })
         } catch (ex : Exception){
         }
     }
@@ -272,6 +287,7 @@ class MainActivity : AppCompatActivity() {
 
     @Serializable
     data class MessageFromUser(
+            val user : String,
             val authorId : String,
             val senderName : String,
             val text : String

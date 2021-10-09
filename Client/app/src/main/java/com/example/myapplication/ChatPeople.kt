@@ -8,6 +8,7 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.children
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -21,6 +22,7 @@ class ChatPeople : AppCompatActivity() {
         private val ME_MSG = 1
         private val OTHER_MSG = 0
         lateinit var mainWindowOuter: LinearLayout
+        lateinit var scrollView: ScrollView
     }
     private lateinit var animAlpha: Animation
     private lateinit var editTextMessage : EditText
@@ -37,7 +39,7 @@ class ChatPeople : AppCompatActivity() {
         webSocketClient = MainActivity.webSocketClient
         sqliteHelper = MainActivity.sqliteHelper
         idUser = intent.extras?.getString("idTag").toString()
-
+        scrollView = findViewById(R.id.scrollChat)
     }
 
     override fun onStart() {
@@ -93,12 +95,13 @@ class ChatPeople : AppCompatActivity() {
                         Toast.LENGTH_SHORT).show()
                 return
             }
-            val textMSG = editTextMessage.text
+            val textMSG = editTextMessage.text.toString()
+            if(textMSG.isEmpty()) return
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             val newView = inflater.inflate(R.layout.message_to, null)
             val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
             textInMessage.text = textMSG
-            val dataUser = Msg("MESSAGE_TO::", idUser, textMSG.toString())
+            val dataUser = Msg("MESSAGE_TO::", idUser, textMSG)
             val msg = Json.encodeToString(dataUser)
             webSocketClient.send(msg)
             val c: Calendar = Calendar.getInstance()
@@ -107,6 +110,9 @@ class ChatPeople : AppCompatActivity() {
 //            sqliteHelper.addMsgInTable(idUser, ME_MSG, textMSG.toString(), strDate)
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             mainWindowInclude.addView(newView, lp)
+            scrollView.post(Runnable(){
+                scrollView.fullScroll(View.FOCUS_DOWN)
+            })
         } catch (ex : Exception){
 
         }

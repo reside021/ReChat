@@ -21,7 +21,7 @@ C:\Users\admin\vcpkg\installed\x86-windows\include\uwebsockets\WebSocketContext.
 C:\Users\admin\vcpkg\installed\x86-windows\include\uwebsockets\WebSocketContext.h(389): message : выполняется компиляция ссылки на экземпляр шаблон функции "uWS::WebSocketContext<true,true> *uWS::WebSocketContext<true,true>::init(void)"
 C:\Users\admin\vcpkg\installed\x86-windows\include\uwebsockets\App.h(93): message : выполняется компиляция ссылки на экземпляр класс шаблон функции "uWS::WebSocketContext<true,true>"
 C:\Users\admin\vcpkg\installed\x86-windows\include\uwebsockets\App.h(87): message : во время компиляции функции-члена класс шаблон "uWS::TemplatedApp<true>::~TemplatedApp(void)"
-C:\Users\admin\source\repos\SkillChatServer\SkillChatServer\SkillChatServer.cpp(504): message : выполняется компиляция ссылки на экземпляр шаблон функции "uWS::TemplatedApp<true>::~TemplatedApp(void)"
+C:\Users\admin\source\repos\SkillChatServer\SkillChatServer\SkillChatServer.cpp(506): message : выполняется компиляция ссылки на экземпляр шаблон функции "uWS::TemplatedApp<true>::~TemplatedApp(void)"
 C:\Users\admin\source\repos\SkillChatServer\SkillChatServer\SkillChatServer.cpp(251): message : выполняется компиляция ссылки на экземпляр класс шаблон функции "uWS::TemplatedApp<true>"
 C:\Users\admin\vcpkg\installed\x86-windows\include\uwebsockets\WebSocketProtocol.h(332,64): warning C4244: аргумент: преобразование "T" в "size_t", возможна потеря данных
           with

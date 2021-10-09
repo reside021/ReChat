@@ -55,7 +55,9 @@ class MasterActivity : AppCompatActivity() {
         parentLinearLayout = findViewById(R.id.masterLayout)
 
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
-
+        val ed = sp.edit()
+        ed.putBoolean("isAuth", true)
+        ed.apply()
         sqliteHelper = MainActivity.sqliteHelper
         webSocketClient = MainActivity.webSocketClient
         sqliteHelper.addUserInChat(Pair("0","Global Chat"))

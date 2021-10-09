@@ -302,6 +302,7 @@ int main() {
                     // отправить получателю
                     if (receiverId == "0") {
                         json jsonOut = {
+                            {"user", userData->name + "_" + authorId},
                             {"authorId", "0"},
                             {"senderName", userData->name},
                             {"text", text}
@@ -312,6 +313,7 @@ int main() {
                     }
                     else {
                         json jsonOut = {
+                            {"user", userData->name + "_" + authorId},
                             {"authorId", authorId},
                             {"senderName", userData->name},
                             {"text", text}
