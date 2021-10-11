@@ -12,6 +12,8 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatDelegate
+import com.example.myapplication.ChatPeople.Companion.mainWindowOuter
+import com.example.myapplication.ChatPeople.Companion.scrollView
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -35,6 +37,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.firstactivity)
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         sqliteHelper = SqliteHelper(this)
+        sqliteHelper.clearTable()
         val ed = sp.edit()
         ed.putBoolean("isAuth", false)
         ed.apply()
@@ -42,9 +45,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        sqliteHelper.clearOnlineTable()
         initWebSocket()
     }
+
 
 
 
@@ -160,6 +163,91 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+                if(typeOper == "INSERT"){
+                    if(status == "SUCCESS"){
+                        if(msg.substringBefore("::") == "NEWUSERDLG"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ConfirmInsertNewUserDlg>(jsonData)
+                            if(msg.Icreater){
+                                sqliteHelper.addUserInDLG(
+                                        msg.dialog_id,
+                                        msg.userCompanion,
+                                        msg.enteredTime
+                                )
+                                Toast.makeText(this, "С пользователем создан чат",
+                                        Toast.LENGTH_SHORT).show()
+                            } else{
+                                sqliteHelper.addUserInDLG(
+                                        msg.dialog_id,
+                                        msg.userManager,
+                                        msg.enteredTime
+                                )
+                                val dialog_ids = sqliteHelper.getAllDlgFromDLG()
+                                val queryAllTagName = QueryAllTagName("DOWNLOAD::", "ALLTAGNAME::", dialog_ids)
+                                val dataServerName = Json.encodeToString(queryAllTagName)
+                                webSocketClient.send(dataServerName)
+                            }
+                        }
+                        if(msg.substringBefore("::") == "NEWMSGDLG"){
+                            val jsonData = msg.substringAfter("::")
+                            messageToUser(jsonData)
+                        }
+                    }
+                    if(status == "ERROR"){
+                        if(msg.substringBefore("::") == "NEWUSERDLG"){
+                            Toast.makeText(this, "Не удалось создать чат",
+                                    Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                if(typeOper == "DOWNLOAD"){
+                    if(status == "SUCCESS"){
+                        if(msg.substringBefore("::") == "ALLDLG"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ListDataOfDlg>(jsonData)
+                            val dataOfDialog : List<DataOfDialog> = msg.listOfData
+                            for(el in dataOfDialog){
+                                sqliteHelper.addUserInDLG(
+                                        el.dialog_id,
+                                        el.tagUser,
+                                        el.enteredTime
+                                )
+                            }
+                            val dialog_ids = sqliteHelper.getAllDlgFromDLG()
+                            val queryAllTagName = QueryAllTagName("DOWNLOAD::", "ALLTAGNAME::", dialog_ids)
+                            val dataServerName = Json.encodeToString(queryAllTagName)
+                            webSocketClient.send(dataServerName)
+                            val queryAllMsg = QueryAllMsg("DOWNLOAD::", "ALLMSG::", dialog_ids )
+                            val dataServerMsg = Json.encodeToString(queryAllMsg)
+                            webSocketClient.send(dataServerMsg)
+                        }
+                        if(msg.substringBefore("::") == "ALLMSG"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ListDataOfMsg>(jsonData)
+                            val dataOfMessage : List<DataOfMessage> = msg.listOfData
+                            for(el in dataOfMessage){
+                                sqliteHelper.addMsgInTable(
+                                        el.dialog_id,
+                                        el.sender,
+                                        el.typeMsg,
+                                        el.textMsg,
+                                        el.timeCreated
+                                )
+                            }
+                        }
+                        if(msg.substringBefore("::") == "ALLTAGNAME"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ListTagName>(jsonData)
+                            val dataOfNickname : List<DataOfNickName> = msg.listOfData
+                            for(el in dataOfNickname){
+                                if(sqliteHelper.checkUserInChat(el.tagUser)) break
+                                sqliteHelper.addUserInChat(el.tagUser to el.nickUser)
+                            }
+                        }
+                    }
+                    if(status == "ERROR"){
+                    }
+                }
             }
             "ONLINE" -> {
                 val idWithName = message.substringAfter("::")
@@ -177,30 +265,67 @@ class MainActivity : AppCompatActivity() {
                 if(sp.getBoolean("isAuth", false)) {
                     val jsonData = message.substringAfter("::")
                     val msg = Json.decodeFromString<MessageFromUser>(jsonData)
-                    messagePrint(msg.user, msg.authorId, msg.senderName, msg.text)
+//                    Toast.makeText(this, jsonData,
+//                            Toast.LENGTH_SHORT).show()
+                    messagePrint(
+                            msg.dialog_id,
+                            msg.sender,
+                            msg.typeMsg,
+                            msg.textMsg,
+                            msg.timeCreated,
+                            msg.receiverId
+                    )
                 }
             }
         }
     }
 
-    private fun messagePrint(user : String, authorId : String, senderName: String, textMSG : String){
-        val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+    private fun messageToUser(jsonData : String){
+        val msg = Json.decodeFromString<ConfirmInsertNewMsgDlg>(jsonData)
         if(!sp.getBoolean("active",false)) return
-        if(sp.getString("idActive","NONE") != authorId) return
+        if(sp.getString("idActive","NONE") != msg.receiverId) return
+        try{
+            val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            val newView = inflater.inflate(R.layout.message_to, null)
+            val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
+            textInMessage.text = msg.textMsg
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            mainWindowOuter.addView(newView, lp)
+            sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
+//            if(sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)){
+//                Toast.makeText(this@MainActivity,
+//                        "сообщение добавлено",
+//                        Toast.LENGTH_SHORT).show()
+//            } else{
+//                Toast.makeText(this@MainActivity,
+//                        "сообщение не добавлено",
+//                        Toast.LENGTH_SHORT).show()
+//            }
+
+            scrollView.post(Runnable(){
+                scrollView.fullScroll(View.FOCUS_DOWN)
+            })
+        } catch (ex : Exception){
+        }
+    }
+    private fun messagePrint(dialog_id: String, sender: String, typeMsg: String, textMsg: String, timeCreated: String, receiverId: String){
+        sqliteHelper.addMsgInTable(dialog_id, sender, typeMsg, textMsg, timeCreated)
+        if(!sp.getBoolean("active",false)) return
+        if(sp.getString("idActive","NONE") != sender) return
 
             val nickname = sp.getString("nickname", resources.getString(R.string.user_name))
             val tagUser = sp.getString("tagUser", null)
         try{
-            if(user == nickname + "_" + tagUser) return
+//            if(user == nickname + "_" + tagUser) return
+            val nameOfUser = sqliteHelper.getNameInUserChat(sender)
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             val newView = inflater.inflate(R.layout.message_from, null)
             val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
-            textInMessage.text = textMSG
-            val sender = newView.findViewById<TextView>(R.id.senderName)
-            sender.text = senderName
+            textInMessage.text = textMsg
+            val senderView = newView.findViewById<TextView>(R.id.senderName)
+            senderView.text = nameOfUser
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            ChatPeople.mainWindowOuter.addView(newView, lp)
-            val scrollView = ChatPeople.scrollView
+            mainWindowOuter.addView(newView, lp)
             scrollView.post(Runnable(){
                 scrollView.fullScroll(View.FOCUS_DOWN)
             })
@@ -218,8 +343,11 @@ class MainActivity : AppCompatActivity() {
             ed.putBoolean("isVisible", obj.isVisible)
             ed.apply()
             val confirmAuth = ConfirmAuth("AUTH::", true, obj.nickname, obj.tagUser, obj.isVisible)
-            val msg = Json.encodeToString(confirmAuth)
+            var msg = Json.encodeToString(confirmAuth)
             if(webSocketClient.connection.readyState.ordinal != 0){
+                webSocketClient.send(msg)
+                val queryAllDlg = QueryAllDlg("DOWNLOAD::","ALLDLG::", obj.tagUser)
+                msg = Json.encodeToString(queryAllDlg)
                 webSocketClient.send(msg)
                 startActivity(intent)
             }
@@ -286,11 +414,79 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Serializable
+    data class ListTagName(
+            val listOfData : List<DataOfNickName>
+    )
+    @Serializable
+    data class DataOfNickName(
+            val tagUser : String,
+            val nickUser : String
+    )
+    @Serializable
+    data class ListDataOfMsg(
+            val listOfData : List<DataOfMessage>
+    )
+    @Serializable
+    data class DataOfMessage(
+            val dialog_id : String,
+            val sender : String,
+            val typeMsg : String,
+            val textMsg : String,
+            val timeCreated : String
+    )
+    @Serializable
+    data class ListDataOfDlg(
+            val listOfData : List<DataOfDialog>
+    )
+    @Serializable
+    data class DataOfDialog(
+            val dialog_id : String,
+            val tagUser : String,
+            val enteredTime: String
+    )
+    @Serializable
+    data class QueryAllMsg(
+            val type : String,
+            val table: String,
+            val dialog_ids: List<String>
+    )
+    @Serializable
+    data class QueryAllTagName(
+            val type: String,
+            val table: String,
+            val dialog_ids: List<String>
+    )
+    @Serializable
+    data class QueryAllDlg(
+            val type : String,
+            val table : String,
+            val tagUser : String
+    )
+    @Serializable
+    data class ConfirmInsertNewMsgDlg(
+            val dialog_id : String,
+            val sender : String,
+            val typeMsg : String,
+            val textMsg : String,
+            val timeCreated : String,
+            val receiverId : String
+    )
+    @Serializable
+    data class ConfirmInsertNewUserDlg(
+            val Icreater : Boolean,
+            val dialog_id : String,
+            val userManager : String,
+            val enteredTime : String,
+            val userCompanion : String
+    )
+    @Serializable
     data class MessageFromUser(
-            val user : String,
-            val authorId : String,
-            val senderName : String,
-            val text : String
+            val dialog_id: String,
+            val sender: String,
+            val typeMsg: String,
+            val textMsg: String,
+            val timeCreated: String,
+            val receiverId : String
     )
     @Serializable
     data class ConfirmUpVisible(

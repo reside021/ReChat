@@ -20,9 +20,12 @@ class SqliteHelper(context: Context) :
         db?.execSQL(tableUsersOnline)
 
         val tableMsgDlg = "CREATE TABLE IF NOT EXISTS $MSGDLGTABLE " +
-                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $SENDER INTEGER, $TEXT TEXT, $TIMECREATED TEXT)"
-        // sender: 1 - from me, 0 - from other
+                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $SENDER TEXT, $TYPEMSG TEXT, $TEXTMSG TEXT, $TIMECREATED TEXT)"
         db?.execSQL(tableMsgDlg)
+
+        val tableUserDlg = "CREATE TABLE IF NOT EXISTS $USERDLGTABLE " +
+                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $TAG_USER TEXT, $ENTEREDTIME TEXT)"
+        db?.execSQL(tableUserDlg)
     }
 
 
@@ -30,13 +33,17 @@ class SqliteHelper(context: Context) :
         db?.execSQL("DROP TABLE IF EXISTS $LIST_USERS_CHAT")
         db?.execSQL("DROP TABLE IF EXISTS $ONLINE_USERS")
         db?.execSQL("DROP TABLE IF EXISTS $MSGDLGTABLE")
+        db?.execSQL("DROP TABLE IF EXISTS $USERDLGTABLE")
         onCreate(db)
     }
 
 
-    fun clearOnlineTable(){
+    fun clearTable(){
         val db = this.writableDatabase
         db.delete(ONLINE_USERS, null,null)
+        db.delete(MSGDLGTABLE, null,null)
+        db.delete(USERDLGTABLE, null,null)
+        db.delete(LIST_USERS_CHAT, null,null)
     }
 
     fun addUserInOnline(tagId : String, username : String) : Boolean{
@@ -94,6 +101,71 @@ class SqliteHelper(context: Context) :
         Log.d("________InsertedInChat_________", "$success")
         return (Integer.parseInt("$success") != -1)
     }
+    fun checkUserInChat(tagUser : String) : Boolean{
+        val db = this.readableDatabase
+        val selectQuery = "SELECT * FROM $LIST_USERS_CHAT WHERE $TAG_USER = '$tagUser'"
+        val cursor = db.rawQuery(selectQuery, null)
+        if(cursor != null){
+            if (cursor.moveToFirst()) {
+                cursor.close()
+                db.close()
+                return true
+            }
+        }
+        cursor.close()
+        db.close()
+        return false
+    }
+    fun getNameInUserChat(tagUser: String) : String{
+        var name = ""
+        val db = this.readableDatabase
+        val selectQuery = "SELECT $NAME_USER FROM $LIST_USERS_CHAT WHERE $TAG_USER = '$tagUser'"
+        val cursor = db.rawQuery(selectQuery, null)
+        if(cursor != null){
+            if (cursor.moveToFirst()) {
+                do {
+                    name = cursor.getString(cursor.getColumnIndex(NAME_USER))
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return name
+    }
+    fun checkExistChatWithUser(tagUser : String) : Boolean{
+        val dialogId : String = CHAT + tagUser
+        val db = this.readableDatabase
+        val selectQuery = "SELECT * FROM $USERDLGTABLE WHERE $DIALOG_ID = '$dialogId'"
+        val cursor = db.rawQuery(selectQuery, null)
+        if(cursor != null){
+            if (cursor.moveToFirst()) {
+                cursor.close()
+                db.close()
+                return true
+            }
+        }
+        cursor.close()
+        db.close()
+        return false
+    }
+
+    fun getDialogIdWithUser(tagUser: String) : String{
+        var dialogId : String = ""
+        val db = this.readableDatabase
+        val selectQuery = "SELECT * FROM $USERDLGTABLE WHERE $TAG_USER = '$tagUser'"
+        val cursor = db.rawQuery(selectQuery, null)
+        if(cursor != null){
+            if (cursor.moveToFirst()) {
+                do {
+                    dialogId = cursor.getString(cursor.getColumnIndex(DIALOG_ID))
+                    if(dialogId.substringBefore("#") == "CHAT") break
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return dialogId
+    }
 
     //get all users
     fun getAllUsersChat(): MutableList<Pair<String,String>>{
@@ -116,12 +188,13 @@ class SqliteHelper(context: Context) :
     }
 
 
-    fun addMsgInTable(dialogID : String, sender : Int,  text : String, timecreated : String ) : Boolean{
+    fun addMsgInTable(dialogID : String, sender : String, typeMsg : String, text : String, timecreated : String ) : Boolean{
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(DIALOG_ID, dialogID)
         values.put(SENDER, sender)
-        values.put(TEXT, text)
+        values.put(TYPEMSG, typeMsg)
+        values.put(TEXTMSG, text)
         values.put(TIMECREATED, timecreated)
         val success = db.insert(MSGDLGTABLE, null, values)
         db.close()
@@ -129,17 +202,37 @@ class SqliteHelper(context: Context) :
         return (Integer.parseInt("$success") != -1)
     }
 
-    fun getMsgWithUser(dialogID : String) : MutableList<Pair<String,Int>>{
-        val allMsg = mutableListOf<Pair<String, Int>>()
+    fun getMsgWithUser(dialogID : String) : MutableList<Array<String>>{
+        val allMsg = mutableListOf<Array<String>>()
         val db = readableDatabase
-        val selectALLQuery = "SELECT * FROM $MSGDLGTABLE WHERE $DIALOG_ID = '$dialogID'"
+        val selectALLQuery = "SELECT * FROM $MSGDLGTABLE WHERE $DIALOG_ID = '$dialogID' ORDER BY $TIMECREATED"
         val cursor = db.rawQuery(selectALLQuery, null)
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val text = cursor.getString(cursor.getColumnIndex(TEXT))
-                    val sender = cursor.getInt(cursor.getColumnIndex(SENDER))
-                    allMsg.add(text to sender)
+                    val text = cursor.getString(cursor.getColumnIndex(TEXTMSG))
+                    val sender = cursor.getString(cursor.getColumnIndex(SENDER))
+                    val timeCreated = cursor.getString(cursor.getColumnIndex(TIMECREATED))
+                    allMsg.add(arrayOf(sender, text, timeCreated))
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return allMsg
+    }
+    fun qq() : MutableList<Array<String>>{
+        val allMsg = mutableListOf<Array<String>>()
+        val db = readableDatabase
+        val selectALLQuery = "SELECT * FROM $USERDLGTABLE"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    val dialog_id = cursor.getString(cursor.getColumnIndex(DIALOG_ID))
+                    val tagUser = cursor.getString(cursor.getColumnIndex(TAG_USER))
+                    val timeCreated = cursor.getString(cursor.getColumnIndex(TIMECREATED))
+                    allMsg.add(arrayOf(dialog_id, tagUser, timeCreated))
                 } while (cursor.moveToNext())
             }
         }
@@ -148,9 +241,55 @@ class SqliteHelper(context: Context) :
         return allMsg
     }
 
+    fun addUserInDLG(dialogID : String, tagUser : String,  enteredTime : String ) : Boolean{
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(DIALOG_ID, dialogID)
+        values.put(TAG_USER, tagUser)
+        values.put(ENTEREDTIME, enteredTime)
+        val success = db.insert(USERDLGTABLE, null, values)
+        db.close()
+        Log.d("________InsertedInTblMsg_________", "$success")
+        return (Integer.parseInt("$success") != -1)
+    }
+
+    fun getAllDlgFromDLG(): MutableList<String>{
+        var allDlg : MutableList<String> = mutableListOf()
+        val db = readableDatabase
+        val selectALLQuery = "SELECT * FROM $USERDLGTABLE"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    val dialog_id = cursor.getString(cursor.getColumnIndex(DIALOG_ID))
+                    allDlg.add(dialog_id)
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return allDlg
+    }
+
+    fun getCountMsgDlg() :  String{
+        val db = this.readableDatabase
+        val selectQuery = "SELECT $DIALOG_ID FROM $USERDLGTABLE"
+        val cursor = db.rawQuery(selectQuery, null)
+        if(cursor != null){
+            if (cursor.moveToFirst()) {
+                do {
+                    return cursor.getString(cursor.getColumnIndex(DIALOG_ID))
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return ""
+    }
+
     companion object {
         private val DB_NAME = "UserChat"
-        private val DB_VERSION = 2;
+        private val DB_VERSION = 1;
 
         private val ONLINE_USERS = "OnlineUsers" // tablename
         private val TAG_USER = "Tag_Of_User" // field in table
@@ -161,10 +300,15 @@ class SqliteHelper(context: Context) :
         private val MSGDLGTABLE = "MsgDlgTable" // tablename
         private val ID = "id" // field in table
         private val DIALOG_ID = "dialog_id" // field in table (tag of users)
-        private val TEXT = "text" // field in table (text of message)
+        private val TEXTMSG = "textMsg" // field in table (text of message)
+        private val TYPEMSG = "typeMsg"
         private val TIMECREATED = "timecreated" // field in table (time message)
         private val SENDER = "sender" // field in table (who is sender?)
 
+        private val USERDLGTABLE = "UserDlgTable" // tablename
+        private val ENTEREDTIME = "EnteredTime"
+
+        private val CHAT = "CHAT#"
 
     }
 }

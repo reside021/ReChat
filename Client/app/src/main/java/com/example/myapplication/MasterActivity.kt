@@ -42,6 +42,7 @@ class MasterActivity : AppCompatActivity() {
     private lateinit var sqliteHelper: SqliteHelper
     private lateinit var sp : SharedPreferences
     private lateinit var webSocketClient : WebSocketClient
+    private lateinit var tagUser : String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.master)
@@ -58,9 +59,10 @@ class MasterActivity : AppCompatActivity() {
         val ed = sp.edit()
         ed.putBoolean("isAuth", true)
         ed.apply()
+        tagUser = sp.getString("tagUser", null)!!
         sqliteHelper = MainActivity.sqliteHelper
         webSocketClient = MainActivity.webSocketClient
-        sqliteHelper.addUserInChat(Pair("0","Global Chat"))
+//        sqliteHelper.addUserInChat(Pair("0","Global Chat"))
 
         profileTab = findViewById(R.id.profile)
         chatTab = findViewById(R.id.chat)
@@ -76,6 +78,11 @@ class MasterActivity : AppCompatActivity() {
         profileTabActive()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        sqliteHelper.clearTable()
+    }
+
     private fun profileTabActive(){
         parentLinearLayout.removeView(view)
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -86,7 +93,6 @@ class MasterActivity : AppCompatActivity() {
         chatTab.setBackgroundColor(0)
         friendsTab.setBackgroundColor(0)
         val nickname = sp.getString("nickname", resources.getString(R.string.user_name))
-        val tagUser = sp.getString("tagUser", null)
         view.findViewById<TextView>(R.id.nameofuser).text = nickname
         view.findViewById<TextView>(R.id.tagofuser).text = tagUser
 
@@ -119,6 +125,9 @@ class MasterActivity : AppCompatActivity() {
     }
 
     private fun chatTabActive(){
+//        val queryAllDlg = MainActivity.QueryAllDlg("DOWNLOAD::", "ALLDLG::", tagUser)
+//        val msg = Json.encodeToString(queryAllDlg)
+//        webSocketClient.send(msg)
         parentLinearLayout.removeView(view)
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         view = inflater.inflate(R.layout.chat, null)

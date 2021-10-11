@@ -73,6 +73,12 @@ const string NEWNAME = "NEWNAME::";
 const string SUCCESS = "SUCCESS::";
 const string _ERROR = "ERROR::";
 const string VISIBLE = "VISIBLE::";
+const string NEWUSERDLG = "NEWUSERDLG::";
+const string NEWMSGDLG = "NEWMSGDLG::";
+const string DOWNLOAD = "DOWNLOAD::";
+const string ALLDLG = "ALLDLG::";
+const string ALLMSG = "ALLMSG::";
+const string ALLTAGNAME = "ALLTAGNAME::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -196,6 +202,12 @@ bool IsServerDBNotActive() {
 bool isAuthUser(string message) {
     return message.find(AUTH) == 0;
 }
+bool isCreateDlg(string message) {
+    return message.find(NEWUSERDLG) == 0;
+}
+bool isDownLoadData(string message) {
+    return message.find(DOWNLOAD) == 0;
+}
 string parseUserLogin(string message) {
     string rest = message.substr(AUTH.size());
     int pos = rest.find("::");
@@ -299,31 +311,33 @@ int main() {
                     // string text = parseUserText(strMessage);
                     string receiverId = jsonData["id"];
                     string text = jsonData["text"];
+                    string dialog_id = jsonData["dialog_id"];
+                    string typeMsg = jsonData["typeMsg"];
                     // отправить получателю
                     if (receiverId == "0") {
-                        json jsonOut = {
-                            {"user", userData->name + "_" + authorId},
-                            {"authorId", "0"},
-                            {"senderName", userData->name},
-                            {"text", text}
-                        };
-                        string outgoingMessage = MESSAGEFROM + (string)jsonOut.dump();
-                        // userData->user_id == отправитель
-                        ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
+                        //json jsonOut = {
+                        //    {"dialog_id", dialog_id},
+                        //    {"sender", authorId},
+                        //    {"typeMsg", typeMsg},
+                        //    {"text", text},
+                        //    {"receiverId", receiverId}
+                        //};
+                        ////string outgoingMessage = MESSAGEFROM + (string)jsonOut.dump();
+                        ////ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
+                        //string outgoingMessage = FORDB + SQL + INSERT + NEWMSGDLG + (string)jsonOut.dump();
+                        //ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                     else {
                         json jsonOut = {
-                            {"user", userData->name + "_" + authorId},
-                            {"authorId", authorId},
-                            {"senderName", userData->name},
-                            {"text", text}
+                            {"dialog_id", dialog_id},
+                            {"sender", authorId},
+                            {"typeMsg", typeMsg},
+                            {"text", text},
+                            {"receiverId", receiverId}
                         };
-                        // userData->user_id == отправитель
-                        string outgoingMessage = MESSAGEFROM + (string)jsonOut.dump();
-                        ws->publish("user#" + receiverId, outgoingMessage, uWS::OpCode::TEXT, false);
-                    }
-                    ws->send("Message sent", uWS::OpCode::TEXT);
-                    cout << "User #" << authorId << " wrote message to " << receiverId << endl;
+                        string outgoingMessage = FORDB + SQL + INSERT + NEWMSGDLG + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                        }
                     }
                 if (isSetName(jsonData["type"])) {
                     string newName = jsonData["newUserName"];
@@ -433,6 +447,50 @@ int main() {
                         ws->publish(userChannel, outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                 }
+                if (isCreateDlg(jsonData["type"])) {
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
+                        return;
+                    }
+                    string userCompanion = jsonData["tagUser"];
+                    string userManager = authorId;
+                    json jsonOut = {
+                            {"userCompanion", userCompanion},
+                            {"userManager", userManager}
+                    };
+                    string outgoingMessage = FORDB + SQL + INSERT + NEWUSERDLG + (string)jsonOut.dump();
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
+                if (isDownLoadData(jsonData["type"])) {
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
+                        return;
+                    }
+                    if (jsonData["table"] == ALLDLG) {
+                        json jsonOut = {
+                            {"tagUser", jsonData["tagUser"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLDLG + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["table"] == ALLMSG) {
+                        json jsonOut = {
+                            {"dialog_ids", jsonData["dialog_ids"]},
+                            {"authorId", authorId}
+                        };
+                        string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLMSG + (string)jsonOut.dump();
+                        cout << endl << "DOWNLOADALLMSG" << endl << outgoingMessage << endl;
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["table"] == ALLTAGNAME) {
+                        json jsonOut = {
+                            {"dialog_ids", jsonData["dialog_ids"]},
+                            {"authorId", authorId}
+                        };
+                        string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLTAGNAME + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                }
                 if (isResultFromDB(jsonData["type"])) {
                     if (jsonData["oper"] == AUTH) {
                         if (jsonData["success"]) {
@@ -485,7 +543,112 @@ int main() {
                         }
                         
                     }
+                    if (jsonData["oper"] == NEWUSERDLG) {
+                        if (jsonData["success"]) {
+                            json jsonOut = {
+                            {"Icreater", true},
+                            {"dialog_id", jsonData["dialog_id"]},
+                            {"userManager", jsonData["userManager"]},
+                            {"enteredTime",jsonData["enteredTime"]},
+                            {"userCompanion", jsonData["userCompanion"]}
+                            };
+                            string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
+                            string userManager = jsonData["userManager"];
+                            string userCompanion = jsonData["userCompanion"];
+                            ws->publish("user#" + userManager, outgoingMsg, uWS::OpCode::TEXT, false);
+                            if (userManager != userCompanion) {
+                                json jsonOut = {
+                                {"Icreater", false},
+                                {"dialog_id", jsonData["dialog_id"]},
+                                {"userManager", jsonData["userManager"]},
+                                {"enteredTime",jsonData["enteredTime"]},
+                                {"userCompanion", jsonData["userCompanion"]}
+                                };
+                                string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
+                                ws->publish("user#" + userCompanion, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        else {
+                            string outgoingMsg = RESULTDB + INSERT + _ERROR + NEWUSERDLG;
+                            string authorId = jsonData["userManager"];
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                        }
+                    }
+                    if (jsonData["oper"] == NEWMSGDLG) {
+                        if (jsonData["success"]) {
+                            json jsonOut = {
+                            {"dialog_id", jsonData["dialog_id"]},
+                            {"sender", jsonData["sender"]},
+                            {"typeMsg", jsonData["typeMsg"]},
+                            {"textMsg",jsonData["textMsg"]},
+                            {"timeCreated", jsonData["timeCreated"]},
+                            {"receiverId", jsonData["receiverId"]}
+                            };
+                            string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWMSGDLG + (string)jsonOut.dump();
+                            string sender = jsonData["sender"];
+                            ws->publish("user#" + sender, outgoingMsg, uWS::OpCode::TEXT, false);
 
+                            outgoingMsg = MESSAGEFROM + (string)jsonOut.dump();
+                            string receiverId = jsonData["receiverId"];
+                            ws->publish("user#" + receiverId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            cout << "User #" << sender << " wrote message to " << receiverId << endl;
+                        }
+                        else {
+                            string outgoingMsg = RESULTDB + INSERT + _ERROR + NEWMSGDLG;
+                            string authorId = jsonData["receiverId"];
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                        }
+                    }
+                    if (jsonData["oper"] == DOWNLOAD) {
+                        if (jsonData["table"] == ALLDLG) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"listOfData", jsonData["listOfData"]}
+                                };
+                                string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLDLG + (string)jsonOut.dump();
+                                string tagUser = jsonData["tagUser"];
+                                cout << endl << "ALLDLG" << endl << outgoingMsg << endl;
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + ALLDLG;
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["table"] == ALLMSG) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"listOfData", jsonData["listOfData"]}
+                                };
+                                string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLMSG + (string)jsonOut.dump();
+                                string tagUser = jsonData["tagUser"];
+                                cout << endl << "ALLMSG" << endl << outgoingMsg << endl;
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + ALLMSG;
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["table"] == ALLTAGNAME) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"listOfData", jsonData["listOfData"]}
+                                };
+                                string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLTAGNAME + (string)jsonOut.dump();
+                                string tagUser = jsonData["tagUser"];
+                                cout << endl << "ALLTAGNAME" << endl << outgoingMsg << endl;
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + ALLTAGNAME;
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                    }
                 }
 
                 // сообщить, кто вообще онлайн

@@ -2,6 +2,7 @@
 using WebSocket4Net;
 using System.Data.SqlClient;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace WSClientDB
 {
@@ -27,6 +28,20 @@ namespace WSClientDB
         public string authorId { get; set; }
         public string loginUser { get; set; }
         public string passUser { get; set; }
+    }
+    public class DownLoadAllDlg
+    {
+        public string tagUser { get; set; }
+    }
+    public class DownLoadAllMsg
+    {
+        public List<string> dialog_ids { get; set; }
+        public string authorId { get; set; }
+    }
+    public class DownLoadAllTagName
+    {
+        public List<string> dialog_ids { get; set; }
+        public string authorId { get; set; }
     }
     public class ResultDB // for auth of user
     {
@@ -58,6 +73,88 @@ namespace WSClientDB
         public string newName { get; set; }
         public bool isVisible { get; set; }
     }
+    public class NewUserDLG
+    {
+        public string userCompanion { get; set; }
+        public string userManager { get; set; }
+    }
+    public class SuccessInsertMsgDlg
+    {
+        public string type { get; set; }
+        public string oper { get; set; } // type oper
+        public bool success { get; set; }
+        public string dialog_id { get; set; }
+        public string sender { get; set; }
+        public string typeMsg { get; set; }
+        public string textMsg { get; set; }
+        public string timeCreated { get; set; }
+        public string receiverId { get; set; }
+    }
+    public class NewMsgDLG
+    {
+        public string dialog_id { get; set; }
+        public string sender { get; set; }
+        public string typeMsg { get; set; }
+        public string text { get; set; }
+        public string receiverId { get; set; }
+    }
+    public class SuccessCreateUserDlg
+    {
+        public string type { get; set; }
+        public string oper { get; set; } // type oper
+        public bool success { get; set; }
+        public string dialog_id { get; set; }
+        public string userManager { get; set; }
+        public string userCompanion { get; set; }
+        public string enteredTime { get; set; }
+    }
+    public class DataOfDialog
+    {
+        public string dialog_id { get; set; }
+        public string tagUser { get; set; }
+        public string enteredTime { get; set; }
+    }
+    public class ListDataOfDialog
+    {
+        public string type { get; set; }
+        public string oper { get; set; } // type oper
+        public string table { get; set; }
+        public bool success { get; set; }
+        public List<DataOfDialog> listOfData { get; set; }
+        public string tagUser {get; set;}
+    }
+    public class DataOfMessage
+    {
+        public string dialog_id { get; set; }
+        public string sender { get; set; }
+        public string typeMsg { get; set; }
+        public string textMsg { get; set; }
+        public string timeCreated { get; set; }
+    }
+    public class ListDataOfMessage
+    {
+        public string type { get; set; }
+        public string oper { get; set; } // type oper
+        public string table { get; set; }
+        public bool success { get; set; }
+        public List<DataOfMessage> listOfData { get; set; }
+        public string tagUser { get; set; }
+    }
+    public class DataOfNickName
+    {
+        public string tagUser { get; set; }
+        public string nickUser { get; set; }
+    }
+
+    public class DataOfTagName
+    {
+        public string type { get; set; }
+        public string oper { get; set; } // type oper
+        public string table { get; set; }
+        public bool success { get; set; }
+        public List<DataOfNickName> listOfData { get; set; }
+        public string tagUser { get; set; }
+    }
     class Program
     {
         const string FORDB = "FORDB::";
@@ -71,6 +168,13 @@ namespace WSClientDB
         const string UPDATE = "UPDATE::";
         const string NEWNAME = "NEWNAME::";
         const string VISIBLE = "VISIBLE::";
+        const string NEWUSERDLG = "NEWUSERDLG::";
+        const string CHAT = "CHAT#";
+        const string NEWMSGDLG = "NEWMSGDLG::";
+        const string DOWNLOAD = "DOWNLOAD::";
+        const string ALLDLG = "ALLDLG::";
+        const string ALLMSG = "ALLMSG::";
+        const string ALLTAGNAME = "ALLTAGNAME::";
 
 
         static WebSocket webSocket;
@@ -109,6 +213,89 @@ namespace WSClientDB
             sqlCommand.Parameters.Clear();
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> SIGNUP^Insert into UsersData");
+        }
+        private static void InsertDataNewMsgDLG(string dialog_id, string sender, string typeMsg, string text, string receiverId)
+        {
+            DateTime timeCreated = DateTime.UtcNow;
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "Insert into MsgDlgTable values(@dialog_id, @sender, @typeMsg, @textMsg, @timeCreated)";
+            SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+            sqlCommand.Parameters.Add(sqlParameter);
+            SqlParameter sqlParameter1 = new SqlParameter("@sender", sender);
+            sqlCommand.Parameters.Add(sqlParameter1);
+            SqlParameter sqlParameter2 = new SqlParameter("@typeMsg", typeMsg);
+            sqlCommand.Parameters.Add(sqlParameter2);
+            SqlParameter sqlParameter3 = new SqlParameter("@textMsg", text);
+            sqlCommand.Parameters.Add(sqlParameter3);
+            SqlParameter sqlParameter4 = new SqlParameter("@timeCreated", timeCreated);
+            sqlCommand.Parameters.Add(sqlParameter4);
+            SuccessInsertMsgDlg successInsertMsgDlg = new SuccessInsertMsgDlg();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+                successInsertMsgDlg.type = RESULTDB;
+                successInsertMsgDlg.oper = NEWMSGDLG;
+                successInsertMsgDlg.success = true;
+                successInsertMsgDlg.dialog_id = dialog_id;
+                successInsertMsgDlg.sender = sender;
+                successInsertMsgDlg.typeMsg = typeMsg;
+                successInsertMsgDlg.textMsg = text;
+                successInsertMsgDlg.timeCreated = timeCreated.ToString();
+                successInsertMsgDlg.receiverId = receiverId;
+            }
+            catch
+            {
+                successInsertMsgDlg.type = RESULTDB;
+                successInsertMsgDlg.oper = NEWMSGDLG;
+                successInsertMsgDlg.success = false;
+            }
+            string jsonResult = JsonConvert.SerializeObject(successInsertMsgDlg);
+            webSocket.Send(jsonResult);
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            Console.WriteLine($"[MSG] -> InsertDLG^Insert into MsgDlgTable");
+        }
+        private static void InsertDataNewUserDLG(string userCompanion, string userManager)
+        {
+            string dialog_id = CHAT + userCompanion;
+            DateTime enteredTime = DateTime.UtcNow;
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "Insert into UserDlgTable values(@dialog_id, @tagUser, @enteredTime)";
+            SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+            sqlCommand.Parameters.Add(sqlParameter);
+            SqlParameter sqlParameter1 = new SqlParameter("@tagUser", userCompanion);
+            sqlCommand.Parameters.Add(sqlParameter1);
+            SqlParameter sqlParameter2 = new SqlParameter("@enteredTime", enteredTime);
+            sqlCommand.Parameters.Add(sqlParameter2);
+            SuccessCreateUserDlg successCreateUserDlg = new SuccessCreateUserDlg();
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Remove(sqlParameter1);
+                sqlParameter1 = new SqlParameter("@tagUser", userManager);
+                sqlCommand.Parameters.Add(sqlParameter1);
+                sqlCommand.ExecuteNonQuery();
+                successCreateUserDlg.type = RESULTDB;
+                successCreateUserDlg.oper = NEWUSERDLG;
+                successCreateUserDlg.success = true;
+                successCreateUserDlg.dialog_id = dialog_id;
+                successCreateUserDlg.userManager = userManager;
+                successCreateUserDlg.userCompanion = userCompanion;
+                successCreateUserDlg.enteredTime = enteredTime.ToString();
+            }
+            catch
+            {
+                successCreateUserDlg.type = RESULTDB;
+                successCreateUserDlg.oper = NEWUSERDLG;
+                successCreateUserDlg.success = false;
+            }
+            string jsonResult = JsonConvert.SerializeObject(successCreateUserDlg);
+            webSocket.Send(jsonResult);
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable");
         }
 
         private static void SelectDataForAuth(string authorUser, string loginUser, string passUser)
@@ -167,6 +354,161 @@ namespace WSClientDB
             sqlConnection.Close();  
             Console.WriteLine($"[MSG] -> AUTH^{nickDB}_{tagDB}");
 
+        }
+        private static void SelectDataForAllDlg(string tagUser)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "select * from UserDlgTable";
+            SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+            List<DataOfDialog> dataOfDialogs = new List<DataOfDialog>();
+            ListDataOfDialog listDataOfDialog = new ListDataOfDialog();
+            if (sqlDataReader.HasRows)
+            {
+                while (sqlDataReader.Read())
+                {
+                    string _dialogId = sqlDataReader.GetString(1);
+                    string _tagUser = sqlDataReader.GetString(2);
+                    string _enteredTime = sqlDataReader.GetDateTime(3).ToString();
+                    dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime });
+                }
+                listDataOfDialog.type = RESULTDB;
+                listDataOfDialog.oper = DOWNLOAD;
+                listDataOfDialog.table = ALLDLG;
+                listDataOfDialog.success = true;
+                listDataOfDialog.listOfData = dataOfDialogs;
+                listDataOfDialog.tagUser = tagUser;
+            }
+            else
+            {
+                listDataOfDialog.type = RESULTDB;
+                listDataOfDialog.oper = DOWNLOAD;
+                listDataOfDialog.table = ALLDLG;
+                listDataOfDialog.success = false;
+                listDataOfDialog.tagUser = tagUser;
+            }
+            string jsonResult = JsonConvert.SerializeObject(listDataOfDialog);
+            webSocket.Send(jsonResult);
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            Console.WriteLine($"[MSG] -> DownLoadDialog^{tagUser}");
+        }
+
+        private static List<DataOfMessage> SlctAllMsgHelper(string dialog_id)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "select * from MsgDlgTable where dialog_id = @dialog_id";
+            SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+            sqlCommand.Parameters.Add(sqlParameter);
+            SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+            List<DataOfMessage> dataOfMessages = new List<DataOfMessage>();
+            if (sqlDataReader.HasRows)
+            {
+                while (sqlDataReader.Read())
+                {
+                    string _dialogId = sqlDataReader.GetString(1);
+                    string _sender = sqlDataReader.GetString(2);
+                    string _typeMsg = sqlDataReader.GetString(3);
+                    string _textMsg = sqlDataReader.GetString(4);
+                    string _timeCreated = sqlDataReader.GetDateTime(5).ToString();
+                    dataOfMessages.Add(new DataOfMessage()
+                    {
+                        dialog_id = _dialogId,
+                        sender = _sender,
+                        typeMsg = _typeMsg,
+                        textMsg = _textMsg,
+                        timeCreated = _timeCreated
+                    });
+                }
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            return dataOfMessages;
+        }
+        private static void SelectDataForAllMsg(List<string> dialog_ids, string authorId)
+        {
+            foreach(var el in dialog_ids)
+            {
+                List<DataOfMessage> dataOfMessages = SlctAllMsgHelper(el);
+                ListDataOfMessage listDataOfMessage = new ListDataOfMessage();
+                if (dataOfMessages.Count != 0)
+                {
+                    listDataOfMessage.type = RESULTDB;
+                    listDataOfMessage.oper = DOWNLOAD;
+                    listDataOfMessage.table = ALLMSG;
+                    listDataOfMessage.success = true;
+                    listDataOfMessage.listOfData = dataOfMessages;
+                    listDataOfMessage.tagUser = authorId;
+                    string jsonResult = JsonConvert.SerializeObject(listDataOfMessage);
+                    webSocket.Send(jsonResult);
+                }
+            }
+            Console.WriteLine($"[MSG] -> DownLoadMsg^{authorId}");
+        }
+        private static string SearchNeedTag(string dialog_id, string notNeededTag)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "select tagUser from UserDlgTable where dialog_id = @dialog_id and tagUser <> @notNeededTag";
+            SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+            sqlCommand.Parameters.Add(sqlParameter);
+            SqlParameter sqlParameter2 = new SqlParameter("@notNeededTag", notNeededTag);
+            sqlCommand.Parameters.Add(sqlParameter2);
+            var name = sqlCommand.ExecuteScalar();
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            return name.ToString();
+        }
+        private static void SelectDataForAllTagName(List<string> dialog_ids, string authorId)
+        {
+            List<DataOfNickName> listTagName = new List<DataOfNickName>();
+            foreach (var el in dialog_ids)
+            {
+                var tag = el.Substring(CHAT.Length);
+                if(tag == authorId)
+                {
+                    tag = SearchNeedTag(el, tag);
+                }
+                string name = SlctAllTagNameHelper(tag);
+                if (!string.IsNullOrEmpty(name))
+                {
+                    listTagName.Add(new DataOfNickName() { nickUser = name, tagUser = tag });
+                }
+            }
+            DataOfTagName dataOfTagName = new DataOfTagName();
+            if (listTagName.Count != 0)
+            {
+                dataOfTagName.type = RESULTDB;
+                dataOfTagName.oper = DOWNLOAD;
+                dataOfTagName.table = ALLTAGNAME;
+                dataOfTagName.success = true;
+                dataOfTagName.listOfData = listTagName;
+                dataOfTagName.tagUser = authorId;
+            }
+            else
+            {
+                dataOfTagName.type = RESULTDB;
+                dataOfTagName.oper = DOWNLOAD;
+                dataOfTagName.table = ALLTAGNAME;
+                dataOfTagName.success = false;
+                dataOfTagName.tagUser = authorId;
+            }
+            string jsonResult = JsonConvert.SerializeObject(dataOfTagName);
+            webSocket.Send(jsonResult);
+            Console.WriteLine($"[MSG] -> DownLoadNickUser^{authorId} ({dataOfTagName.success})");
+        }
+        private static string SlctAllTagNameHelper(string tag)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "select nickUser from UsersData where tagUser = @tagUser";
+            SqlParameter sqlParameter = new SqlParameter("@tagUser", tag);
+            sqlCommand.Parameters.Add(sqlParameter);
+            var name = sqlCommand.ExecuteScalar();
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            return name.ToString();
         }
         private static void UpdateNameOfUser(string tagId, string newName)
         {
@@ -250,6 +592,18 @@ namespace WSClientDB
                         SignUp signUp = JsonConvert.DeserializeObject<SignUp>(message);
                         InsertDataSignUp(signUp.loginUser, signUp.passUser, signUp.nickName, signUp.authorId);
                     }
+                    if(message.IndexOf(NEWUSERDLG) != -1)
+                    {
+                        message = message.Substring(NEWUSERDLG.Length);
+                        NewUserDLG newUserDLG = JsonConvert.DeserializeObject<NewUserDLG>(message);
+                        InsertDataNewUserDLG(newUserDLG.userCompanion, newUserDLG.userManager);
+                    }
+                    if(message.IndexOf(NEWMSGDLG) != -1)
+                    {
+                        message = message.Substring(NEWMSGDLG.Length);
+                        NewMsgDLG newMsgDLG = JsonConvert.DeserializeObject<NewMsgDLG>(message);
+                        InsertDataNewMsgDLG(newMsgDLG.dialog_id, newMsgDLG.sender, newMsgDLG.typeMsg, newMsgDLG.text, newMsgDLG.receiverId);
+                    }
                 }
                 if (message.IndexOf(SELECT) != -1)
                 {
@@ -259,6 +613,28 @@ namespace WSClientDB
                         message = message.Substring(AUTH.Length);
                         Auth auth = JsonConvert.DeserializeObject<Auth>(message);
                         SelectDataForAuth(auth.authorId, auth.loginUser, auth.passUser);
+                    }
+                    if(message.IndexOf(DOWNLOAD) != -1)
+                    {
+                        message = message.Substring(DOWNLOAD.Length);
+                        if (message.IndexOf(ALLDLG) != -1)
+                        {
+                            message = message.Substring(ALLDLG.Length);
+                            DownLoadAllDlg downLoadAllDlg = JsonConvert.DeserializeObject<DownLoadAllDlg>(message);
+                            SelectDataForAllDlg(downLoadAllDlg.tagUser);
+                        }
+                        if(message.IndexOf(ALLMSG) != -1)
+                        {
+                            message = message.Substring(ALLMSG.Length);
+                            DownLoadAllMsg downLoadAllMsg = JsonConvert.DeserializeObject<DownLoadAllMsg>(message);
+                            SelectDataForAllMsg(downLoadAllMsg.dialog_ids, downLoadAllMsg.authorId);
+                        }
+                        if(message.IndexOf(ALLTAGNAME) != -1)
+                        {
+                            message = message.Substring(ALLTAGNAME.Length);
+                            DownLoadAllTagName downLoadAllTagName = JsonConvert.DeserializeObject<DownLoadAllTagName>(message);
+                            SelectDataForAllTagName(downLoadAllTagName.dialog_ids, downLoadAllTagName.authorId);
+                        }
                     }
                 }
                 if(message.IndexOf(UPDATE) != -1)
