@@ -20,8 +20,6 @@ import java.util.*
 
 class ChatPeople : AppCompatActivity() {
     companion object{
-        private val ME_MSG = 1
-        private val OTHER_MSG = 0
         lateinit var mainWindowOuter: LinearLayout
         lateinit var scrollView: ScrollView
     }
@@ -46,16 +44,16 @@ class ChatPeople : AppCompatActivity() {
         scrollView = findViewById(R.id.scrollChat)
         mainWindowOuter = mainWindowInclude
         dialog_id = sqliteHelper.getDialogIdWithUser(idUser)
-        val nameOfUser = sqliteHelper.getNameInUserChat(idUser)
-        recoveryAllMsg(dialog_id, nameOfUser)
+        recoveryAllMsg(dialog_id)
     }
 
 
-    private fun recoveryAllMsg(dialog_id: String, nameOfUser : String){
+    private fun recoveryAllMsg(dialog_id: String){
         val ourTag = sp.getString("tagUser", null)
         val dataOfMsg = sqliteHelper.getMsgWithUser(dialog_id)
         for(el in dataOfMsg){
             if(el[0] != ourTag){
+                val nameOfUser = sqliteHelper.getNameInUserChat(el[0])
                 val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
                 val newView = inflater.inflate(R.layout.message_from, null)
                 val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)

@@ -14,4 +14,8 @@
     <color name="green">#4CAF50</color>
     <color name="red">#F44336</color>
     <color name="lightBlue">#03A8F4</color>
+    <color name="accentColor">#2196f3</color>
+    <color name="colorPrimary">#8A8A8A</color>
+    <color name="backgroundColor">#eff3f4</color>
+    <color name="textMessColor">#6E6E6E</color>
 </resources>

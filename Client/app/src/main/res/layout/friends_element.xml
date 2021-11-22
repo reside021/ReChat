@@ -4,7 +4,10 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="10dp">
+    android:layout_margin="10dp"
+    android:background="@drawable/round"
+    android:backgroundTint="@color/white"
+    >
     <de.hdodenhof.circleimageview.CircleImageView
         android:layout_width="50dp"
         android:layout_height="50dp"
@@ -18,9 +21,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+
         android:text="username"
         android:textSize="22sp"
-        android:textColor="@color/black"
+        android:textColor="@color/colorPrimary"
         android:layout_marginVertical="15dp"/>
     <Button
         android:id="@+id/addFriendBtn"

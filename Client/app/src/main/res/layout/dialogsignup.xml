@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
+    android:padding="20dp">
     <Space
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -11,24 +13,45 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
         <EditText
+            android:textColor="@color/colorPrimary"
+            android:background="@drawable/round"
+            android:layout_height="45dp"
+            android:backgroundTint="@color/white"
             android:id="@+id/loginSign"
             style="@style/editTextSignLogin"
-            android:hint="Login"/>
+            android:layout_marginBottom="10dp"
+            android:hint="@string/login"/>
         <EditText
+            android:textColor="@color/colorPrimary"
+
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/round"
+            android:layout_height="45dp"
+            android:backgroundTint="@color/white"
             android:id="@+id/usernameSign"
             style="@style/editTextSignLogin"
-            android:hint="UserName"/>
+            android:hint="@string/UserName"/>
         <EditText
+            android:textColor="@color/colorPrimary"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/round"
+            android:layout_height="45dp"
+            android:backgroundTint="@color/white"
             android:id="@+id/pass1Sign"
             style="@style/editTextSignLogin"
-            android:hint="Password"
+            android:hint="@string/password"
             android:inputType="textPassword"/>
         <EditText
+            android:background="@drawable/round"
+            android:textColor="@color/colorPrimary"
+            android:layout_height="45dp"
+            android:backgroundTint="@color/white"
             android:id="@+id/pass2Sign"
             style="@style/editTextSignLogin"
-            android:hint="Password"
+            android:hint="@string/password"
             android:inputType="textPassword"/>
         <CheckBox
+            android:textColor="@color/colorPrimary"
             android:id="@+id/checkBoxPrivacy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -39,25 +62,35 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:gravity="center"
             android:layout_marginVertical="10dp">
             <Space
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"/>
-            <Button
-                android:id="@+id/cancelBtnSignup"
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_weight="1"
+                android:background="@drawable/round"
+                android:id="@+id/signupBtn"
                 style="@style/btnDlgSignLogin"
-                android:text="Cancel"/>
+                android:text="@string/sign_up"
+                android:textColor="@color/white"
+                android:layout_marginBottom="10dp"
+                android:backgroundTint="@color/accentColor"/>
             <Space
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"/>
-            <Button
-                android:id="@+id/signupBtn"
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_weight="1"
+                android:background="@drawable/round"
+                android:backgroundTint="@color/colorPrimary"
+                android:textColor="@color/white"
+                android:id="@+id/cancelBtnSignup"
                 style="@style/btnDlgSignLogin"
-                android:text="Sign Up"/>
+                android:text="@string/cancel"/>
             <Space
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

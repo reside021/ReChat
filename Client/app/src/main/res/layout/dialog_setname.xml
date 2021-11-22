@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@color/backgroundColor"
+    android:padding="10dp">
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Введите Ваше имя"
+        android:text="@string/Enter_your_name"
         android:textSize="22sp"
         android:layout_marginVertical="20dp"
-        android:textColor="@color/black"
+        android:textColor="@color/colorPrimary"
         android:layout_gravity="center"
         android:maxLength="20"/>
     <EditText
+        android:padding="5dp"
+        android:background="@drawable/round"
+        android:backgroundTint="@color/white"
         android:id="@+id/newnameuser"
-        android:hint="Имя пользователя"
+        android:hint="@string/UserName"
         style="@style/editTextSignLogin"/>
 </LinearLayout>

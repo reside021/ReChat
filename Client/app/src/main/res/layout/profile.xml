@@ -1,81 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_centerVertical="true"
-    android:layout_centerHorizontal="true">
+    android:layout_centerHorizontal="true"
+    android:background="@color/backgroundColor"
+    >
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
-    <ImageView
-        android:id="@+id/imageofuser"
-        android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:background="@drawable/view_back"
-        android:layout_margin="5dp"
-        android:src="@drawable/user_photo"
-        android:onClick="changePhotoClick"
-        android:scaleType="centerCrop"/>
-        <View
+
+        <ImageView
+            android:id="@+id/imageofuser"
+
             android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:background="@color/black"
-            android:layout_marginHorizontal="5dp"/>
+            android:layout_height="400dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/round"
+            android:backgroundTint="@color/white"
+            android:onClick="changePhotoClick"
+            android:scaleType="centerCrop"
+            android:src="@drawable/user_photo"
+            tools:ignore="SpeakableTextPresentCheck" />
+<!--        <View-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="2dp"-->
+<!--            android:background="@color/black"-->
+<!--            android:layout_marginHorizontal="5dp"/>-->
         <TextView
+            android:textColor="@color/colorPrimary"
+            android:background="@drawable/round"
+            android:backgroundTint="@color/white"
             android:id="@+id/nameofuser"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/user_name"
             android:textSize="35sp"
-            android:textColor="@color/black"
             android:layout_margin="10dp"
-            android:padding="5dp"
+            android:paddingLeft="15dp"
+            android:paddingRight="5dp"
+            android:paddingBottom="5dp"
+            android:paddingTop="5dp"
             android:onClick="onNameClick"/>
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:background="@color/black"
-            android:layout_marginHorizontal="5dp"/>
+<!--        <View-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="2dp"-->
+<!--            android:background="@color/colorPrimary"-->
+<!--            android:layout_marginHorizontal="5dp"/>-->
         <LinearLayout
+            android:background="@drawable/round"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_margin="10dp">
             <TextView
+
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tag:"
+                android:text="@string/tag"
                 android:textSize="22sp"
-                android:textColor="@color/black"
                 android:layout_margin="10dp"
-                android:padding="5dp"/>
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"/>
             <TextView
+                android:textColor="@color/colorPrimary"
                 android:id="@+id/tagofuser"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/black"
                 android:textSize="22sp"
                 android:layout_marginVertical="10dp"/>
         </LinearLayout>
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:background="@color/black"
-            android:layout_marginHorizontal="5dp"/>
-            <androidx.appcompat.widget.SwitchCompat
+<!--        <View-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="2dp"-->
+<!--            android:background="@color/black"-->
+<!--            android:layout_marginHorizontal="5dp"/>-->
+        <androidx.appcompat.widget.SwitchCompat
+                android:background="@drawable/round"
+                android:backgroundTint="@color/white"
+                android:textColor="@color/colorPrimary"
                 android:id="@+id/switchBeOnline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/beOnline"
                 android:textSize="22sp"
                 android:layout_margin="10dp"
-                android:padding="5dp"/>
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:background="@color/black"
-            android:layout_marginHorizontal="5dp"/>
+                android:padding="15dp"/>
+<!--        <View-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="2dp"-->
+<!--            android:background="@color/black"-->
+<!--            android:layout_marginHorizontal="5dp"/>-->
 
     </LinearLayout>
 </LinearLayout>

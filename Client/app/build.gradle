@@ -51,4 +51,12 @@ dependencies {
 // Moshi
     implementation 'com.squareup.moshi:moshi:1.9.2'
     kapt 'com.squareup.moshi:moshi-kotlin-codegen:1.9.2'
+
+    implementation 'com.github.dhaval2404:imagepicker:2.1'
+
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+
+    implementation 'com.squareup.retrofit2:converter-scalars:2.3.0'
+
+    implementation 'com.squareup.picasso:picasso:2.71828'
 }

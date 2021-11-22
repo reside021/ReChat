@@ -1,55 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+    android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
+    android:padding="20dp">
     <LinearLayout
+
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
         <EditText
+
+            android:background="@drawable/round"
+            android:layout_height="45dp"
+            android:backgroundTint="@color/white"
             android:id="@+id/loginAuth"
+
             style="@style/editTextSignLogin"
-            android:hint="Login"/>
+            android:textColor="@color/colorPrimary"
+            android:layout_marginBottom="10dp"
+            android:hint="@string/login"/>
         <EditText
+
+            android:background="@drawable/round"
+            android:textColor="@color/colorPrimary"
+            android:layout_height="45dp"
+            android:backgroundTint="@color/white"
             android:id="@+id/passAuth"
             style="@style/editTextSignLogin"
-            android:hint="Password"
+            android:hint="@string/password"
             android:inputType="textPassword"/>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:gravity="center"
             android:layout_marginVertical="10dp">
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"/>
-            <Button
-                android:id="@+id/cancelBtnAuth"
-                style="@style/btnDlgSignLogin"
-                android:text="Cancel"/>
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"/>
-            <Button
+<!--            <Space-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"/>-->
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/loginBtnAuth"
                 style="@style/btnDlgSignLogin"
-                android:text="Login"/>
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"/>
+                android:background="@drawable/round"
+                android:text="@string/log_in"
+                android:layout_marginBottom="10dp"
+                android:backgroundTint="@color/accentColor"
+                android:textColor="@color/white"/>
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/cancelBtnAuth"
+                style="@style/btnDlgSignLogin"
+                android:background="@drawable/round"
+                android:backgroundTint="@color/colorPrimary"
+                android:textColor="@color/white"
+                android:text="@string/cancel" />
         </LinearLayout>
     </LinearLayout>
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
-
 </LinearLayout>

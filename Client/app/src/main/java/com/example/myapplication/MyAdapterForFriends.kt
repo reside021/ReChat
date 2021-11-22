@@ -51,7 +51,7 @@ class MyAdapterForFriends() : BaseAdapter() {
                     return@setOnClickListener
                 }
                 sqliteHelper.addUserInChat(list[position])
-                if(!sqliteHelper.checkExistChatWithUser(ourTag)){
+                if(!sqliteHelper.checkExistChatWithUser(ourTag, tagUser)){
                     val newUser = NewUserDLGTable("NEWUSERDLG::", tagUser)
                     val msg = Json.encodeToString(newUser)
                     webSocketClient.send(msg)

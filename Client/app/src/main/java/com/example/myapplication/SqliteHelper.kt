@@ -26,6 +26,8 @@ class SqliteHelper(context: Context) :
         val tableUserDlg = "CREATE TABLE IF NOT EXISTS $USERDLGTABLE " +
                 "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $TAG_USER TEXT, $ENTEREDTIME TEXT)"
         db?.execSQL(tableUserDlg)
+
+
     }
 
 
@@ -132,10 +134,11 @@ class SqliteHelper(context: Context) :
         db.close()
         return name
     }
-    fun checkExistChatWithUser(tagUser : String) : Boolean{
-        val dialogId : String = CHAT + tagUser
+    fun checkExistChatWithUser(ourTag : String, tagUser : String ) : Boolean{
+        val dialogId1 : String = "$CHAT$tagUser::$ourTag"
+        val dialogId2 : String = "$CHAT$ourTag::$tagUser"
         val db = this.readableDatabase
-        val selectQuery = "SELECT * FROM $USERDLGTABLE WHERE $DIALOG_ID = '$dialogId'"
+        val selectQuery = "SELECT * FROM $USERDLGTABLE WHERE $DIALOG_ID = '$dialogId1' OR $DIALOG_ID = '$dialogId2'"
         val cursor = db.rawQuery(selectQuery, null)
         if(cursor != null){
             if (cursor.moveToFirst()) {
@@ -158,7 +161,8 @@ class SqliteHelper(context: Context) :
             if (cursor.moveToFirst()) {
                 do {
                     dialogId = cursor.getString(cursor.getColumnIndex(DIALOG_ID))
-                    if(dialogId.substringBefore("#") == "CHAT") break
+                    if(dialogId.substringBefore("#") == "CHAT"
+                            || dialogId.substringBefore("#") == "GROUP") break
                 } while (cursor.moveToNext())
             }
         }
@@ -271,6 +275,7 @@ class SqliteHelper(context: Context) :
         return allDlg
     }
 
+
     fun getCountMsgDlg() :  String{
         val db = this.readableDatabase
         val selectQuery = "SELECT $DIALOG_ID FROM $USERDLGTABLE"
@@ -307,6 +312,7 @@ class SqliteHelper(context: Context) :
 
         private val USERDLGTABLE = "UserDlgTable" // tablename
         private val ENTEREDTIME = "EnteredTime"
+
 
         private val CHAT = "CHAT#"
 

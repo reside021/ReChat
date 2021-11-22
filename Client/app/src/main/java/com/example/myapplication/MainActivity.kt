@@ -150,6 +150,13 @@ class MainActivity : AppCompatActivity() {
                                         Toast.LENGTH_SHORT).show()
                             }
                         }
+                        if(msg.substringBefore("::") == "SETAVATAR"){
+                            val ed = sp.edit()
+                            ed.putBoolean("isAvatar", true)
+                            ed.apply()
+                            Toast.makeText(this@MainActivity, "Изображение успешно установлено",
+                                    Toast.LENGTH_SHORT).show()
+                        }
                     }
                     if(status == "ERROR"){
                         if(msg == "NEWNAME::"){
@@ -273,7 +280,8 @@ class MainActivity : AppCompatActivity() {
                             msg.typeMsg,
                             msg.textMsg,
                             msg.timeCreated,
-                            msg.receiverId
+                            msg.receiverId,
+                            msg.nameSender
                     )
                 }
             }
@@ -308,22 +316,30 @@ class MainActivity : AppCompatActivity() {
         } catch (ex : Exception){
         }
     }
-    private fun messagePrint(dialog_id: String, sender: String, typeMsg: String, textMsg: String, timeCreated: String, receiverId: String){
-        sqliteHelper.addMsgInTable(dialog_id, sender, typeMsg, textMsg, timeCreated)
-        if(!sp.getBoolean("active",false)) return
-        if(sp.getString("idActive","NONE") != sender) return
+    private fun messagePrint(dialog_id: String, sender: String, typeMsg: String, textMsg: String,
+                             timeCreated: String, receiverId: String, nameSender: String){
 
+
+        if(!sp.getBoolean("active",false)) return
+        if(dialog_id.substringBefore("#") == "GROUP"){
+            if(receiverId != sp.getString("idActive","NONE")){
+                return
+            }
+            if(sender == sp.getString("tagUser", "NONE")) return
+        }else{
+            if(sp.getString("idActive","NONE") != sender) return
+        }
+
+        sqliteHelper.addMsgInTable(dialog_id, sender, typeMsg, textMsg, timeCreated)
             val nickname = sp.getString("nickname", resources.getString(R.string.user_name))
             val tagUser = sp.getString("tagUser", null)
         try{
-//            if(user == nickname + "_" + tagUser) return
-            val nameOfUser = sqliteHelper.getNameInUserChat(sender)
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             val newView = inflater.inflate(R.layout.message_from, null)
             val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
             textInMessage.text = textMsg
             val senderView = newView.findViewById<TextView>(R.id.senderName)
-            senderView.text = nameOfUser
+            senderView.text = nameSender
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             mainWindowOuter.addView(newView, lp)
             scrollView.post(Runnable(){
@@ -341,6 +357,7 @@ class MainActivity : AppCompatActivity() {
             ed.putString("nickname", obj.nickname)
             ed.putString("tagUser", obj.tagUser)
             ed.putBoolean("isVisible", obj.isVisible)
+            ed.putBoolean("isAvatar", obj.isAvatar)
             ed.apply()
             val confirmAuth = ConfirmAuth("AUTH::", true, obj.nickname, obj.tagUser, obj.isVisible)
             var msg = Json.encodeToString(confirmAuth)
@@ -469,7 +486,8 @@ class MainActivity : AppCompatActivity() {
             val typeMsg : String,
             val textMsg : String,
             val timeCreated : String,
-            val receiverId : String
+            val receiverId : String,
+            val nameSender : String
     )
     @Serializable
     data class ConfirmInsertNewUserDlg(
@@ -486,7 +504,8 @@ class MainActivity : AppCompatActivity() {
             val typeMsg: String,
             val textMsg: String,
             val timeCreated: String,
-            val receiverId : String
+            val receiverId : String,
+            val nameSender : String
     )
     @Serializable
     data class ConfirmUpVisible(
@@ -512,7 +531,8 @@ class MainActivity : AppCompatActivity() {
     data class DataOfUser(
             val nickname : String,
             val tagUser : String,
-            val isVisible : Boolean
+            val isVisible : Boolean,
+            val isAvatar : Boolean
     )
     @Serializable
     data class SignUpUser(

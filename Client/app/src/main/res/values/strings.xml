@@ -1,14 +1,25 @@
 <resources>
-    <string name="app_name">My Application</string>
     <string name="user_name">Unnamed User</string>
-    <string name="galleryuse">Сменить аватар</string>
-    <string name="imageopen">Открыть</string>
+    <string name="galleryuse">Replace avatar</string>
+    <string name="imageopen">Open</string>
     <string name="profile">Profile</string>
     <string name="chat">Chat</string>
     <string name="friends">Friends</string>
-    <string name="beOnline">Видимость для всех</string>
-    <string name="deletethischat">Удалить этот чат</string>
+    <string name="beOnline">Active for everyone</string>
     <string name="checkboxSignup">I agree to the terms of use and privacy policy</string>
     <string name="serverAccessOK">✅</string>
     <string name="serverAccessNot">❌</string>
+    <string name="deletethischat">Delete chat</string>
+    <string name="selectAction">Select action</string>
+    <string name="Message">Message</string>
+    <string name="tag">Tag:</string>
+    <string name="log_in">Log in</string>
+    <string name="sign_up">Sign up</string>
+    <string name="AlreadyRegistered">Already registered?</string>
+    <string name="app_name">ReChat</string>
+    <string name="cancel">Cancel</string>
+    <string name="password">Password</string>
+    <string name="UserName">User name</string>
+    <string name="login">Login</string>
+    <string name="Enter_your_name">Enter your name</string>
 </resources>
