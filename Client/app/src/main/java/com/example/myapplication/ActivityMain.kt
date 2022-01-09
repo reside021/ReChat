@@ -64,6 +64,8 @@ class ActivityMain :
         super.onCreate(savedInstanceState)
         setContentView(R.layout.bottom_nav_bar)
 
+        val toolbar = supportActionBar
+
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         val ed = sp.edit()
         ed.putBoolean("isAuth", true)
@@ -74,18 +76,22 @@ class ActivityMain :
 
         val bubbleNav = findViewById<BubbleNavigationLinearView>(R.id.bottom_navigation_view_linear)
         loadFragment(UserFragment.newInstance())
+        toolbar?.title = resources.getString(R.string.profile)
         bubbleNav.setNavigationChangeListener { view, position ->
             val fragment: Fragment
             when (position) {
                 0 -> {
+                    toolbar?.title = resources.getString(R.string.profile)
                     fragment = UserFragment()
                     loadFragment(fragment)
                 }
                 1 -> {
+                    toolbar?.title = resources.getString(R.string.chat)
                     fragment = ChatFragment()
                     loadFragment(fragment)
                 }
                 2 -> {
+                    toolbar?.title = resources.getString(R.string.friends)
                     fragment = FriendsFragment()
                     loadFragment(fragment)
                 }
