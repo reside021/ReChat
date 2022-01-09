@@ -175,8 +175,10 @@ class MasterActivity : AppCompatActivity() {
             val alertDialog = builder.create();
             alertDialog.show()
             dialogView.findViewById<Button>(R.id.delThisChat).setOnClickListener(){
-                sqliteHelper.deleteUserChat(idUser.text.toString())
-                alertDialog.dismiss()
+                if(!idUser.text.equals("0")){
+                    sqliteHelper.deleteUserChat(idUser.text.toString())
+                    alertDialog.dismiss()
+                }
             }
             return@OnItemLongClickListener true
         }

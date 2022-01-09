@@ -7,7 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="grey">#D5D2D2</color>
+    <color name="grey">#666666</color>
     <color name="clear">#00FFFFFF</color>
     <color name="lightgrey">#E8E6E6</color>
     <color name="morelightgrey">#F4F3F3</color>
@@ -18,4 +18,5 @@
     <color name="colorPrimary">#8A8A8A</color>
     <color name="backgroundColor">#eff3f4</color>
     <color name="textMessColor">#6E6E6E</color>
+    <color name="default_inactive">#78909c</color>
 </resources>

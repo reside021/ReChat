@@ -21,12 +21,13 @@ import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.lang.Exception
 import java.net.URI
-import javax.net.ssl.SSLSocketFactory
 import kotlinx.serialization.json.Json
+import java.time.LocalDateTime
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(){
+
     companion object {
-        const val WEB_SOCKET_URL = "ws://chatserv.sytes.net:9001"
+        const val WEB_SOCKET_URL = "ws://servchat.ddns.net:9001"
         lateinit var webSocketClient: WebSocketClient
         lateinit var sqliteHelper: SqliteHelper
     }
@@ -153,6 +154,7 @@ class MainActivity : AppCompatActivity() {
                         if(msg.substringBefore("::") == "SETAVATAR"){
                             val ed = sp.edit()
                             ed.putBoolean("isAvatar", true)
+                            ed.putString("changeAvatar", LocalDateTime.now().toString())
                             ed.apply()
                             Toast.makeText(this@MainActivity, "Изображение успешно установлено",
                                     Toast.LENGTH_SHORT).show()
@@ -300,16 +302,6 @@ class MainActivity : AppCompatActivity() {
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             mainWindowOuter.addView(newView, lp)
             sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
-//            if(sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)){
-//                Toast.makeText(this@MainActivity,
-//                        "сообщение добавлено",
-//                        Toast.LENGTH_SHORT).show()
-//            } else{
-//                Toast.makeText(this@MainActivity,
-//                        "сообщение не добавлено",
-//                        Toast.LENGTH_SHORT).show()
-//            }
-
             scrollView.post(Runnable(){
                 scrollView.fullScroll(View.FOCUS_DOWN)
             })
@@ -352,7 +344,7 @@ class MainActivity : AppCompatActivity() {
     private fun authorization(data : String){
         try {
             val obj = Json.decodeFromString<DataOfUser>(data)
-            val intent = Intent(this, MasterActivity::class.java);
+            val intent = Intent(this, ActivityMain::class.java);
             val ed = sp.edit()
             ed.putString("nickname", obj.nickname)
             ed.putString("tagUser", obj.tagUser)
@@ -574,14 +566,17 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
                         Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
+            } else{
+                webSocketClient.send(msg)
+                alertDialog.dismiss()
             }
-            webSocketClient.send(msg)
-            alertDialog.dismiss()
         }
         if(webSocketClient.connection.readyState.ordinal == 0){
             Toast.makeText(this@MainActivity, "Отсутствует подключение к серверу",
                     Toast.LENGTH_SHORT).show()
         }
     }
+
+
 
 }

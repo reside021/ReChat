@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ReChat</string>
-    <string name="user_name">Беззымянный пользователь</string>
+    <string name="user_name">Unnamed User</string>
     <string name="galleryuse">Сменить аватар</string>
     <string name="imageopen">Открыть</string>
     <string name="profile">Профиль</string>
@@ -14,13 +14,16 @@
     <string name="checkboxSignup">Я согласен с правилами использования и политикой конфиденциальности</string>
     <string name="selectAction">Выберите действие</string>
     <string name="Message">Сообщение</string>
-    <string name="tag">Тэг:</string>
+    <string name="tag">Тег:</string>
     <string name="log_in">Войти</string>
-    <string name="sign_up">Зарегестрироваться</string>
-    <string name="AlreadyRegistered">Уже зарегестрированы?</string>
+    <string name="sign_up">Зарегистрироваться</string>
+    <string name="AlreadyRegistered">Уже зарегистрированы?</string>
     <string name="cancel">Отмена</string>
     <string name="password">Пароль</string>
     <string name="UserName">Имя пользователя</string>
     <string name="login">Логин</string>
     <string name="Enter_your_name">Введите Ваше имя</string>
+    <string name="title_user">Пользователь</string>
+    <string name="title_chat">Мессенджер</string>
+    <string name="title_friends">Друзья</string>
 </resources>
