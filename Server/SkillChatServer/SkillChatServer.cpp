@@ -80,6 +80,7 @@ const string ALLDLG = "ALLDLG::";
 const string ALLMSG = "ALLMSG::";
 const string ALLTAGNAME = "ALLTAGNAME::";
 const string SET_AVATAR = "SETAVATAR::";
+const string DELETE_AVATAR = "DELETEAVATAR::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -127,6 +128,10 @@ bool isSetName(string message) {
 
 bool isSetAvatar(string message) {
     return message.find(SET_AVATAR) == 0;
+}
+
+bool isDeleteAvatar(string message) {
+    return message.find(DELETE_AVATAR) == 0;
 }
 
 string parseName(string message) {
@@ -371,6 +376,13 @@ int main() {
                     string outgoingMessage = FORDB + SQL + UPDATE + NEWNAME + (string)jsonOut.dump();
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                 }
+                if (isDeleteAvatar(jsonData["type"])) {
+                    json jsonOut = {
+                        {"tagId", authorId}
+                    };
+                    string outgoingMessage = FORDB + SQL + UPDATE + DELETE_AVATAR + (string)jsonOut.dump();
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
                 if (isSetAvatar(jsonData["type"])) {
                     if (jsonData["successSet"]) {
                         json jsonOut = {
@@ -567,9 +579,15 @@ int main() {
                         }
                         if (jsonData["typeUpdate"] == SET_AVATAR) {
                             if (jsonData["success"]) {
-                                cout << endl << strMessage << endl;
                                 string authorId = jsonData["tagId"];
                                 string outgoingMsg = RESULTDB + UPDATE + SUCCESS + SET_AVATAR;
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == DELETE_AVATAR) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + DELETE_AVATAR;
                                 ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="user_name">Unnamed User</string>
+    <string name="user_name" translatable="false">Unnamed User</string>
     <string name="galleryuse">Replace avatar</string>
     <string name="imageopen">Open</string>
     <string name="profile">Profile</string>
@@ -16,16 +16,16 @@
     <string name="log_in">Log in</string>
     <string name="sign_up">Sign up</string>
     <string name="AlreadyRegistered">Already registered?</string>
-    <string name="app_name">ReChat</string>
+    <string name="app_name" translatable="false">ReChat</string>
     <string name="cancel">Cancel</string>
     <string name="password">Password</string>
     <string name="UserName">User name</string>
     <string name="login">Login</string>
     <string name="Enter_your_name">Enter your name</string>
-    <string name="title_activity_main_window">MainActivity</string>
     <string name="title_user">User</string>
     <string name="title_chat">Chat</string>
     <string name="title_friends">Friends</string>
     <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="username">username</string>
+    <string name="delete">Delete</string>
 </resources>

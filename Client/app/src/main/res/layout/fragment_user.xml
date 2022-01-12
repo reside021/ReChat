@@ -14,7 +14,7 @@
         <ImageView
             android:id="@+id/imageofuser"
             android:layout_width="match_parent"
-            android:layout_height="400dp"
+            android:layout_height="350dp"
             android:layout_marginBottom="10dp"
             android:layout_marginHorizontal="5dp"
             android:layout_marginTop="5dp"
@@ -22,7 +22,7 @@
             android:backgroundTint="@color/white"
             android:onClick="changePhotoClick"
             android:scaleType="centerCrop"
-            android:src="@drawable/user_photo"
+            android:src="@drawable/user_profile_photo"
             tools:ignore="SpeakableTextPresentCheck"/>
         <TextView
             android:textColor="@color/colorPrimary"

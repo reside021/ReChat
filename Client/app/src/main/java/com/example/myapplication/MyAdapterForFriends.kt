@@ -6,10 +6,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import com.squareup.picasso.MemoryPolicy
+import com.squareup.picasso.NetworkPolicy
+import com.squareup.picasso.Picasso
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -25,16 +25,21 @@ class MyAdapterForFriends() : BaseAdapter() {
         val ourTag : String = sp.getString("tagUser", "NONE")!!
         val newView : View
         if(convertView == null){
-            val layoutInflater = context?.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             newView = layoutInflater.inflate(R.layout.friends_element, parent, false)
             val textView2 = newView.findViewById<TextView>(R.id.userName)
             textView2.text = list[position].second
             val addFriendsBtn = newView.findViewById<Button>(R.id.addFriendBtn)
             val addChat = newView.findViewById<Button>(R.id.addChatBtn)
+            val imageOfUser = newView.findViewById<ImageView>(R.id.avatarUser)
+            val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$ourTag.jpg"
+            Picasso.get()
+                    .load(urlAvatar)
+                    .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+                    .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
+                    .placeholder(R.drawable.user_profile_photo)
+                    .into(imageOfUser)
             addFriendsBtn.setOnClickListener {
-//                Toast.makeText(context, "Пользователь добавлен в список друзей",
-//                        Toast.LENGTH_SHORT).show()
-               // val qq = sqliteHelper.getCountMsgDlg()
                 Toast.makeText(context, "gg",
                         Toast.LENGTH_SHORT).show()
             }

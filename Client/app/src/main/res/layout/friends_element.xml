@@ -4,41 +4,42 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
     android:background="@drawable/round"
     android:backgroundTint="@color/white"
-    >
+    android:paddingVertical="10dp">
     <de.hdodenhof.circleimageview.CircleImageView
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:id="@+id/avatarUser"
-        android:layout_margin="15dp"
-        android:background="@drawable/user_photo"
-        app:civ_border_width="2dp"
-        app:civ_border_color="@color/black" />
+        android:layout_marginHorizontal="10dp"
+        android:src="@drawable/user_photo"
+        app:civ_border_width="1dp"
+        app:civ_border_color="@color/black"
+        android:layout_gravity="center"/>
     <TextView
         android:id="@+id/userName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="username"
+        android:text="@string/username"
         android:textSize="22sp"
         android:textColor="@color/colorPrimary"
-        android:layout_marginVertical="15dp"/>
+        android:layout_gravity="center"/>
     <Button
         android:id="@+id/addFriendBtn"
-        android:layout_width="60dp"
+        android:layout_width="50dp"
         android:layout_height="wrap_content"
         android:text="+"
-        android:textSize="22sp"
-        android:layout_marginVertical="15dp"
-        android:layout_marginRight="10dp"/>
+        android:textSize="15sp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_gravity="center"/>
     <Button
         android:id="@+id/addChatBtn"
-        android:layout_width="60dp"
+        android:layout_width="50dp"
         android:layout_height="wrap_content"
         android:text="💬"
-        android:layout_marginVertical="15dp"
-        android:textSize="22sp"
-        android:layout_marginRight="10dp"/>
+        android:textSize="15sp"
+        android:layout_marginEnd="10dp"
+        android:layout_gravity="center" />
 </LinearLayout>

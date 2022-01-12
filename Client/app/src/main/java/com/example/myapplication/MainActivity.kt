@@ -159,6 +159,14 @@ class MainActivity : AppCompatActivity(){
                             Toast.makeText(this@MainActivity, "Изображение успешно установлено",
                                     Toast.LENGTH_SHORT).show()
                         }
+                        if(msg.substringBefore("::") == "DELETEAVATAR"){
+                            val ed = sp.edit()
+                            ed.putBoolean("isAvatar", false)
+                            ed.putString("changeAvatar", LocalDateTime.now().toString())
+                            ed.apply()
+                            Toast.makeText(this@MainActivity, "Изображение успешно удалено",
+                                    Toast.LENGTH_SHORT).show()
+                        }
                     }
                     if(status == "ERROR"){
                         if(msg == "NEWNAME::"){

@@ -56,7 +56,9 @@ class ChatFragment : Fragment() {
         listViewChat.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
             val intent = Intent(activity, ChatPeople::class.java);
             val idUser = view.findViewById<TextView>(R.id.idUser)
+            val nameOfUser = view.findViewById<TextView>(R.id.userName)
             intent.putExtra("idTag", idUser.text)
+            intent.putExtra("nameOfUser", nameOfUser.text)
             startActivity(intent)
         }
         listViewChat.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, view, position, id ->

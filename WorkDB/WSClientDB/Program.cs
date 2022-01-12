@@ -8,7 +8,7 @@ namespace WSClientDB
 {
     class SecureConnection
     {
-        public string type, key;                                 
+        public string type, key;                                  
     }
     public class MsgFromServer
     {
@@ -175,6 +175,7 @@ namespace WSClientDB
         const string NEWNAME = "NEWNAME::";
         const string VISIBLE = "VISIBLE::";
         const string SETAVATAR = "SETAVATAR::";
+        const string DELETEAVATAR = "DELETEAVATAR::";
         const string NEWUSERDLG = "NEWUSERDLG::";
         const string CHAT = "CHAT#";
         const string NEWMSGDLG = "NEWMSGDLG::";
@@ -191,7 +192,7 @@ namespace WSClientDB
         static void Main(string[] args)
         {
 
-            webSocket = new WebSocket("ws://chatserv.sytes.net:9001/");
+            webSocket = new WebSocket("ws://servchat.ddns.net:9001/");
             webSocket.Opened += WebSocket_Opened;
             webSocket.Error += WebSocket_Error;
             webSocket.Closed += WebSocket_Closed;
@@ -527,8 +528,6 @@ namespace WSClientDB
             var objectName = sqlCommand.ExecuteScalar();
             sqlCommand.Parameters.Clear();
             sqlConnection.Close();
-            Console.WriteLine(dialog_id);
-            Console.WriteLine(notNeededTag);
             if (objectName != null) name = objectName.ToString();
             return name;
         }
@@ -695,6 +694,35 @@ namespace WSClientDB
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> AvatarEdit^{tagUser} -> {successUpdate.success}");
         }
+        private static void DeleteAvatarOfUser(string tagUser)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText = "Update InfoUsers set isAvatar = @isAvatar where tagUser = @tagUser";
+            SqlParameter sqlParameter = new SqlParameter("@tagUser", tagUser);
+            sqlCommand.Parameters.Add(sqlParameter);
+            SqlParameter sqlParameter2 = new SqlParameter("@IsAvatar", false);
+            sqlCommand.Parameters.Add(sqlParameter2);
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = DELETEAVATAR;
+            successUpdate.tagId = tagUser;
+            try
+            {
+                sqlCommand.ExecuteNonQuery();
+                successUpdate.success = true;
+            }
+            catch (Exception ex)
+            {
+                successUpdate.success = false;
+            }
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            Console.WriteLine($"[MSG] -> AvatarDelete^{tagUser} -> {successUpdate.success}");
+        }
         private static void AddInGlobalChat(string userTag)
         {
             string dialog_id = GROUP + "0";
@@ -800,6 +828,13 @@ namespace WSClientDB
                         message = message.Substring(SETAVATAR.Length);
                         UpdateAvatar updateAvatar = JsonConvert.DeserializeObject<UpdateAvatar>(message);
                         UpdateAvatarOfUser(updateAvatar.tagId);
+
+                    }
+                    if (message.IndexOf(DELETEAVATAR) != -1)
+                    {
+                        message = message.Substring(DELETEAVATAR.Length);
+                        UpdateAvatar updateAvatar = JsonConvert.DeserializeObject<UpdateAvatar>(message);
+                        DeleteAvatarOfUser(updateAvatar.tagId);
 
                     }
                 }

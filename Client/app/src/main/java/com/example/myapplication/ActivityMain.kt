@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -49,6 +48,10 @@ class ActivityMain :
     data class SuccessSetAvatar(
             val type : String,
             val successSet : Boolean
+    )
+    @Serializable
+    data class DeleteAvatar(
+            val type: String
     )
 
     companion object {
@@ -123,14 +126,9 @@ class ActivityMain :
     }
 
     override fun onNewUserImage() {
-        val isAvatar = sp.getBoolean("isAvatar", false)
-        val urlAvatar = if(isAvatar){
-            "http://imagerc.ddns.net:80/avatarImg/$tagUser.jpg"
-        } else{
-            ""
-        }
+        val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$tagUser.jpg"
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
-        fragment.setNewUserImage(urlAvatar, isAvatar)
+        fragment.setNewUserImage(urlAvatar)
     }
 
 
@@ -173,7 +171,7 @@ class ActivityMain :
         builder.setView(view)
         val alertDialog = builder.create();
         alertDialog.show()
-        view.findViewById<TextView>(R.id.changeAvatar).setOnClickListener(){
+        view.findViewById<TextView>(R.id.changeAvatar).setOnClickListener{
             ImagePicker.with(this)
                     .crop()	    			//Crop image(Optional), Check Customization for more option
                     .compress(1024)			//Final image size will be less than 1 MB(Optional)
@@ -181,7 +179,54 @@ class ActivityMain :
                     .start(IMAGE_REQUEST)
             alertDialog.dismiss()
         }
+        view.findViewById<TextView>(R.id.deleteAvatar).setOnClickListener {
+            val isAvatar = sp.getBoolean("isAvatar", false)
+            if (isAvatar) {
+                try {
+                    if (webSocketClient.connection.readyState.ordinal != 0) {
+                        val retrofit = Retrofit.Builder()
+                                .baseUrl("http://imagerc.ddns.net:80/")
+                                .addConverterFactory(ScalarsConverterFactory.create())
+                                .build()
+                        val service = retrofit.create(com.example.myapplication.DeleteAvatar::class.java)
+                        val response: Call<String> = service.deleteProfile(tagUser)
+                        response.enqueue(object : Callback<String> {
+                            override fun onResponse(call: Call<String>, response: Response<String>) {
+                                if (response.isSuccessful) {
+                                    if (response.code() == 200) {
+                                        val queryDeleteAvatar = DeleteAvatar("DELETEAVATAR::")
+                                        val dataServerName = Json.encodeToString(queryDeleteAvatar)
+                                        webSocketClient.send(dataServerName)
+                                        alertDialog.dismiss()
+                                    }
+                                } else {
+                                    Toast.makeText(this@ActivityMain,
+                                            "Ошибка смены изображения",
+                                            Toast.LENGTH_LONG).show()
+                                }
+                            }
+
+                            override fun onFailure(call: Call<String>, t: Throwable) {
+                                Toast.makeText(this@ActivityMain,
+                                        "Ошибка смены изображения",
+                                        Toast.LENGTH_LONG).show()
+                            }
+                        })
+                    } else {
+                        Toast.makeText(this@ActivityMain,
+                                "Отсутствует подключение к серверу",
+                                Toast.LENGTH_LONG).show()
+                    }
+                } catch (ex: Exception) {
+                    Toast.makeText(
+                            this@ActivityMain, ex.message.toString(),
+                            Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
     }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         try{

@@ -12,7 +12,6 @@
         android:layout_marginVertical="20dp"
         android:layout_gravity="center"/>
     <TextView
-
         android:id="@+id/changeAvatar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -23,18 +22,18 @@
         android:backgroundTint="@color/accentColor"
         android:gravity="center"
         android:layout_marginBottom="5dp"
-        android:padding="5dp"
-        />
+        android:padding="5dp" />
     <TextView
+        android:id="@+id/deleteAvatar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/imageopen"
+        android:text="@string/delete"
         android:textSize="22sp"
         android:textColor="@color/white"
         android:background="@drawable/round"
         android:gravity="center"
         android:padding="5dp"
-        android:backgroundTint="@color/colorPrimary"
+        android:backgroundTint="@color/red"
         android:layout_marginBottom="20dp"
         android:layout_marginTop="5dp"/>
 

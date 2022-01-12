@@ -110,16 +110,15 @@ class UserFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListe
         }
     }
 
-    fun setNewUserImage(urlAvatar: String, isAvatar: Boolean){
-        if(isAvatar){
-            val imageOfUser = requireView().findViewById<ImageView>(R.id.imageofuser)
-            imageOfUser.setImageDrawable(null)
-            Picasso.get()
-                    .load(urlAvatar)
-                    .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
-                    .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
-                    .into(imageOfUser)
-        }
+    fun setNewUserImage(urlAvatar: String){
+        val imageOfUser = requireView().findViewById<ImageView>(R.id.imageofuser)
+        imageOfUser.setImageDrawable(null)
+        Picasso.get()
+                .load(urlAvatar)
+                .placeholder(R.drawable.user_profile_photo)
+                .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+                .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
+                .into(imageOfUser)
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {

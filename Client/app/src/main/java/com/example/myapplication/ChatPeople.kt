@@ -41,12 +41,22 @@ class ChatPeople : AppCompatActivity() {
         webSocketClient = MainActivity.webSocketClient
         sqliteHelper = MainActivity.sqliteHelper
         idUser = intent.extras?.getString("idTag").toString()
+        val nameOfUser = intent.extras?.getString("nameOfUser").toString()
+        supportActionBar?.apply {
+            title = nameOfUser
+            setDisplayHomeAsUpEnabled(true)
+            setDisplayShowHomeEnabled(true)
+        }
         scrollView = findViewById(R.id.scrollChat)
         mainWindowOuter = mainWindowInclude
         dialog_id = sqliteHelper.getDialogIdWithUser(idUser)
         recoveryAllMsg(dialog_id)
     }
 
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
+    }
 
     private fun recoveryAllMsg(dialog_id: String){
         val ourTag = sp.getString("tagUser", null)

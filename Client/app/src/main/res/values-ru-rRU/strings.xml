@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ReChat</string>
-    <string name="user_name">Unnamed User</string>
     <string name="galleryuse">Сменить аватар</string>
     <string name="imageopen">Открыть</string>
     <string name="profile">Профиль</string>
@@ -26,4 +24,6 @@
     <string name="title_user">Пользователь</string>
     <string name="title_chat">Мессенджер</string>
     <string name="title_friends">Друзья</string>
+    <string name="delete">Удалить</string>
+    <string name="username">Имя пользователя</string>
 </resources>

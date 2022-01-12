@@ -5,8 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.squareup.picasso.MemoryPolicy
+import com.squareup.picasso.NetworkPolicy
+import com.squareup.picasso.Picasso
 
 class MyAdapterForChat(_list: MutableList<Pair<String,String>>) : BaseAdapter() {
     private val list : MutableList<Pair<String, String>> = _list
@@ -21,6 +25,15 @@ class MyAdapterForChat(_list: MutableList<Pair<String,String>>) : BaseAdapter() 
             val idOfUser = newView.findViewById<TextView>(R.id.idUser)
             nameOfUser.text = list[position].second
             idOfUser.text = list[position].first
+            val userTag = idOfUser.text
+            val imageOfUser = newView.findViewById<ImageView>(R.id.avatarUser)
+            val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$userTag.jpg"
+            Picasso.get()
+                    .load(urlAvatar)
+                    .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+                    .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
+                    .placeholder(R.drawable.user_profile_photo)
+                    .into(imageOfUser)
             return newView
         }
         return convertView
