@@ -118,6 +118,15 @@ class SqliteHelper(context: Context) :
         db.close()
         return false
     }
+    fun updateNameInUserChat(tagUser: String, newUserName : String) : Boolean{
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(NAME_USER, newUserName)
+        val success = db.update(LIST_USERS_CHAT, values, "$TAG_USER = ?", arrayOf(tagUser))
+        db.close()
+        Log.d("________UpdateInTblListUsersChat_________", "$success")
+        return (Integer.parseInt("$success") != -1)
+    }
     fun getNameInUserChat(tagUser: String) : String{
         var name = ""
         val db = this.readableDatabase

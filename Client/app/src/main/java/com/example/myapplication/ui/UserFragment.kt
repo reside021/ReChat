@@ -22,7 +22,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 
-class UserFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListener{
+class UserFragment : Fragment(){
 
     @Serializable
     data class UpdateVisible(
@@ -34,7 +34,6 @@ class UserFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListe
     internal interface OnFragmentSendDataListener {
         fun onSendData(data: String?)
         fun onUserLoadView()
-        fun onNewUserImage()
     }
 
     companion object{
@@ -42,7 +41,6 @@ class UserFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListe
     }
 
     private var fragmentSendDataListener: OnFragmentSendDataListener? = null
-    private lateinit var sp : SharedPreferences
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -64,9 +62,7 @@ class UserFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListe
 
 
     fun setUserData(tag : String, userName : String, isAvatar : Boolean,
-                    urlAvatar : String, isVisible : Boolean, _sp : SharedPreferences){
-        sp = _sp
-        sp.registerOnSharedPreferenceChangeListener(this)
+                    urlAvatar : String, isVisible : Boolean){
         requireView().findViewById<TextView>(R.id.nameofuser).text = userName
         requireView().findViewById<TextView>(R.id.tagofuser).text = tag
         val switchBeOnline = requireView().findViewById<SwitchCompat>(R.id.switchBeOnline)
@@ -121,13 +117,8 @@ class UserFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListe
                 .into(imageOfUser)
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        if(key.equals("nickname")){
-            val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
-            requireView().findViewById<TextView>(R.id.nameofuser).text = userName
-        }
-        if(key.equals("changeAvatar")){
-            fragmentSendDataListener?.onNewUserImage()
-        }
+    fun setNewUserName(newName : String){
+        requireView().findViewById<TextView>(R.id.nameofuser).text = newName
     }
+
 }

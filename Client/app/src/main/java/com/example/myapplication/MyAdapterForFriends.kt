@@ -32,7 +32,8 @@ class MyAdapterForFriends() : BaseAdapter() {
             val addFriendsBtn = newView.findViewById<Button>(R.id.addFriendBtn)
             val addChat = newView.findViewById<Button>(R.id.addChatBtn)
             val imageOfUser = newView.findViewById<ImageView>(R.id.avatarUser)
-            val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$ourTag.jpg"
+            val tagUser = list[position].first
+            val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$tagUser.jpg"
             Picasso.get()
                     .load(urlAvatar)
                     .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)

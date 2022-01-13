@@ -270,12 +270,17 @@ class MainActivity : AppCompatActivity(){
                 val idWithName = message.substringAfter("::")
                 val id = idWithName.substringBefore("::")
                 val name = idWithName.substringAfter("::")
-                sqliteHelper.addUserInOnline(id, name)
+                if(name != "UNNAMED" && id != sp.getString("tagUser", "NONE") ){
+                    sqliteHelper.addUserInOnline(id, name)
+                    sqliteHelper.updateNameInUserChat(id, name)
+                }
+
 
             }
             "OFFLINE" ->{
                 val idWithName = message.substringAfter("::")
                 val id = idWithName.substringBefore("::")
+                val name = idWithName.substringAfter("::")
                 sqliteHelper.deleteUserFromOnline(id)
             }
             "MESSAGE_FROM" -> {

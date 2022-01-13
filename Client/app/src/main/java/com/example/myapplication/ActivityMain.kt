@@ -36,7 +36,8 @@ class ActivityMain :
         AppCompatActivity(),
         UserFragment.OnFragmentSendDataListener,
         ChatFragment.OnFragmentSendDataListener,
-        FriendsFragment.OnFragmentSendDataListener{
+        FriendsFragment.OnFragmentSendDataListener,
+        SharedPreferences.OnSharedPreferenceChangeListener{
 
     @Serializable
     data class NewName(
@@ -70,6 +71,7 @@ class ActivityMain :
         val toolbar = supportActionBar
 
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+        sp.registerOnSharedPreferenceChangeListener(this)
         val ed = sp.edit()
         ed.putBoolean("isAuth", true)
         ed.apply()
@@ -122,13 +124,7 @@ class ActivityMain :
         }
         val isVisible = sp.getBoolean("isVisible", false)
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
-        fragment.setUserData(tagUser, userName, isAvatar, urlAvatar, isVisible,  sp)
-    }
-
-    override fun onNewUserImage() {
-        val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$tagUser.jpg"
-        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
-        fragment.setNewUserImage(urlAvatar)
+        fragment.setUserData(tagUser, userName, isAvatar, urlAvatar, isVisible)
     }
 
 
@@ -152,10 +148,11 @@ class ActivityMain :
                                 Toast.LENGTH_SHORT
                         ).show()
                         return@setPositiveButton
+                    } else{
+                        val dataUser = NewName("SETNAME::", false, newNameUser.toString())
+                        val msg = Json.encodeToString(dataUser)
+                        webSocketClient.send(msg)
                     }
-                    val dataUser = NewName("SETNAME::", false, newNameUser.toString())
-                    val msg = Json.encodeToString(dataUser)
-                    webSocketClient.send(msg)
                     dialog.dismiss()
 
                 }
@@ -297,6 +294,19 @@ class ActivityMain :
         val myAdapterForFriends = MyAdapterForFriends()
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as FriendsFragment
         fragment.setUserData(myAdapterForFriends)
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        if(key.equals("nickname")){
+            val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            fragment.setNewUserName(userName)
+        }
+        if(key.equals("changeAvatar")){
+            val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$tagUser.jpg"
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            fragment.setNewUserImage(urlAvatar)
+        }
     }
 
 }

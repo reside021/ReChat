@@ -13,8 +13,6 @@
         android:id="@+id/avatarUser"
         android:layout_marginHorizontal="10dp"
         android:src="@drawable/user_photo"
-        app:civ_border_width="1dp"
-        app:civ_border_color="@color/black"
         android:layout_gravity="center"/>
     <TextView
         android:id="@+id/userName"
