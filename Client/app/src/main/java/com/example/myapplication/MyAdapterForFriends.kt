@@ -13,12 +13,11 @@ import com.squareup.picasso.Picasso
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.java_websocket.client.WebSocketClient
+import com.example.myapplication.ActivityMain.Companion.webSocketClient
+import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 
 class MyAdapterForFriends() : BaseAdapter() {
-    private val sqliteHelper : SqliteHelper = MainActivity.sqliteHelper
     private val list : List<Pair<String, String>> = sqliteHelper.getAllUsersOnline().toList()
-    private val webSocketClient = MainActivity.webSocketClient
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
         val context = parent?.context
         val sp = context!!.getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
@@ -33,7 +32,7 @@ class MyAdapterForFriends() : BaseAdapter() {
             val addChat = newView.findViewById<Button>(R.id.addChatBtn)
             val imageOfUser = newView.findViewById<ImageView>(R.id.avatarUser)
             val tagUser = list[position].first
-            val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$tagUser.jpg"
+            val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$tagUser.jpg"
             Picasso.get()
                     .load(urlAvatar)
                     .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)

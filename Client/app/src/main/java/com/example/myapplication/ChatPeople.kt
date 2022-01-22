@@ -9,13 +9,11 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.children
-import kotlinx.serialization.Serializable
+import com.example.myapplication.dataClasses.Msg
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.java_websocket.client.WebSocketClient
-import java.text.SimpleDateFormat
-import java.util.*
+import com.example.myapplication.ActivityMain.Companion.webSocketClient
+import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 
 
 class ChatPeople : AppCompatActivity() {
@@ -26,9 +24,7 @@ class ChatPeople : AppCompatActivity() {
     private lateinit var animAlpha: Animation
     private lateinit var editTextMessage : EditText
     private lateinit var mainWindowInclude : LinearLayout
-    private lateinit var webSocketClient: WebSocketClient
     private lateinit var idUser : String
-    private lateinit var sqliteHelper: SqliteHelper
     private lateinit var dialog_id: String
     private lateinit var sp : SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,8 +34,6 @@ class ChatPeople : AppCompatActivity() {
         animAlpha = AnimationUtils.loadAnimation(this, R.anim.alpha)
         editTextMessage = findViewById(R.id.editTextMessage)
         mainWindowInclude = findViewById(R.id.mainChatWindow)
-        webSocketClient = MainActivity.webSocketClient
-        sqliteHelper = MainActivity.sqliteHelper
         idUser = intent.extras?.getString("idTag").toString()
         val nameOfUser = intent.extras?.getString("nameOfUser").toString()
         supportActionBar?.apply {
@@ -63,7 +57,10 @@ class ChatPeople : AppCompatActivity() {
         val dataOfMsg = sqliteHelper.getMsgWithUser(dialog_id)
         for(el in dataOfMsg){
             if(el[0] != ourTag){
-                val nameOfUser = sqliteHelper.getNameInUserChat(el[0])
+                var nameOfUser = sqliteHelper.getNameInUserChat(el[0])
+                if (nameOfUser.isEmpty()){
+                    nameOfUser = resources.getString(R.string.user_name)
+                }
                 val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
                 val newView = inflater.inflate(R.layout.message_from, null)
                 val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
@@ -105,14 +102,7 @@ class ChatPeople : AppCompatActivity() {
         ed.putBoolean("active", false)
         ed.apply()
     }
-    @Serializable
-    data class Msg(
-        val type : String,
-        val dialog_id : String,
-        val typeMsg : String,
-        val id : String,
-        val text : String
-    )
+
 
     fun onSendMsgClick(view: View) {
         view.startAnimation(animAlpha)
@@ -124,18 +114,9 @@ class ChatPeople : AppCompatActivity() {
             }
             val textMSG = editTextMessage.text.toString()
             if(textMSG.isEmpty()) return
-//            val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-//            val newView = inflater.inflate(R.layout.message_to, null)
-//            val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
-//            textInMessage.text = textMSG
             val dataUser = Msg("MESSAGE_TO::",dialog_id,"TEXT", idUser, textMSG)
             val msg = Json.encodeToString(dataUser)
             webSocketClient.send(msg)
-//            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-//            mainWindowInclude.addView(newView, lp)
-//            scrollView.post(Runnable(){
-//                scrollView.fullScroll(View.FOCUS_DOWN)
-//            })
         } catch (ex : Exception){
 
         }

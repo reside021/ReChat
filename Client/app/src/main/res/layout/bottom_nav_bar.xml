@@ -1,68 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container2"
+    android:id="@+id/appLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ActivityMain">
-
-    <com.gauravk.bubblenavigation.BubbleNavigationLinearView
-        android:id="@+id/bottom_navigation_view_linear"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@color/white"
-        android:elevation="18dp"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <com.gauravk.bubblenavigation.BubbleToggleView
-            android:layout_marginHorizontal="15dp"
-            android:id="@+id/itemUser"
-            android:layout_width="wrap_content"
+        android:layout_height="match_parent">
+        <com.gauravk.bubblenavigation.BubbleNavigationLinearView
+            android:id="@+id/bottom_navigation_view_linear"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:bt_active="true"
-            app:bt_colorActive="@color/purple_500"
-            app:bt_colorInactive="@color/default_inactive"
-            app:bt_icon="@drawable/user_photo"
-            app:bt_title="@string/profile"
-            app:bt_titleSize="15sp"/>
+            android:layout_alignParentBottom="true"
+            android:background="@color/white"
+            android:elevation="18dp"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
-        <com.gauravk.bubblenavigation.BubbleToggleView
-            android:layout_marginHorizontal="15dp"
-            android:id="@+id/itemChat"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:bt_active="true"
-            app:bt_colorActive="@color/purple_500"
-            app:bt_colorInactive="@color/default_inactive"
-            app:bt_icon="@drawable/chat"
-            app:bt_title="@string/chat"
-            app:bt_titleSize="15sp"/>
-        <com.gauravk.bubblenavigation.BubbleToggleView
-            android:layout_marginHorizontal="15dp"
-            android:id="@+id/itemFriends"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:bt_active="true"
-            app:bt_colorActive="@color/purple_500"
-            app:bt_colorInactive="@color/default_inactive"
-            app:bt_icon="@drawable/friends"
-            app:bt_title="@string/friends"
-            app:bt_titleSize="15sp"/>
-    </com.gauravk.bubblenavigation.BubbleNavigationLinearView>
+            <com.gauravk.bubblenavigation.BubbleToggleView
+                android:layout_marginHorizontal="15dp"
+                android:id="@+id/itemUser"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:bt_active="true"
+                app:bt_colorActive="@color/purple_500"
+                app:bt_colorInactive="@color/default_inactive"
+                app:bt_icon="@drawable/user_photo"
+                app:bt_title="@string/profile"
+                app:bt_titleSize="15sp"/>
 
-<FrameLayout
-    android:id="@+id/host_fragment"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_above="@id/bottom_navigation_view_linear"
-    app:layout_constraintLeft_toLeftOf="parent"
-    app:layout_constraintRight_toRightOf="parent"
-    app:layout_constraintTop_toTopOf="parent"/>
-
-</RelativeLayout>
+            <com.gauravk.bubblenavigation.BubbleToggleView
+                android:layout_marginHorizontal="15dp"
+                android:id="@+id/itemChat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:bt_active="true"
+                app:bt_colorActive="@color/purple_500"
+                app:bt_colorInactive="@color/default_inactive"
+                app:bt_icon="@drawable/chat"
+                app:bt_title="@string/chat"
+                app:bt_titleSize="15sp"/>
+            <com.gauravk.bubblenavigation.BubbleToggleView
+                android:layout_marginHorizontal="15dp"
+                android:id="@+id/itemFriends"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:bt_active="true"
+                app:bt_colorActive="@color/purple_500"
+                app:bt_colorInactive="@color/default_inactive"
+                app:bt_icon="@drawable/friends"
+                app:bt_title="@string/friends"
+                app:bt_titleSize="15sp"/>
+        </com.gauravk.bubblenavigation.BubbleNavigationLinearView>
+        <FrameLayout
+            android:id="@+id/host_fragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/bottom_navigation_view_linear"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+    </RelativeLayout>
+</FrameLayout>

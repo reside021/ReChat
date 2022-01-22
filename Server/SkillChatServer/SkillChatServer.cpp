@@ -66,6 +66,7 @@ const string SQL = "SQL::";
 const string DBNOTACTIVE = "DBNOTACTIVE::";
 const string INSERT = "INSERT::";
 const string AUTH = "AUTH::";
+const string AUTHTOKEN = "AUTHTOKEN::";
 const string SELECT = "SELECT::";
 const string RESULTDB = "RESULTDB::";
 const string UPDATE = "UPDATE::";
@@ -211,6 +212,9 @@ bool IsServerDBNotActive() {
 
 bool isAuthUser(string message) {
     return message.find(AUTH) == 0;
+}
+bool isAuthToken(string message) {
+    return message.find(AUTHTOKEN) == 0;
 }
 bool isCreateDlg(string message) {
     return message.find(NEWUSERDLG) == 0;
@@ -411,6 +415,10 @@ int main() {
                     cout << "User #" << authorId << " has registered" << endl;
                 }
                 if (isAuthUser(jsonData["type"])) {
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
+                        return;
+                    }
                     if (jsonData["confirmAuth"]) {
                         ws->publish(BROADCAST_CHANNEL, offline(userData->uId));
                         deleteName(userData);
@@ -429,10 +437,6 @@ int main() {
                         cout << "Users connected: " << userNames.size() << endl;
                         return;
                     }
-                    if (IsServerDBNotActive()) {
-                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
-                        return;
-                    }
                     string loginUser = jsonData["loginAuth"];
                     string passUser = jsonData["passAuth"];
                     json jsonOut = {
@@ -441,6 +445,14 @@ int main() {
                             {"authorId", authorId}
                     };
                     string outgoingMessage = FORDB + SQL + SELECT + AUTH + (string)jsonOut.dump();
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
+                if (isAuthToken(jsonData["type"])) {
+                    json jsonOut = {
+                        {"tagUser", authorId},
+                        {"token", jsonData["token"]}
+                    };
+                    string outgoingMessage = FORDB + SQL + SELECT + AUTHTOKEN + (string)jsonOut.dump();
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                 }
                 if (isUpdateVisible(jsonData["type"])) {
@@ -533,11 +545,13 @@ int main() {
                             string uId = jsonData["tag"];
                             bool isVisible = jsonData["isVisible"];
                             bool isAvatar = jsonData["isAvatar"];
+                            string token = jsonData["token"];
                             json jsonOut = {
                                 {"nickname", name},
                                 {"tagUser", uId},
                                 {"isVisible", isVisible},
-                                {"isAvatar", isAvatar}
+                                {"isAvatar", isAvatar},
+                                {"token", token}
                             };
                             string outgoingMsg = AUTH + SUCCESS + (string)jsonOut.dump();
                             ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
@@ -545,6 +559,28 @@ int main() {
                         else {
                             string authorId = jsonData["authorId"];
                             string outgoingMsg = AUTH + _ERROR + "none";
+                            ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                        }
+                    }
+                    if (jsonData["oper"] == AUTHTOKEN) {
+                        if (jsonData["success"]) {
+                            string authorId = jsonData["authorId"];
+                            string name = jsonData["nickName"];
+                            string uId = jsonData["tag"];
+                            bool isVisible = jsonData["isVisible"];
+                            bool isAvatar = jsonData["isAvatar"];
+                            json jsonOut = {
+                                {"nickname", name},
+                                {"tagUser", uId},
+                                {"isVisible", isVisible},
+                                {"isAvatar", isAvatar}
+                            };
+                            string outgoingMsg = AUTHTOKEN + SUCCESS + (string)jsonOut.dump();
+                            ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                        }
+                        else {
+                            string authorId = jsonData["authorId"];
+                            string outgoingMsg = AUTHTOKEN + _ERROR + "none";
                             ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
                         }
                     }

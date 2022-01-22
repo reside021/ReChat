@@ -27,7 +27,7 @@ class MyAdapterForChat(_list: MutableList<Pair<String,String>>) : BaseAdapter() 
             idOfUser.text = list[position].first
             val userTag = idOfUser.text
             val imageOfUser = newView.findViewById<ImageView>(R.id.avatarUser)
-            val urlAvatar = "http://imagerc.ddns.net:80/avatarImg/$userTag.jpg"
+            val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$userTag.jpg"
             Picasso.get()
                     .load(urlAvatar)
                     .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)

@@ -20,4 +20,5 @@ C:\Users\admin\source\repos\WSClientDB\WSClientDB\bin\Debug\netcoreapp3.1\runtim
 C:\Users\admin\source\repos\WSClientDB\WSClientDB\bin\Debug\netcoreapp3.1\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll
 C:\Users\admin\source\repos\WSClientDB\WSClientDB\bin\Debug\netcoreapp3.1\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll
 C:\Users\admin\source\repos\WSClientDB\WSClientDB\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
+C:\Users\admin\source\repos\WSClientDB\WSClientDB\bin\Debug\netcoreapp3.1\JWT.dll
 C:\Users\admin\source\repos\WSClientDB\WSClientDB\obj\Debug\netcoreapp3.1\WSClientDB.csproj.CoreCompileInputs.cache

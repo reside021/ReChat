@@ -13,17 +13,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
         android:usesCleartextTraffic="true">
-        <activity android:name=".MainActivity">
+        <activity android:name=".ActivityMain">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MasterActivity" />
-        <activity android:name=".FriendsProfile" />
-        <activity android:name=".ChatPeople" />
-        <activity android:name=".ActivityMain"/>
+        <activity android:name=".FriendsProfile"/>
+        <activity android:name=".ChatPeople"/>
     </application>
-
 </manifest>

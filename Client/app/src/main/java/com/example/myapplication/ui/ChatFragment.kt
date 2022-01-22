@@ -14,10 +14,9 @@ import android.widget.Button
 import android.widget.ListView
 import android.widget.TextView
 import com.example.myapplication.ChatPeople
-import com.example.myapplication.MainActivity.Companion.sqliteHelper
+import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 import com.example.myapplication.MyAdapterForChat
 import com.example.myapplication.R
-import java.lang.Exception
 
 
 class ChatFragment : Fragment() {

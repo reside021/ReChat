@@ -1,38 +1,32 @@
 package com.example.myapplication.ui
 
+import android.app.AlertDialog
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
-import com.example.myapplication.MainActivity.Companion.webSocketClient
-import com.example.myapplication.MasterActivity
+import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.R
+import com.example.myapplication.dataClasses.NewName
+import com.example.myapplication.dataClasses.UpdateVisible
 import com.squareup.picasso.MemoryPolicy
 import com.squareup.picasso.NetworkPolicy
 import com.squareup.picasso.Picasso
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 
 class UserFragment : Fragment(){
 
-    @Serializable
-    data class UpdateVisible(
-            val type: String,
-            val confirmUpVisible: Boolean,
-            val isVisible: Boolean
-    )
 
     internal interface OnFragmentSendDataListener {
-        fun onSendData(data: String?)
         fun onUserLoadView()
     }
 
@@ -58,21 +52,56 @@ class UserFragment : Fragment(){
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentSendDataListener?.onUserLoadView()
+
+        val userName = requireView().findViewById<TextView>(R.id.nameOfUser)
+        userName.setOnClickListener {
+            val builder = AlertDialog.Builder(activity)
+            val inflater = this.layoutInflater
+            val view  = inflater.inflate(R.layout.dialog_setname, null)
+            val newNameUser = view.findViewById<EditText>(R.id.newnameuser).text
+            builder.setView(view)
+                .setPositiveButton("OK") { dialog, id ->
+                    if(newNameUser.isEmpty()){
+                        Toast.makeText(
+                            activity, "Вы не задали нового имени!",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        return@setPositiveButton
+                    }
+                    if(webSocketClient.connection.readyState.ordinal == 0){
+                        Toast.makeText(
+                            activity, "Отсутствует подключение к серверу",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@setPositiveButton
+                    } else{
+                        val dataUser = NewName("SETNAME::", false, newNameUser.toString())
+                        val msg = Json.encodeToString(dataUser)
+                        webSocketClient.send(msg)
+                    }
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss()
+                }
+            builder.show()
+        }
+
     }
 
 
     fun setUserData(tag : String, userName : String, isAvatar : Boolean,
                     urlAvatar : String, isVisible : Boolean){
-        requireView().findViewById<TextView>(R.id.nameofuser).text = userName
+        requireView().findViewById<TextView>(R.id.nameOfUser).text = userName
         requireView().findViewById<TextView>(R.id.tagofuser).text = tag
         val switchBeOnline = requireView().findViewById<SwitchCompat>(R.id.switchBeOnline)
         switchBeOnline.isChecked = isVisible
         if(isAvatar){
-            val imageOfUser = requireView().findViewById<ImageView>(R.id.imageofuser)
+            val imageOfUser = requireView().findViewById<ImageView>(R.id.imageOfUser)
             Picasso.get()
                     .load(urlAvatar)
                     .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
                     .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
+                    .placeholder(R.drawable.user_profile_photo)
                     .into(imageOfUser)
         }
         switchBeOnline.setOnCheckedChangeListener { _, isChecked ->
@@ -107,18 +136,17 @@ class UserFragment : Fragment(){
     }
 
     fun setNewUserImage(urlAvatar: String){
-        val imageOfUser = requireView().findViewById<ImageView>(R.id.imageofuser)
-        imageOfUser.setImageDrawable(null)
+        val imageOfUser = requireView().findViewById<ImageView>(R.id.imageOfUser)
         Picasso.get()
                 .load(urlAvatar)
-                .placeholder(R.drawable.user_profile_photo)
                 .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
                 .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
+                .placeholder(R.drawable.user_profile_photo)
                 .into(imageOfUser)
     }
 
     fun setNewUserName(newName : String){
-        requireView().findViewById<TextView>(R.id.nameofuser).text = newName
+        requireView().findViewById<TextView>(R.id.nameOfUser).text = newName
     }
 
 }

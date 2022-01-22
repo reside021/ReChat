@@ -3,6 +3,8 @@ using WebSocket4Net;
 using System.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using JWT.Builder;
+using JWT.Algorithms;
 
 namespace WSClientDB
 {
@@ -29,6 +31,12 @@ namespace WSClientDB
         public string loginUser { get; set; }
         public string passUser { get; set; }
     }
+    public class AuthToken
+    {
+        public string tagUser { get; set; }
+        public string token { get; set; }
+    }
+
     public class DownLoadAllDlg
     {
         public string tagUser { get; set; }
@@ -53,6 +61,7 @@ namespace WSClientDB
         public bool isVisible { get; set; } // isVisible for all
         public bool isAvatar { get; set; } // have avatar?
         public bool success { get; set; } // status
+        public string token { get; set; } // jwt
     }
     public class NewName
     {
@@ -170,6 +179,7 @@ namespace WSClientDB
         const string SIGNUP = "SIGNUP::";
         const string SELECT = "SELECT::";
         const string AUTH = "AUTH::";
+        const string AUTHTOKEN = "AUTHTOKEN::";
         const string RESULTDB = "RESULTDB::";
         const string UPDATE = "UPDATE::";
         const string NEWNAME = "NEWNAME::";
@@ -205,24 +215,26 @@ namespace WSClientDB
         {
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "Insert into UsersData values(@loginuser, @passuser, @taguser)";
-            SqlParameter sqlParameter = new SqlParameter("@loginuser", loginUser);
+            sqlCommand.CommandText = "Insert into InfoUsers values(@taguser, @nickuser, @isVisible, @isAvatar)";
+            SqlParameter sqlParameter = new SqlParameter("@taguser", tagUser);
             sqlCommand.Parameters.Add(sqlParameter);
-            SqlParameter sqlParameter1 = new SqlParameter("@passuser", passUser);
+            SqlParameter sqlParameter1 = new SqlParameter("@nickuser", nickUser);
             sqlCommand.Parameters.Add(sqlParameter1);
-            SqlParameter sqlParameter2 = new SqlParameter("@taguser", tagUser);
+            SqlParameter sqlParameter2 = new SqlParameter("@isVisible", false);
             sqlCommand.Parameters.Add(sqlParameter2);
+            SqlParameter sqlParameter3 = new SqlParameter("@isAvatar", false);
+            sqlCommand.Parameters.Add(sqlParameter3);
             sqlCommand.ExecuteNonQuery();
             sqlCommand.Parameters.Clear();
-            sqlCommand.CommandText = "Insert into InfoUsers values(@taguser, @nickuser, @isVisible, @isAvatar)";
-            SqlParameter sqlParameter3 = new SqlParameter("@taguser", tagUser);
-            sqlCommand.Parameters.Add(sqlParameter3);
-            SqlParameter sqlParameter4 = new SqlParameter("@nickuser", nickUser);
+            sqlCommand.CommandText = "Insert into UsersData values(@loginuser, @passuser, @taguser,@deviceToken)";
+            SqlParameter sqlParameter4 = new SqlParameter("@loginuser", loginUser);
             sqlCommand.Parameters.Add(sqlParameter4);
-            SqlParameter sqlParameter5 = new SqlParameter("@isVisible", false);
+            SqlParameter sqlParameter5 = new SqlParameter("@passuser", passUser);
             sqlCommand.Parameters.Add(sqlParameter5);
-            SqlParameter sqlParameter6 = new SqlParameter("@isAvatar", false);
+            SqlParameter sqlParameter6 = new SqlParameter("@taguser", tagUser);
             sqlCommand.Parameters.Add(sqlParameter6);
+            SqlParameter sqlParameter7 = new SqlParameter("@deviceToken", "");
+            sqlCommand.Parameters.Add(sqlParameter7);
             sqlCommand.ExecuteNonQuery();
             sqlCommand.Parameters.Clear();
             sqlConnection.Close();
@@ -314,6 +326,16 @@ namespace WSClientDB
             Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable");
         }
 
+        private static string getToken(string tagUser)
+        {
+            var token = JwtBuilder.Create()
+                      .WithAlgorithm(new HMACSHA256Algorithm()) // symmetric
+                      .WithSecret(tagUser)
+                      .AddClaim("tagUser", tagUser)
+                      .AddClaim("iss", "Server_ReChat")
+                      .Encode();
+            return token;
+        }
         private static void SelectDataForAuth(string authorUser, string loginUser, string passUser)
         {
             sqlConnection.Open();
@@ -351,6 +373,7 @@ namespace WSClientDB
                     result.isVisible = isVisible;
                     result.isAvatar = isAvatar;
                     result.nickName = nickDB;
+                    result.token = getToken(tagDB);
                     string jsonResult = JsonConvert.SerializeObject(result);
                     webSocket.Send(jsonResult);
                 }
@@ -374,9 +397,21 @@ namespace WSClientDB
                 webSocket.Send(jsonResult);
             }
             sqlCommand.Parameters.Clear();
-            sqlConnection.Close();  
+            sqlConnection.Close();
+            if (result.success)
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = "Update UsersData set deviceToken = @token where tagUser = @tagUser";
+                sqlParameter = new SqlParameter("@token", result.token);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter1 = new SqlParameter("@tagUser", tagDB);
+                sqlCommand.Parameters.Add(sqlParameter1);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
+            }
             Console.WriteLine($"[MSG] -> AUTH^{nickDB}_{tagDB} -> {result.success}");
-
         }
         private static List<string> GetInfoAboutDialogs(string tagUser)
         {
@@ -664,7 +699,6 @@ namespace WSClientDB
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> VisibleEdit^{tagUser}_{isVisible} -> {successUpdate.success}");
         }
-
         private static void UpdateAvatarOfUser(string tagUser)
         {
             sqlConnection.Open();
@@ -736,9 +770,60 @@ namespace WSClientDB
             sqlCommand.Parameters.Add(sqlParameter1);
             SqlParameter sqlParameter2 = new SqlParameter("@enteredTime", enteredTime);
             sqlCommand.Parameters.Add(sqlParameter2);
+            sqlCommand.ExecuteNonQuery();
             sqlCommand.Parameters.Clear();
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable");
+        }
+        private static void SelectDeviceForAuth(string userTag, string token)
+        {
+            sqlConnection.Open();
+            sqlCommand.Connection = sqlConnection;
+            sqlCommand.CommandText =
+                @"Select i.nickUser, u.tagUser, i.isVisible, i.isAvatar from UsersData as u 
+                    inner join InfoUsers as i
+                    on i.tagUser = u.tagUser
+                    where u.deviceToken = @deviceToken";
+            SqlParameter sqlParameter1 = new SqlParameter("@deviceToken", token);
+            sqlCommand.Parameters.Add(sqlParameter1);
+            SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+            string nickDB = "", tagDB = "";
+            bool isVisible = false;
+            bool isAvatar = false;
+            ResultDB result = new ResultDB();
+            if (sqlDataReader.HasRows)
+            {
+                while (sqlDataReader.Read())
+                {
+                    nickDB = sqlDataReader.GetString(0);
+                    tagDB = sqlDataReader.GetString(1);
+                    isVisible = sqlDataReader.GetBoolean(2);
+                    isAvatar = sqlDataReader.GetBoolean(3);
+                }
+                result.type = RESULTDB;
+                result.oper = AUTHTOKEN;
+                result.success = true;
+                result.authorId = userTag;
+                result.tag = tagDB;
+                result.isVisible = isVisible;
+                result.isAvatar = isAvatar;
+                result.nickName = nickDB;
+                string jsonResult = JsonConvert.SerializeObject(result);
+                webSocket.Send(jsonResult);
+            }
+            else
+            {
+                result.type = RESULTDB;
+                result.oper = AUTHTOKEN;
+                result.success = false;
+                result.authorId = userTag;
+                string jsonResult = JsonConvert.SerializeObject(result);
+                webSocket.Send(jsonResult);
+            }
+
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            Console.WriteLine($"[MSG] -> DeviceAuth^{tagDB}");
         }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
@@ -784,6 +869,13 @@ namespace WSClientDB
                         message = message.Substring(AUTH.Length);
                         Auth auth = JsonConvert.DeserializeObject<Auth>(message);
                         SelectDataForAuth(auth.authorId, auth.loginUser, auth.passUser);
+                    }
+                    if (message.IndexOf(AUTHTOKEN) != -1)
+                    {
+                        message = message.Substring(AUTHTOKEN.Length);
+                        AuthToken authToken = JsonConvert.DeserializeObject<AuthToken>(message);
+                        SelectDeviceForAuth(authToken.tagUser, authToken.token);
+
                     }
                     if(message.IndexOf(DOWNLOAD) != -1)
                     {
