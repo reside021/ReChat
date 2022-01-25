@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 <ScrollView
     android:id="@+id/scrollChat"
     android:layout_width="match_parent"
     android:layout_height="0dp"
-    android:layout_weight="1">
+    android:layout_weight="1"
+    android:layout_marginBottom="10dp">
     <LinearLayout
         android:id="@+id/mainChatWindow"
         android:layout_width="match_parent"
@@ -14,13 +16,39 @@
         android:orientation="vertical">
     </LinearLayout>
 </ScrollView>
-
-<!--    <View-->
-<!--        -->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="3dp"-->
-<!--        android:layout_marginVertical="10dp"-->
-<!--        android:background="@color/black" />-->
+    <LinearLayout
+        android:id="@+id/layoutAddImgMsg"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/backgroundColor"
+        android:layout_marginBottom="5dp">
+        <RelativeLayout
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="10dp">
+            <ImageView
+                android:id="@+id/addingImgMsg"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginBottom="5dp"
+                android:background="@drawable/view_back"
+                android:padding="5dp"
+                android:scaleType="centerInside" />
+            <ImageButton
+                android:id="@+id/dltImgMsg"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/redcross"
+                android:layout_alignParentEnd="true"
+                android:scaleType="centerInside"
+                android:background="@drawable/view_back_clear"/>
+        </RelativeLayout>
+    </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,8 +56,7 @@
         android:background="@drawable/view_back_90"
         android:backgroundTint="@color/backgroundColor"
         android:layout_marginBottom="8dp"
-        android:layout_marginHorizontal="5dp"
-        android:layout_marginTop="10dp">
+        android:layout_marginHorizontal="5dp">
         <EditText
             android:id="@+id/editTextMessage"
             android:layout_width="0dp"
@@ -37,10 +64,18 @@
             android:layout_height="wrap_content"
             android:minHeight="45dp"
             android:background="@android:color/transparent"
-            android:layout_marginLeft="15dp"
+            android:layout_marginStart="15dp"
             android:layout_gravity="fill_vertical"
             android:inputType="textMultiLine"
             android:hint="@string/Message"/>
+        <ImageButton
+            android:id="@+id/choose_img_msg"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.2"
+            android:src="@drawable/gallery_icon"
+            android:backgroundTint="#00FFFFFF"
+            android:scaleType="centerCrop"/>
         <ImageButton
             android:src="@drawable/paper_airplane"
             android:layout_width="0dp"
@@ -48,7 +83,6 @@
             android:scaleType="centerCrop"
             android:layout_height="match_parent"
             android:layout_weight="0.2"
-            android:textColor="@color/purple_500"
             android:onClick="onSendMsgClick"/>
     </LinearLayout>
 </LinearLayout>

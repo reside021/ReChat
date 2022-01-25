@@ -3,18 +3,33 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/drawable/gallery.xml" value="0.2235" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/drawable/gallery_icon.xml" value="0.2235" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/drawable/user_profile_photo.xml" value="0.2235" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/drawable/view_back.xml" value="0.2235" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/drawable/view_back_90.xml" value="0.2235" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/drawable/view_back_clear.xml" value="0.2235" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/actionbar.xml" value="0.1816123188405797" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/activity_main.xml" value="0.1816123188405797" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/auth_activity.xml" value="0.176" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/bottom_nav_bar.xml" value="0.1816123188405797" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/chat.xml" value="0.1816123188405797" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/chat_element.xml" value="0.1816123188405797" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/chat_window.xml" value="0.5160875160875161" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/clearlayout.xml" value="0.1816123188405797" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/dialoglogin.xml" value="0.1816123188405797" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/dialoglogin2.xml" value="0.25416666666666665" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/dialogsignup.xml" value="0.1816123188405797" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/firstactivity.xml" value="0.1816123188405797" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/fragment_chat.xml" value="0.1816123188405797" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/fragment_user.xml" value="0.1816123188405797" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/image_fc.xml" value="0.21979166666666666" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/main_layout.xml" value="0.2" />
         <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/master.xml" value="0.1816123188405797" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/message_from.xml" value="0.1816123188405797" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/message_from_image.xml" value="0.25416666666666665" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/message_to.xml" value="0.1816123188405797" />
+        <entry key="..\:/Users/admin/AndroidStudioProjects/MyApplication2/app/src/main/res/layout/message_to_image.xml" value="0.25416666666666665" />
       </map>
     </option>
   </component>

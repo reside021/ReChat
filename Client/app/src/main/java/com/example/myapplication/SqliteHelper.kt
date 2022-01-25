@@ -66,8 +66,8 @@ class SqliteHelper(context: Context) :
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val idTag = cursor.getString(cursor.getColumnIndex(TAG_USER))
-                    val nameuser = cursor.getString(cursor.getColumnIndex(NAME_USER))
+                    val idTag = cursor.getString(cursor.getColumnIndexOrThrow(TAG_USER))
+                    val nameuser = cursor.getString(cursor.getColumnIndexOrThrow(NAME_USER))
                     allUser.add(idTag to nameuser)
                 } while (cursor.moveToNext())
             }
@@ -135,7 +135,7 @@ class SqliteHelper(context: Context) :
         if(cursor != null){
             if (cursor.moveToFirst()) {
                 do {
-                    name = cursor.getString(cursor.getColumnIndex(NAME_USER))
+                    name = cursor.getString(cursor.getColumnIndexOrThrow(NAME_USER))
                 } while (cursor.moveToNext())
             }
         }
@@ -169,7 +169,7 @@ class SqliteHelper(context: Context) :
         if(cursor != null){
             if (cursor.moveToFirst()) {
                 do {
-                    dialogId = cursor.getString(cursor.getColumnIndex(DIALOG_ID))
+                    dialogId = cursor.getString(cursor.getColumnIndexOrThrow(DIALOG_ID))
                     if(dialogId.substringBefore("#") == "CHAT"
                             || dialogId.substringBefore("#") == "GROUP") break
                 } while (cursor.moveToNext())
@@ -189,8 +189,8 @@ class SqliteHelper(context: Context) :
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val idTag = cursor.getString(cursor.getColumnIndex(TAG_USER))
-                    val nameuser = cursor.getString(cursor.getColumnIndex(NAME_USER))
+                    val idTag = cursor.getString(cursor.getColumnIndexOrThrow(TAG_USER))
+                    val nameuser = cursor.getString(cursor.getColumnIndexOrThrow(NAME_USER))
                     allUser.add(idTag to nameuser)
                 } while (cursor.moveToNext())
             }
@@ -223,10 +223,11 @@ class SqliteHelper(context: Context) :
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val text = cursor.getString(cursor.getColumnIndex(TEXTMSG))
-                    val sender = cursor.getString(cursor.getColumnIndex(SENDER))
-                    val timeCreated = cursor.getString(cursor.getColumnIndex(TIMECREATED))
-                    allMsg.add(arrayOf(sender, text, timeCreated))
+                    val text = cursor.getString(cursor.getColumnIndexOrThrow(TEXTMSG))
+                    val sender = cursor.getString(cursor.getColumnIndexOrThrow(SENDER))
+                    val timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(TIMECREATED))
+                    val typeMsg = cursor.getString(cursor.getColumnIndexOrThrow(TYPEMSG))
+                    allMsg.add(arrayOf(sender, text, timeCreated, typeMsg))
                 } while (cursor.moveToNext())
             }
         }
@@ -242,9 +243,9 @@ class SqliteHelper(context: Context) :
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val dialog_id = cursor.getString(cursor.getColumnIndex(DIALOG_ID))
-                    val tagUser = cursor.getString(cursor.getColumnIndex(TAG_USER))
-                    val timeCreated = cursor.getString(cursor.getColumnIndex(TIMECREATED))
+                    val dialog_id = cursor.getString(cursor.getColumnIndexOrThrow(DIALOG_ID))
+                    val tagUser = cursor.getString(cursor.getColumnIndexOrThrow(TAG_USER))
+                    val timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(TIMECREATED))
                     allMsg.add(arrayOf(dialog_id, tagUser, timeCreated))
                 } while (cursor.moveToNext())
             }
@@ -274,7 +275,7 @@ class SqliteHelper(context: Context) :
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val dialog_id = cursor.getString(cursor.getColumnIndex(DIALOG_ID))
+                    val dialog_id = cursor.getString(cursor.getColumnIndexOrThrow(DIALOG_ID))
                     allDlg.add(dialog_id)
                 } while (cursor.moveToNext())
             }
@@ -292,7 +293,7 @@ class SqliteHelper(context: Context) :
         if(cursor != null){
             if (cursor.moveToFirst()) {
                 do {
-                    return cursor.getString(cursor.getColumnIndex(DIALOG_ID))
+                    return cursor.getString(cursor.getColumnIndexOrThrow(DIALOG_ID))
                 } while (cursor.moveToNext())
             }
         }

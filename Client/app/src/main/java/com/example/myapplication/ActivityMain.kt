@@ -20,6 +20,7 @@ import com.example.myapplication.interfaces.*
 import com.example.myapplication.ui.*
 import com.gauravk.bubblenavigation.BubbleNavigationLinearView
 import com.github.dhaval2404.imagepicker.ImagePicker
+import com.squareup.picasso.Picasso
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -393,6 +394,7 @@ class ActivityMain :
                             val ed = sp.edit()
                             ed.putString("nickname", newName)
                             ed.putString("changeNickName", LocalDateTime.now().toString())
+                            LocalDateTime.now().chronology
                             ed.apply()
                             val confirmSetname = ConfirmSetName("SETNAME::", true, newName)
                             val msg = Json.encodeToString(confirmSetname)
@@ -580,68 +582,88 @@ class ActivityMain :
             "MESSAGE_FROM" -> {
                 if (sp.getBoolean("isAuth", false)) {
                     val jsonData = message.substringAfter("::")
-                    val msg = Json.decodeFromString<MessageFromUser>(jsonData)
-                    messagePrint(
-                        msg.dialog_id,
-                        msg.sender,
-                        msg.typeMsg,
-                        msg.textMsg,
-                        msg.timeCreated,
-                        msg.receiverId,
-                        msg.nameSender
-                    )
+                    messagePrint(jsonData)
                 }
             }
         }
     }
     private fun messageToUser(jsonData: String){
-        val msg = Json.decodeFromString<ConfirmInsertNewMsgDlg>(jsonData)
-        if(!sp.getBoolean("active", false)) return
-        if(sp.getString("idActive", "NONE") != msg.receiverId) return
         try{
+            val msg = Json.decodeFromString<ConfirmInsertNewMsgDlg>(jsonData)
+                sqliteHelper.addMsgInTable(
+                    msg.dialog_id,
+                    msg.sender,
+                    msg.typeMsg,
+                    msg.textMsg,
+                    msg.timeCreated
+                )
+            if(!sp.getBoolean("active", false)) return
+            if(sp.getString("idActive", "NONE") != msg.receiverId) return
             val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val newView = inflater.inflate(R.layout.message_to, null)
-            val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
-            textInMessage.text = msg.textMsg
+            var newView = inflater.inflate(R.layout.message_to, null)
+            when (msg.typeMsg) {
+                "TEXT" -> {
+                    val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
+                    textInMessage.text = msg.textMsg
+                }
+                "IMAGE" -> {
+                    newView = inflater.inflate(R.layout.message_to_image, null)
+                    val imageInMessage = newView.findViewById<ImageView>(R.id.msgToImage)
+                    val nameImg = msg.textMsg
+                    val chatName = msg.dialog_id.replace("#", "%23")
+                    val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
+                    Picasso.get()
+                        .load(urlImg)
+                        .placeholder(R.drawable.error_image)
+                        .into(imageInMessage)
+                }
+            }
+
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
             mainWindowOuter.addView(newView, lp)
-            sqliteHelper.addMsgInTable(
-                msg.dialog_id,
-                msg.sender,
-                msg.typeMsg,
-                msg.textMsg,
-                msg.timeCreated
-            )
             scrollView.post(Runnable() {
                 scrollView.fullScroll(View.FOCUS_DOWN)
             })
-        } catch (ex: Exception){
-        }
+        } catch (ex: Exception){ }
     }
-    private fun messagePrint(
-        dialog_id: String, sender: String, typeMsg: String, textMsg: String,
-        timeCreated: String, receiverId: String, nameSender: String
-    ){
-        if(!sp.getBoolean("active", false)) return
-        if(dialog_id.substringBefore("#") == "GROUP"){
-            if(receiverId != sp.getString("idActive", "NONE")){
-                return
-            }
-            if(sender == sp.getString("tagUser", "NONE")) return
-        }else{
-            if(sp.getString("idActive", "NONE") != sender) return
-        }
-        sqliteHelper.addMsgInTable(dialog_id, sender, typeMsg, textMsg, timeCreated)
+    private fun messagePrint(jsonData: String){
         try{
+        val msg = Json.decodeFromString<MessageFromUser>(jsonData)
+        if(msg.dialog_id.substringBefore("#") == "GROUP"){
+            if(msg.sender == sp.getString("tagUser", "NONE")) return
+            sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
+            if(msg.receiverId != sp.getString("idActive", "NONE")) return
+        }else{
+            sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
+            if(sp.getString("idActive", "NONE") != msg.sender) return
+        }
+        if(!sp.getBoolean("active", false)) return
+            var nameOfSender = sqliteHelper.getNameInUserChat(msg.sender)
+            if (nameOfSender.isEmpty()){
+                nameOfSender = resources.getString(R.string.user_name)
+            }
             val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val newView = inflater.inflate(R.layout.message_from, null)
-            val textInMessage = newView.findViewById<TextView>(R.id.msgFrom)
-            textInMessage.text = textMsg
-            val senderView = newView.findViewById<TextView>(R.id.senderName)
-            senderView.text = nameSender
+            var newView = inflater.inflate(R.layout.message_from, null)
+            when (msg.typeMsg) {
+                "IMAGE" -> {
+                    newView = inflater.inflate(R.layout.message_from_image, null)
+                    val nameImg = msg.textMsg
+                    val chatName = msg.dialog_id.replace("#", "%23")
+                    val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
+                    val imageInMessage = newView.findViewById<ImageView>(R.id.msgFromImage)
+                    Picasso.get()
+                        .load(urlImg)
+                        .placeholder(R.drawable.error_image)
+                        .into(imageInMessage)
+                }
+                "TEXT" -> {
+                    newView.findViewById<TextView>(R.id.msgFrom).text = msg.textMsg
+                }
+            }
+            newView.findViewById<TextView>(R.id.senderName).text = nameOfSender
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT

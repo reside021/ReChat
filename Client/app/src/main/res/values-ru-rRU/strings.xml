@@ -26,4 +26,5 @@
     <string name="title_friends">Друзья</string>
     <string name="delete">Удалить</string>
     <string name="username">Имя пользователя</string>
+    <string name="user_name">Незнакомец</string>
 </resources>

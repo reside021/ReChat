@@ -1,5 +1,5 @@
 <resources>
-    <string name="user_name" translatable="false">Unnamed User</string>
+    <string name="user_name">Unknown User</string>
     <string name="galleryuse">Replace avatar</string>
     <string name="imageopen">Open</string>
     <string name="profile">Profile</string>
