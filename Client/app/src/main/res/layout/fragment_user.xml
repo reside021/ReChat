@@ -16,7 +16,6 @@
             android:layout_width="match_parent"
             android:layout_height="350dp"
             android:layout_marginBottom="10dp"
-            android:layout_marginHorizontal="5dp"
             android:layout_marginTop="5dp"
             android:background="@drawable/round"
             android:backgroundTint="@color/white"
@@ -58,11 +57,19 @@
                 android:textColor="@color/colorPrimary"/>
             <TextView
                 android:textColor="@color/colorPrimary"
-                android:id="@+id/tagofuser"
+                android:id="@+id/tagOfUser"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="22sp"
                 android:padding="5dp"/>
+            <ImageButton
+                android:id="@+id/copyTagBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/copy_icon_draw"
+                android:scaleType="centerCrop"
+                android:backgroundTint="@color/white"
+                android:layout_gravity="center"/>
         </LinearLayout>
         <androidx.appcompat.widget.SwitchCompat
             android:background="@drawable/round"

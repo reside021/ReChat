@@ -82,6 +82,11 @@ const string ALLMSG = "ALLMSG::";
 const string ALLTAGNAME = "ALLTAGNAME::";
 const string SET_AVATAR = "SETAVATAR::";
 const string DELETE_AVATAR = "DELETEAVATAR::";
+const string FRND = "FRND::";
+const string ADD = "ADD::";
+const string _DELETE = "DELETE::";
+const string CNFRMADD = "CNFRMADD::";
+const string ALLFRND = "ALLFRND::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -218,6 +223,9 @@ bool isAuthToken(string message) {
 }
 bool isCreateDlg(string message) {
     return message.find(NEWUSERDLG) == 0;
+}
+bool isFrnd(string message) {
+    return message.find(FRND) == 0;
 }
 bool isDownLoadData(string message) {
     return message.find(DOWNLOAD) == 0;
@@ -508,6 +516,42 @@ int main() {
                     string outgoingMessage = FORDB + SQL + INSERT + NEWUSERDLG + (string)jsonOut.dump();
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                 }
+                if (isFrnd(jsonData["type"])){
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
+                        return;
+                    }
+                    if (jsonData["typeAction"] == ADD) {
+                        string authorName = userData->name;
+                        json jsonOut = {
+                                {"typeAction", jsonData["typeAction"]},
+                                {"tagUserSender", authorId},
+                                {"nameUserSender", authorName},
+                                {"tagUserReceiver", jsonData["tagUserReceiver"]},
+                                {"nameUserReceiver", jsonData["nameUserReceiver"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + INSERT + FRND + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    else if (jsonData["typeAction"] == CNFRMADD) {
+                        string tagUserFriend = jsonData["tagUserFriend"];
+                        json jsonOut = {
+                            {"tagUserFriend", tagUserFriend},
+                            {"tagUserOur", authorId}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + FRND + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    else if (jsonData["typeAction"] == _DELETE) {
+                        string tagUserFriend = jsonData["tagUserFriend"];
+                        json jsonOut = {
+                            {"tagUserFriend", tagUserFriend},
+                            {"tagUserOur", authorId}
+                        };
+                        string outgoingMessage = FORDB + SQL + _DELETE + FRND + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                }
                 if (isDownLoadData(jsonData["type"])) {
                     if (IsServerDBNotActive()) {
                         ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
@@ -534,6 +578,13 @@ int main() {
                             {"authorId", authorId}
                         };
                         string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLTAGNAME + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["table"] == ALLFRND) {
+                        json jsonOut = {
+                            {"tagUser", authorId}
+                        };
+                        string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLFRND + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                 }
@@ -734,6 +785,90 @@ int main() {
                                 string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + ALLTAGNAME;
                                 string tagUser = jsonData["tagUser"];
                                 ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["table"] == ALLFRND) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"listOfData", jsonData["listOfData"]}
+                                };
+                                string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLFRND + (string)jsonOut.dump();
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + ALLFRND;
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                    }
+                    if (jsonData["oper"] == FRND) {
+                        if (jsonData["typeAction"] == ADD) {
+                            if (jsonData["success"]) {
+                                string tagUserSender = jsonData["tagUserSender"];
+                                string nameUserSender = jsonData["nameUserSender"];
+                                string tagUserReceiver = jsonData["tagUserReceiver"];
+                                string nameUserReceiver = jsonData["nameUserReceiver"];
+                                json jsonOut = {
+                                {"tagUserSender", tagUserSender},
+                                {"nameUserSender", nameUserSender},
+                                {"tagUserReceiver", tagUserReceiver},
+                                {"nameUserReceiver", nameUserReceiver},
+                                };
+                                string outgoingMsg = RESULTDB + FRND + SUCCESS + ADD + (string)jsonOut.dump();
+                                ws->publish("user#" + tagUserSender, outgoingMsg, uWS::OpCode::TEXT, false);
+                                ws->publish("user#" + tagUserReceiver, outgoingMsg, uWS::OpCode::TEXT, false);
+                                cout << endl << outgoingMsg << endl;
+                                cout << "User #" << tagUserSender << " added " << tagUserReceiver << " as a friend " << endl;
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + FRND + _ERROR + ADD;
+                                string tagUserSender = jsonData["tagUserSender"]; 
+                                cout << endl << outgoingMsg << endl;
+                                ws->publish("user#" + tagUserSender, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        else if (jsonData["typeAction"] == _DELETE) {
+                            if (jsonData["success"]) {
+                                string tagUserFriend = jsonData["tagUserReceiver"];
+                                string tagUserOur = jsonData["tagUserSender"];
+                                json jsonOut = {
+                                {"tagUserFriend", tagUserFriend},
+                                {"tagUserOur", tagUserOur},
+                                };
+                                string outgoingMsg = RESULTDB + FRND + SUCCESS + _DELETE + (string)jsonOut.dump();
+                                ws->publish("user#" + tagUserFriend, outgoingMsg, uWS::OpCode::TEXT, false);
+                                ws->publish("user#" + tagUserOur, outgoingMsg, uWS::OpCode::TEXT, false);
+                                cout << endl << outgoingMsg << endl;
+                                cout << "User #" << tagUserOur << " deleted " << tagUserFriend << " from friends " << endl;
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + FRND + _ERROR + CNFRMADD;
+                                string tagUserOur = jsonData["tagUserOur"];
+                                cout << endl << outgoingMsg << endl;
+                                ws->publish("user#" + tagUserOur, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        else if (jsonData["typeAction"] == CNFRMADD) {
+                            if (jsonData["success"]) {
+                                string tagUserFriend = jsonData["tagUserReceiver"];
+                                string tagUserOur = jsonData["tagUserSender"];
+                                json jsonOut = {
+                                {"tagUserFriend", tagUserFriend},
+                                {"tagUserOur", tagUserOur},
+                                };
+                                string outgoingMsg = RESULTDB + FRND + SUCCESS + CNFRMADD + (string)jsonOut.dump();
+                                ws->publish("user#" + tagUserFriend, outgoingMsg, uWS::OpCode::TEXT, false);
+                                ws->publish("user#" + tagUserOur, outgoingMsg, uWS::OpCode::TEXT, false);
+                                cout << endl << outgoingMsg << endl;
+                                cout << "User #" << tagUserOur << " added " << tagUserFriend << " as a friend " << endl;
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + FRND + _ERROR + CNFRMADD;
+                                string tagUserOur = jsonData["tagUserOur"];
+                                cout << endl << outgoingMsg << endl;
+                                ws->publish("user#" + tagUserOur, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }
                     }

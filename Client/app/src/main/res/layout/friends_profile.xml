@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,55 +11,72 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+        <Button
+            android:background="@drawable/round"
+            android:id="@+id/userInFriend"
+            style="@style/btnDlgSignLogin"
+            android:text="@string/add_to_friends"
+            android:textColor="@color/white"
+            android:layout_margin="10dp"
+            app:backgroundTint="@color/accentColor"/>
         <ImageView
             android:id="@+id/imageOfUser"
-            android:backgroundTint="@color/white"
             android:layout_width="match_parent"
-            android:layout_height="400dp"
+            android:layout_height="350dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="5dp"
             android:background="@drawable/round"
-            android:layout_margin="10dp"
-            android:src="@drawable/user_photo"
+            android:backgroundTint="@color/white"
             android:onClick="changePhotoClick"
-            android:scaleType="centerCrop"/>
+            android:scaleType="centerCrop"
+            android:src="@drawable/user_profile_photo"/>
         <TextView
+            android:textColor="@color/colorPrimary"
+            android:background="@drawable/round"
             android:backgroundTint="@color/white"
             android:id="@+id/nameOfUser"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/user_name"
             android:textSize="35sp"
-            android:textColor="@color/colorPrimary"
-            android:layout_margin="10dp"
-            android:paddingLeft="15dp"
-            android:paddingRight="5dp"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginBottom="10dp"
+            android:paddingStart="15dp"
+            android:paddingEnd="5dp"
             android:paddingBottom="5dp"
-            android:paddingTop="5dp"
-            android:onClick="onNameClick"
-            android:background="@drawable/round"/>
+            android:paddingTop="5dp"/>
         <LinearLayout
-            android:layout_margin="10dp"
             android:background="@drawable/round"
-            android:backgroundTint="@color/white"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
             <TextView
-
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/tag"
-                android:textColor="@color/colorPrimary"
                 android:textSize="22sp"
-                android:layout_margin="10dp"
-                android:padding="5dp"/>
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"/>
             <TextView
-                android:id="@+id/tagofuser"
+                android:textColor="@color/colorPrimary"
+                android:id="@+id/tagOfUser"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="22sp"
-                android:textColor="@color/colorPrimary"
-                android:layout_marginVertical="10dp"/>
+                android:padding="5dp"/>
+            <ImageButton
+                android:id="@+id/copyTagBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/copy_icon_draw"
+                android:scaleType="centerCrop"
+                android:backgroundTint="@color/white"
+                android:layout_gravity="center"/>
         </LinearLayout>
-
     </LinearLayout>
 </LinearLayout>

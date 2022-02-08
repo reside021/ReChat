@@ -74,4 +74,7 @@ dependencies {
 
     implementation 'com.gauravk.bubblenavigation:bubblenavigation:1.0.7'
 
+
+    implementation "androidx.viewpager2:viewpager2:1.0.0"
+
 }

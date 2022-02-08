@@ -122,7 +122,8 @@ class ChatPeople : AppCompatActivity() {
             when {
                 el[3] == "IMAGE" -> {
                     val nameImg = el[1]
-                    val chatName = dialog_id.replace("#", "%23")
+                    var chatName = dialog_id.replace("#", "%23")
+                    chatName = chatName.replace("::", "--")
                     val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
                     var imageInMessage: ImageView
                     if(el[0] != ourTag){

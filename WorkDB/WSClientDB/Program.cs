@@ -170,6 +170,46 @@ namespace WSClientDB
         public List<DataOfNickName> listOfData { get; set; }
         public string tagUser { get; set; }
     }
+    public class ActionsWithFrnd
+    {
+        public string typeAction { get; set; }
+        public string tagUserSender { get; set; }
+        public string nameUserSender { get; set; }
+        public string tagUserReceiver { get; set; }
+        public string nameUserReceiver { get; set; }
+    }
+    public class ResultActionFrnd 
+    {
+        public string type { get; set; } // RESULTBD
+        public string oper { get; set; } // type oper
+        public string typeAction { get; set; } // type action with friends
+        public string tagUserSender { get; set; } // userSender
+        public string nameUserSender { get; set; }
+        public string tagUserReceiver { get; set; } // userReceiver
+        public string nameUserReceiver { get; set; }
+        public bool success { get; set; } // status
+    }
+    public class UpdateFriend
+    {
+        public string tagUserFriend { get; set; }
+        public string tagUserOur { get; set; }
+    }
+    public class DataOfFriendsTable
+    {
+        public string tagSenderFrnd { get; set; }
+        public string tagReceiverFrnd { get; set; }
+        public string nameFrnd { get; set; }
+        public int status { get; set; }
+    }
+    public class DataOfFriendsList
+    {
+        public string type { get; set; }
+        public string oper { get; set; } // type oper
+        public string table { get; set; }
+        public bool success { get; set; }
+        public List<DataOfFriendsTable> listOfData { get; set; }
+        public string tagUser { get; set; }
+    }
     class Program
     {
         const string FORDB = "FORDB::";
@@ -194,6 +234,11 @@ namespace WSClientDB
         const string ALLMSG = "ALLMSG::";
         const string ALLTAGNAME = "ALLTAGNAME::";
         const string GROUP = "GROUP#";
+        const string FRND = "FRND::";
+        const string ADD = "ADD::";
+        const string DELETE = "DELETE::";
+        const string CNFRMADD = "CNFRMADD::";
+        const string ALLFRND = "ALLFRND::";
 
         static WebSocket webSocket;
         static SqlConnection sqlConnection;
@@ -655,7 +700,9 @@ namespace WSClientDB
             successUpdate.tagId = tagId;
             try
             {
-                sqlCommand.ExecuteNonQuery(); 
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.CommandText = "Update FriendsTable set nameFrnd = @newnickuser where tagReceiverFrnd = @tagId";
+                sqlCommand.ExecuteNonQuery();
                 successUpdate.success = true;
                 successUpdate.newName = newName;
             }
@@ -825,6 +872,176 @@ namespace WSClientDB
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> DeviceAuth^{tagDB}");
         }
+        private static void WorkWithFrnd(ActionsWithFrnd actionsWithFrnd)
+        {
+
+            ResultActionFrnd resultActionFrnd = new ResultActionFrnd();
+            resultActionFrnd.type = RESULTDB;
+            resultActionFrnd.oper = FRND;
+            resultActionFrnd.tagUserSender = actionsWithFrnd.tagUserSender;
+            resultActionFrnd.nameUserSender = actionsWithFrnd.nameUserSender;
+            resultActionFrnd.tagUserReceiver = actionsWithFrnd.tagUserReceiver;
+            resultActionFrnd.nameUserReceiver = actionsWithFrnd.nameUserReceiver;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                switch (actionsWithFrnd.typeAction)
+                {
+                    case ADD:
+                        {
+                            resultActionFrnd.typeAction = ADD;
+                            sqlCommand.CommandText =
+                                @"Insert into FriendsTable values
+                                (@tagUserSender, @tagUserReceiver, @nameFrndReceiver, 1),
+                                (@tagUserReceiver, @tagUserSender, @nameFrndSender,  0)";
+                            SqlParameter sqlParameter = new SqlParameter("@tagUserSender", actionsWithFrnd.tagUserSender);
+                            sqlCommand.Parameters.Add(sqlParameter);
+                            SqlParameter sqlParameter1 = new SqlParameter("@tagUserReceiver", actionsWithFrnd.tagUserReceiver);
+                            sqlCommand.Parameters.Add(sqlParameter1);
+                            SqlParameter sqlParameter2 = new SqlParameter("@nameFrndReceiver", actionsWithFrnd.nameUserReceiver);
+                            sqlCommand.Parameters.Add(sqlParameter2);
+                            SqlParameter sqlParameter3 = new SqlParameter("@nameFrndSender", actionsWithFrnd.nameUserSender);
+                            sqlCommand.Parameters.Add(sqlParameter3);
+                            sqlCommand.ExecuteNonQuery();
+                            sqlCommand.Parameters.Clear();
+                            break;
+                        }
+                    case DELETE:
+                        {
+
+                            break;
+                        }
+                }
+                resultActionFrnd.success = true;
+            }
+            catch(Exception ex)
+            {
+                resultActionFrnd.success = false;
+                Console.WriteLine(ex.Message);
+            }
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(resultActionFrnd);
+            webSocket.Send(jsonResult);
+            Console.WriteLine($"[MSG] -> CreateFrndRequest^{resultActionFrnd.success}");
+
+        }
+        private static void UpdateFriend(UpdateFriend updateFriend)
+        {
+            ResultActionFrnd resultActionFrnd = new ResultActionFrnd();
+            resultActionFrnd.type = RESULTDB;
+            resultActionFrnd.oper = FRND;
+            resultActionFrnd.tagUserSender = updateFriend.tagUserOur;
+            resultActionFrnd.tagUserReceiver = updateFriend.tagUserFriend;
+            resultActionFrnd.typeAction = CNFRMADD;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"Update FriendsTable set status = 2 where 
+                    (tagSenderFrnd = @tagUserFriend AND tagReceiverFrnd = @tagUserOur)
+                    OR
+                    (tagSenderFrnd = @tagUserOur AND tagReceiverFrnd = @tagUserFriend)";
+                SqlParameter sqlParameter = new SqlParameter("@tagUserFriend", updateFriend.tagUserFriend);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter2 = new SqlParameter("@tagUserOur", updateFriend.tagUserOur);
+                sqlCommand.Parameters.Add(sqlParameter2);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                resultActionFrnd.success = true;
+            }
+            catch
+            {
+                resultActionFrnd.success = false;
+            }
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(resultActionFrnd);
+            webSocket.Send(jsonResult);
+            Console.WriteLine($"[MSG] -> ConfirmAddFriend^{updateFriend.tagUserOur} -> {updateFriend.tagUserFriend} ^ {resultActionFrnd.success}");
+        }
+
+        private static void DeleteFriend(UpdateFriend updateFriend)
+        {
+            ResultActionFrnd resultActionFrnd = new ResultActionFrnd();
+            resultActionFrnd.type = RESULTDB;
+            resultActionFrnd.oper = FRND;
+            resultActionFrnd.tagUserSender = updateFriend.tagUserOur;
+            resultActionFrnd.tagUserReceiver = updateFriend.tagUserFriend;
+            resultActionFrnd.typeAction = DELETE;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"Delete From FriendsTable where 
+                    (tagSenderFrnd = @tagUserFriend AND tagReceiverFrnd = @tagUserOur)
+                    OR
+                    (tagSenderFrnd = @tagUserOur AND tagReceiverFrnd = @tagUserFriend)";
+                SqlParameter sqlParameter = new SqlParameter("@tagUserFriend", updateFriend.tagUserFriend);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter2 = new SqlParameter("@tagUserOur", updateFriend.tagUserOur);
+                sqlCommand.Parameters.Add(sqlParameter2);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                resultActionFrnd.success = true;
+            }
+            catch
+            {
+                resultActionFrnd.success = false;
+            }
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(resultActionFrnd);
+            webSocket.Send(jsonResult);
+            Console.WriteLine($"[MSG] -> DeleteFriend^{updateFriend.tagUserOur} -> {updateFriend.tagUserFriend} ^ {resultActionFrnd.success}");
+        }
+
+        private static void SelectDataForAllFriends(string tagUser)
+        {
+
+            DataOfFriendsList dataOfFriends = new DataOfFriendsList();
+            dataOfFriends.type = RESULTDB;
+            dataOfFriends.oper = DOWNLOAD;
+            dataOfFriends.table = ALLFRND;
+            dataOfFriends.tagUser = tagUser;
+            List<DataOfFriendsTable> listFriends = new List<DataOfFriendsTable>();
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = 
+                    @"select * from FriendsTable where (tagSenderFrnd = @tagUser) OR (tagReceiverFrnd = @tagUser)";
+                SqlParameter sqlParameter = new SqlParameter("@tagUser", tagUser);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                if (sqlDataReader.HasRows)
+                {
+                    while (sqlDataReader.Read())
+                    {
+                        string _tagSenderFrnd = sqlDataReader.GetString(0);
+                        string _tagReceiverFrnd = sqlDataReader.GetString(1);
+                        string _nameFrnd = sqlDataReader.GetString(2);
+                        int _status = sqlDataReader.GetInt16(3);
+                        listFriends.Add(new DataOfFriendsTable() { 
+                            tagSenderFrnd = _tagSenderFrnd,
+                            tagReceiverFrnd = _tagReceiverFrnd,
+                            nameFrnd = _nameFrnd,
+                            status = _status});
+                    }
+                }
+                sqlCommand.Parameters.Clear();
+                dataOfFriends.listOfData = listFriends;
+                dataOfFriends.success = true;
+            }
+            catch
+            {
+                dataOfFriends.success = false;
+            }
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(dataOfFriends);
+            webSocket.Send(jsonResult);
+            Console.WriteLine($"[MSG] -> DownLoadFriends^{tagUser} ({dataOfFriends.success})");
+        }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
             if (e.Message.IndexOf(FORDB) == -1) return;
@@ -841,7 +1058,7 @@ namespace WSClientDB
                 if (message.IndexOf(INSERT) != -1)
                 {
                     message = message.Substring(INSERT.Length);
-                    if (message.IndexOf(SIGNUP) != -1)
+                    if(message.IndexOf(SIGNUP) != -1)
                     {
                         message = message.Substring(SIGNUP.Length);
                         SignUp signUp = JsonConvert.DeserializeObject<SignUp>(message);
@@ -860,6 +1077,12 @@ namespace WSClientDB
                         NewMsgDLG newMsgDLG = JsonConvert.DeserializeObject<NewMsgDLG>(message);
                         InsertDataNewMsgDLG(newMsgDLG.dialog_id, newMsgDLG.sender, newMsgDLG.typeMsg, newMsgDLG.text, newMsgDLG.receiverId);
                     }
+                    if(message.IndexOf(FRND) != -1)
+                    {
+                        message = message.Substring(FRND.Length);
+                        ActionsWithFrnd actionsWithFrnd = JsonConvert.DeserializeObject<ActionsWithFrnd>(message);
+                        WorkWithFrnd(actionsWithFrnd);
+                    }
                 }
                 if (message.IndexOf(SELECT) != -1)
                 {
@@ -877,7 +1100,7 @@ namespace WSClientDB
                         SelectDeviceForAuth(authToken.tagUser, authToken.token);
 
                     }
-                    if(message.IndexOf(DOWNLOAD) != -1)
+                    if (message.IndexOf(DOWNLOAD) != -1)
                     {
                         message = message.Substring(DOWNLOAD.Length);
                         if (message.IndexOf(ALLDLG) != -1)
@@ -886,17 +1109,23 @@ namespace WSClientDB
                             DownLoadAllDlg downLoadAllDlg = JsonConvert.DeserializeObject<DownLoadAllDlg>(message);
                             SelectDataForAllDlg(downLoadAllDlg.tagUser);
                         }
-                        if(message.IndexOf(ALLMSG) != -1)
+                        if (message.IndexOf(ALLMSG) != -1)
                         {
                             message = message.Substring(ALLMSG.Length);
                             DownLoadAllMsg downLoadAllMsg = JsonConvert.DeserializeObject<DownLoadAllMsg>(message);
                             SelectDataForAllMsg(downLoadAllMsg.dialog_ids, downLoadAllMsg.authorId);
                         }
-                        if(message.IndexOf(ALLTAGNAME) != -1)
+                        if (message.IndexOf(ALLTAGNAME) != -1)
                         {
                             message = message.Substring(ALLTAGNAME.Length);
                             DownLoadAllTagName downLoadAllTagName = JsonConvert.DeserializeObject<DownLoadAllTagName>(message);
                             SelectDataForAllTagName(downLoadAllTagName.dialog_ids, downLoadAllTagName.authorId);
+                        }
+                        if (message.IndexOf(ALLFRND) != -1)
+                        {
+                            message = message.Substring(ALLFRND.Length);
+                            DownLoadAllDlg downLoadAllDlg = JsonConvert.DeserializeObject<DownLoadAllDlg>(message);
+                            SelectDataForAllFriends(downLoadAllDlg.tagUser);
                         }
                     }
                 }
@@ -928,6 +1157,22 @@ namespace WSClientDB
                         UpdateAvatar updateAvatar = JsonConvert.DeserializeObject<UpdateAvatar>(message);
                         DeleteAvatarOfUser(updateAvatar.tagId);
 
+                    }
+                    if (message.IndexOf(FRND) != -1)
+                    {
+                        message = message.Substring(FRND.Length);
+                        UpdateFriend updateFriend = JsonConvert.DeserializeObject<UpdateFriend>(message);
+                        UpdateFriend(updateFriend);
+                    }
+                }
+                if (message.IndexOf(DELETE) != -1)
+                {
+                    message = message.Substring(DELETE.Length);
+                    if (message.IndexOf(FRND) != -1)
+                    {
+                        message = message.Substring(FRND.Length);
+                        UpdateFriend updateFriend = JsonConvert.DeserializeObject<UpdateFriend>(message);
+                        DeleteFriend(updateFriend);
                     }
                 }
             }

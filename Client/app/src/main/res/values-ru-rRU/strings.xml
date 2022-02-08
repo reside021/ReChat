@@ -27,4 +27,13 @@
     <string name="delete">Удалить</string>
     <string name="username">Имя пользователя</string>
     <string name="user_name">Незнакомец</string>
+    <string name="users">Пользователи</string>
+    <string name="search">Поиск пользователя (тег)</string>
+    <string name="people">Люди</string>
+    <string name="share_to">Поделиться</string>
+    <string name="msg_share">Мой тег для добавления в друзья:</string>
+    <string name="copy_tag">Скопировано!</string>
+    <string name="add_to_friends">Добавить в друзья</string>
+    <string name="remove_from_friends">Удалить из друзей</string>
+    <string name="request">Запросы</string>
 </resources>

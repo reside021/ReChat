@@ -1,0 +1,26 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="ui.UserListFragment">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <SearchView
+            android:id="@+id/searchField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:queryHint="@string/search"
+            android:iconifiedByDefault="false"
+            android:background="@drawable/view_back"/>
+        <ListView
+            android:id="@+id/listViewUser"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/searchField"
+            android:background="@color/backgroundColor"
+            android:paddingTop="5dp"/>
+    </RelativeLayout>
+</FrameLayout>

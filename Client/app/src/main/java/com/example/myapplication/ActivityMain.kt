@@ -15,6 +15,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.myapplication.ChatPeople.Companion.mainWindowOuter
 import com.example.myapplication.ChatPeople.Companion.scrollView
+import com.example.myapplication.adapters.MyAdapterForChat
+import com.example.myapplication.adapters.MyAdapterForFriends
+import com.example.myapplication.adapters.MyAdapterForRequest
+import com.example.myapplication.adapters.MyAdapterForUsers
 import com.example.myapplication.dataClasses.*
 import com.example.myapplication.interfaces.*
 import com.example.myapplication.ui.*
@@ -47,7 +51,10 @@ class ActivityMain :
         FriendsFragment.OnFragmentSendDataListener,
         SharedPreferences.OnSharedPreferenceChangeListener,
         FirstDisplayFragment.OnFragmentSendDataListener,
-        AuthFragment.OnFragmentSendDataListener{
+        AuthFragment.OnFragmentSendDataListener,
+        FriendListFragment.OnFragmentSendDataListener,
+        UserListFragment.OnFragmentSendDataListener,
+        FrndListRequestFragment.OnFragmentSendDataListener{
 
     companion object {
         const val WEB_SOCKET_URL = "ws://servchat.ddns.net:9001"
@@ -95,12 +102,13 @@ class ActivityMain :
                     loadFragment(fragment)
                 }
                 2 -> {
-                    toolbar?.title = resources.getString(R.string.friends)
+                    toolbar?.title = resources.getString(R.string.people)
                     fragment = FriendsFragment()
                     loadFragment(fragment)
                 }
             }
         }
+
     }
 
 
@@ -120,13 +128,13 @@ class ActivityMain :
                 }else{
                     Toast.makeText(this@ActivityMain,
                         "Необходимо установить актуальную версию приложения",
-                        Toast.LENGTH_LONG).show()
+                        Toast.LENGTH_SHORT).show()
                 }
             }
             override fun onFailure(call: Call<ActualVersion>, t: Throwable) {
                 Toast.makeText(this@ActivityMain,
                     "Отсутствует подключение к серверу",
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
             }
         })
     }
@@ -137,6 +145,7 @@ class ActivityMain :
             .replace(R.id.host_fragment, fragment)
             .commit()
     }
+
 
     override fun onUserLoadView() {
         val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
@@ -156,14 +165,26 @@ class ActivityMain :
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as ChatFragment
         fragment.setUserData(myAdapterForChat)
     }
-    override fun onFriendsLoadView() {
-        val myAdapterForFriends = MyAdapterForFriends()
-        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as FriendsFragment
-        fragment.setUserData(myAdapterForFriends)
-    }
+    override fun onFriendsLoadView() {}
+
+
     override fun onFirstDisplayLoadView() {}
     override fun onAuthLoadView() {}
-
+    override fun onFriendsListLoadView() {
+        val myAdapterForFriends = MyAdapterForFriends(tagUser)
+        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as FriendListFragment
+        fragment.setUserData(myAdapterForFriends)
+    }
+    override fun onUserListLoadView() {
+        val myAdapterForUsers = MyAdapterForUsers()
+        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as UserListFragment
+        fragment.setUserData(myAdapterForUsers)
+    }
+    override fun onFrndListRequestLoadView() {
+        val myAdapterForRequest = MyAdapterForRequest(tagUser)
+        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as FrndListRequestFragment
+        fragment.setUserData(myAdapterForRequest)
+    }
 
     fun changePhotoClick(view : View) {
         val builder = AlertDialog.Builder(this)
@@ -532,6 +553,9 @@ class ActivityMain :
                             )
                             val dataServerName = Json.encodeToString(queryAllTagName)
                             webSocketClient.send(dataServerName)
+                            val queryAllFriends = QueryAllFriends("DOWNLOAD::", "ALLFRND::")
+                            val dataServerFriends = Json.encodeToString(queryAllFriends)
+                            webSocketClient.send(dataServerFriends)
                             val queryAllMsg = QueryAllMsg("DOWNLOAD::", "ALLMSG::", dialog_ids)
                             val dataServerMsg = Json.encodeToString(queryAllMsg)
                             webSocketClient.send(dataServerMsg)
@@ -559,8 +583,59 @@ class ActivityMain :
                                 sqliteHelper.addUserInChat(el.tagUser to el.nickUser)
                             }
                         }
+                        if (msg.substringBefore("::") == "ALLFRND") {
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ListDataOfFriends>(jsonData)
+                            val dataOfFriends: List<DataOfFriends> = msg.listOfData
+                            for (el in dataOfFriends) {
+                                sqliteHelper.addUserInFriendDW(el)
+                            }
+                        }
                     }
                     if (status == "ERROR") {
+                    }
+                }
+                if (typeOper == "FRND"){
+                    if (status == "SUCCESS"){
+                        if (msg.substringBefore("::") == "ADD"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ResultActionWithFrnd>(jsonData)
+                            sqliteHelper.addUserInFriend(msg)
+                            if(tagUser == msg.tagUserSender){
+                                Toast.makeText(
+                                    this@ActivityMain,
+                                    "Заявка на добавление отправлена",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                        if (msg.substringBefore("::") == "DELETE"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ResultCnfrmAddFriend>(jsonData)
+                            sqliteHelper.deleteFriend(msg)
+                            if(tagUser == msg.tagUserOur){
+                                Toast.makeText(
+                                    this@ActivityMain,
+                                    "Удалено",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                        if (msg.substringBefore("::") == "CNFRMADD"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ResultCnfrmAddFriend>(jsonData)
+                            sqliteHelper.updateStatusFriend(msg)
+                            if(tagUser == msg.tagUserOur){
+                                Toast.makeText(
+                                    this@ActivityMain,
+                                    "Пользователь добавлен в список друзей",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                    if (status == "ERROR"){
+
                     }
                 }
             }
@@ -571,6 +646,7 @@ class ActivityMain :
                 if (name != "UNNAMED" && id != sp.getString("tagUser", "NONE")) {
                     sqliteHelper.addUserInOnline(id, name)
                     sqliteHelper.updateNameInUserChat(id, name)
+                    sqliteHelper.updateNameInFriends(id, name)
                 }
             }
             "OFFLINE" -> {
@@ -610,7 +686,8 @@ class ActivityMain :
                     newView = inflater.inflate(R.layout.message_to_image, null)
                     val imageInMessage = newView.findViewById<ImageView>(R.id.msgToImage)
                     val nameImg = msg.textMsg
-                    val chatName = msg.dialog_id.replace("#", "%23")
+                    var chatName = msg.dialog_id.replace("#", "%23")
+                    chatName = chatName.replace("::", "--")
                     val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
                     Picasso.get()
                         .load(urlImg)
@@ -651,7 +728,8 @@ class ActivityMain :
                 "IMAGE" -> {
                     newView = inflater.inflate(R.layout.message_from_image, null)
                     val nameImg = msg.textMsg
-                    val chatName = msg.dialog_id.replace("#", "%23")
+                    var chatName = msg.dialog_id.replace("#", "%23")
+                    chatName = chatName.replace("::", "--")
                     val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
                     val imageInMessage = newView.findViewById<ImageView>(R.id.msgFromImage)
                     Picasso.get()

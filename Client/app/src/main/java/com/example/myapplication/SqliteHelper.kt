@@ -5,6 +5,9 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
+import com.example.myapplication.dataClasses.DataOfFriends
+import com.example.myapplication.dataClasses.ResultActionWithFrnd
+import com.example.myapplication.dataClasses.ResultCnfrmAddFriend
 
 class SqliteHelper(context: Context) :
         SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
@@ -18,6 +21,12 @@ class SqliteHelper(context: Context) :
                 "($TAG_USER TEXT PRIMARY KEY, " +
                 "$NAME_USER TEXT)"
         db?.execSQL(tableUsersOnline)
+        val tableFriends = "CREATE TABLE IF NOT EXISTS $FRIENDSTABLE " +
+                "($TAGSENDERFRND TEXT, " +
+                "$TAGRECEIVERFRND TEXT, " +
+                "$FRNDNAME TEXT, " +
+                "$STATUS INTEGER)"
+        db?.execSQL(tableFriends)
 
         val tableMsgDlg = "CREATE TABLE IF NOT EXISTS $MSGDLGTABLE " +
                 "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $SENDER TEXT, $TYPEMSG TEXT, $TEXTMSG TEXT, $TIMECREATED TEXT)"
@@ -36,6 +45,7 @@ class SqliteHelper(context: Context) :
         db?.execSQL("DROP TABLE IF EXISTS $ONLINE_USERS")
         db?.execSQL("DROP TABLE IF EXISTS $MSGDLGTABLE")
         db?.execSQL("DROP TABLE IF EXISTS $USERDLGTABLE")
+        db?.execSQL("DROP TABLE IF EXISTS $FRIENDSTABLE")
         onCreate(db)
     }
 
@@ -46,6 +56,7 @@ class SqliteHelper(context: Context) :
         db.delete(MSGDLGTABLE, null,null)
         db.delete(USERDLGTABLE, null,null)
         db.delete(LIST_USERS_CHAT, null,null)
+        db.delete(FRIENDSTABLE, null,null)
     }
 
     fun addUserInOnline(tagId : String, username : String) : Boolean{
@@ -84,6 +95,24 @@ class SqliteHelper(context: Context) :
         return (Integer.parseInt("$success") != -1)
     }
 
+    fun getAllFriends(ourTag: String) : MutableList<Pair<String, String>>{
+        val allUser = mutableListOf<Pair<String, String>>()
+        val db = readableDatabase
+        val selectALLQuery = "SELECT * FROM $FRIENDSTABLE WHERE $TAGRECEIVERFRND <> '$ourTag' AND $STATUS = 2"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    val tagUser = cursor.getString(cursor.getColumnIndexOrThrow(TAGRECEIVERFRND))
+                    val nameOfUser = cursor.getString(cursor.getColumnIndexOrThrow(FRNDNAME))
+                    allUser.add(tagUser to nameOfUser)
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return allUser
+    }
     fun deleteUserChat(tag: String) : Boolean{
         val db = this.writableDatabase
         val success = db.delete(LIST_USERS_CHAT, "$TAG_USER = ?", arrayOf(tag))
@@ -285,6 +314,99 @@ class SqliteHelper(context: Context) :
         return allDlg
     }
 
+    fun addUserInFriend(msg : ResultActionWithFrnd){
+        //Create and/or open a database that will be used for reading and writing.
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(TAGSENDERFRND, msg.tagUserSender)
+        values.put(TAGRECEIVERFRND, msg.tagUserReceiver)
+        values.put(FRNDNAME, msg.nameUserReceiver)
+        values.put(STATUS, 1)
+        db.insert(FRIENDSTABLE, null, values)
+        values.put(TAGSENDERFRND, msg.tagUserReceiver)
+        values.put(TAGRECEIVERFRND, msg.tagUserSender)
+        values.put(FRNDNAME, msg.nameUserSender)
+        values.put(STATUS, 0)
+        db.insert(FRIENDSTABLE, null, values)
+        db.close()
+        Log.d("________InsertedInFriend_________", "")
+    }
+
+    fun getAllFrndRequest(ourTag: String) : MutableList<Pair<String, String>>{
+        val allUser = mutableListOf<Pair<String, String>>()
+        val db = readableDatabase
+        val selectALLQuery = "SELECT * FROM $FRIENDSTABLE WHERE $TAGSENDERFRND = '$ourTag' AND $STATUS = 0"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    val tagUser = cursor.getString(cursor.getColumnIndexOrThrow(TAGRECEIVERFRND))
+                    val nameOfUser = cursor.getString(cursor.getColumnIndexOrThrow(FRNDNAME))
+                    allUser.add(tagUser to nameOfUser)
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return allUser
+    }
+
+    fun updateStatusFriend(msg : ResultCnfrmAddFriend){
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(STATUS, 2)
+        db.update(FRIENDSTABLE, values, "$TAGSENDERFRND = ? AND $TAGRECEIVERFRND = ?", arrayOf(msg.tagUserFriend, msg.tagUserOur))
+        db.update(FRIENDSTABLE, values, "$TAGSENDERFRND = ? AND $TAGRECEIVERFRND = ?", arrayOf(msg.tagUserOur, msg.tagUserFriend))
+        db.close()
+        Log.d("________UpdateInTblListUsersChat_________", "")
+    }
+
+    fun deleteFriend(msg : ResultCnfrmAddFriend){
+        val db = this.writableDatabase
+        db.delete(FRIENDSTABLE, "$TAGSENDERFRND = ? AND $TAGRECEIVERFRND = ?", arrayOf(msg.tagUserFriend, msg.tagUserOur))
+        db.delete(FRIENDSTABLE, "$TAGSENDERFRND = ? AND $TAGRECEIVERFRND = ?", arrayOf(msg.tagUserOur, msg.tagUserFriend))
+        db.close()
+        Log.d("________DeletedUsersChat_________", "$")
+    }
+
+    fun getStatusUser(tagUser: String) : Int{
+        var status = -1;
+        val db = readableDatabase
+        val selectALLQuery = "SELECT $STATUS FROM $FRIENDSTABLE WHERE $TAGRECEIVERFRND = '$tagUser'"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    status = cursor.getInt(cursor.getColumnIndexOrThrow(STATUS))
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return status
+    }
+
+    fun addUserInFriendDW(el : DataOfFriends){
+        //Create and/or open a database that will be used for reading and writing.
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(TAGSENDERFRND, el.tagSenderFrnd)
+        values.put(TAGRECEIVERFRND, el.tagReceiverFrnd)
+        values.put(FRNDNAME, el.nameFrnd)
+        values.put(STATUS, el.status)
+        db.insert(FRIENDSTABLE, null, values)
+        db.close()
+        Log.d("________InsertedInFriendDW_________", "")
+    }
+
+    fun updateNameInFriends(tagUser: String, newUserName : String){
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(FRNDNAME, newUserName)
+        val success = db.update(FRIENDSTABLE, values, "$TAGRECEIVERFRND = ?", arrayOf(tagUser))
+        db.close()
+        Log.d("________UpdateNameInTblFreinds_________", "")
+    }
 
     fun getCountMsgDlg() :  String{
         val db = this.readableDatabase
@@ -323,6 +445,11 @@ class SqliteHelper(context: Context) :
         private val USERDLGTABLE = "UserDlgTable" // tablename
         private val ENTEREDTIME = "EnteredTime"
 
+        private val FRIENDSTABLE = "FriendsTable" // tablename
+        private val TAGSENDERFRND = "tagSenderFrnd" // field in table
+        private val TAGRECEIVERFRND = "tagReceiverFrnd" // field in table
+        private val STATUS = "status" // field in table
+        private val FRNDNAME = "friendName" // field in table
 
         private val CHAT = "CHAT#"
 

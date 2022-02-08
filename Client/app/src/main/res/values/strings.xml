@@ -29,4 +29,13 @@
     <string name="username">username</string>
     <string name="delete">Delete</string>
     <string name="rechat" translatable="false">ReChat</string>
+    <string name="users">Users</string>
+    <string name="search">User search (tag)</string>
+    <string name="people">People</string>
+    <string name="share_to">Share To:</string>
+    <string name="msg_share">My tag for adding to friends:</string>
+    <string name="copy_tag">Copied!</string>
+    <string name="add_to_friends">Add to friends</string>
+    <string name="remove_from_friends">Remove from friends</string>
+    <string name="request">Request</string>
 </resources>

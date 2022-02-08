@@ -1,15 +1,15 @@
 package com.example.myapplication.ui
 
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import com.example.myapplication.ActivityMain.Companion.webSocketClient
@@ -85,14 +85,35 @@ class UserFragment : Fragment(){
                 }
             builder.show()
         }
-
+        val tagUser = requireView().findViewById<TextView>(R.id.tagOfUser)
+        tagUser?.setOnLongClickListener {
+            val intent = Intent()
+            intent.action = Intent.ACTION_SEND
+            intent.putExtra(Intent.EXTRA_TEXT,"${resources.getString(R.string.msg_share)} ${tagUser.text}")
+            intent.type = "text/plain"
+            startActivity(Intent.createChooser(intent, resources.getString(R.string.share_to)))
+            return@setOnLongClickListener true
+        }
+        val copyTagBtn = requireView().findViewById<ImageButton>(R.id.copyTagBtn)
+        copyTagBtn.setOnClickListener {
+            try {
+                val clipboard: ClipboardManager? =
+                    requireActivity().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
+                val clip = ClipData.newPlainText("TAG", tagUser.text)
+                clipboard?.setPrimaryClip(clip)
+                Toast.makeText(
+                    activity, resources.getString(R.string.copy_tag),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } catch (ex: Exception){}
+        }
     }
 
 
     fun setUserData(tag : String, userName : String, isAvatar : Boolean,
                     urlAvatar : String, isVisible : Boolean){
         requireView().findViewById<TextView>(R.id.nameOfUser).text = userName
-        requireView().findViewById<TextView>(R.id.tagofuser).text = tag
+        requireView().findViewById<TextView>(R.id.tagOfUser).text = tag
         val switchBeOnline = requireView().findViewById<SwitchCompat>(R.id.switchBeOnline)
         switchBeOnline.isChecked = isVisible
         if(isAvatar){

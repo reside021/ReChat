@@ -4,7 +4,6 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -15,7 +14,7 @@ import android.widget.ListView
 import android.widget.TextView
 import com.example.myapplication.ChatPeople
 import com.example.myapplication.ActivityMain.Companion.sqliteHelper
-import com.example.myapplication.MyAdapterForChat
+import com.example.myapplication.adapters.MyAdapterForChat
 import com.example.myapplication.R
 
 

@@ -54,7 +54,7 @@
                 app:bt_colorActive="@color/purple_500"
                 app:bt_colorInactive="@color/default_inactive"
                 app:bt_icon="@drawable/friends"
-                app:bt_title="@string/friends"
+                app:bt_title="@string/people"
                 app:bt_titleSize="15sp"/>
         </com.gauravk.bubblenavigation.BubbleNavigationLinearView>
         <FrameLayout
