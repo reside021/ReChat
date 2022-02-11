@@ -59,7 +59,7 @@ class ActivityMain :
     companion object {
         const val WEB_SOCKET_URL = "ws://servchat.ddns.net:9001"
         const val IMAGE_REQUEST = 1
-        const val VERSION_APP = "0.1"
+        const val VERSION_APP = "0.2"
         lateinit var webSocketClient : WebSocketClient
         lateinit var sqliteHelper: SqliteHelper
     }
@@ -67,46 +67,25 @@ class ActivityMain :
     private lateinit var sp : SharedPreferences
     private lateinit var tagUser : String
     private lateinit var bubbleNav : BubbleNavigationLinearView
+    private var needLoad : Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.bottom_nav_bar)
-
 
         sqliteHelper = SqliteHelper(this)
         supportActionBar?.title = resources.getString(R.string.rechat)
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         sp.registerOnSharedPreferenceChangeListener(this)
         bubbleNav = findViewById(R.id.bottom_navigation_view_linear)
-        sqliteHelper.clearTable()
 
-        bubbleNav.visibility = View.GONE
-        loadFragment(FirstDisplayFragment.newInstance())
-        supportActionBar?.title = resources.getString(R.string.rechat)
+
 
         isActVersion()
 
-        val toolbar = supportActionBar
-
+        loadFragment(-1)
         bubbleNav.setNavigationChangeListener { view, position ->
-            val fragment: Fragment
-            when (position) {
-                0 -> {
-                    toolbar?.title = resources.getString(R.string.profile)
-                    fragment = UserFragment()
-                    loadFragment(fragment)
-                }
-                1 -> {
-                    toolbar?.title = resources.getString(R.string.chat)
-                    fragment = ChatFragment()
-                    loadFragment(fragment)
-                }
-                2 -> {
-                    toolbar?.title = resources.getString(R.string.people)
-                    fragment = FriendsFragment()
-                    loadFragment(fragment)
-                }
-            }
+            loadFragment(position)
         }
 
     }
@@ -139,8 +118,53 @@ class ActivityMain :
         })
     }
 
+    override fun onPostResume() {
+        super.onPostResume()
+        if(needLoad){
+            loadFragment(-1)
+            Toast.makeText(this@ActivityMain,
+                "Потеряно соединение с сервером\nПожалуйста, перезапустите приложение",
+                Toast.LENGTH_LONG).show()
+        }
+        needLoad = false
+    }
+    override fun onRestart() {
+        super.onRestart()
+        if(webSocketClient.connection.isClosed) {
+            needLoad = true
+        }
+    }
 
-    private fun loadFragment(fragment : Fragment){
+    private fun loadFragment(position : Int){
+        val toolbar = supportActionBar
+        val fragment: Fragment
+        when (position) {
+            0 -> {
+                bubbleNav.visibility = View.VISIBLE
+                toolbar?.title = resources.getString(R.string.profile)
+                fragment = UserFragment()
+            }
+            1 -> {
+                bubbleNav.visibility = View.VISIBLE
+                toolbar?.title = resources.getString(R.string.chat)
+                fragment = ChatFragment()
+            }
+            2 -> {
+                bubbleNav.visibility = View.VISIBLE
+                toolbar?.title = resources.getString(R.string.people)
+                fragment = FriendsFragment()
+            }
+            3 ->{
+                bubbleNav.visibility = View.GONE
+                fragment = AuthFragment()
+                toolbar?.title = resources.getString(R.string.rechat)
+            }
+            else -> {
+                bubbleNav.visibility = View.GONE
+                fragment = FirstDisplayFragment()
+                toolbar?.title = resources.getString(R.string.rechat)
+            }
+        }
         supportFragmentManager.beginTransaction()
             .replace(R.id.host_fragment, fragment)
             .commit()
@@ -160,14 +184,11 @@ class ActivityMain :
         fragment.setUserData(tagUser, userName, isAvatar, urlAvatar, isVisible)
     }
     override fun onChatLoadView() {
-        val listUserChat = sqliteHelper.getAllUsersChat()
-        val myAdapterForChat = MyAdapterForChat(listUserChat)
+        val myAdapterForChat = MyAdapterForChat()
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as ChatFragment
         fragment.setUserData(myAdapterForChat)
     }
     override fun onFriendsLoadView() {}
-
-
     override fun onFirstDisplayLoadView() {}
     override fun onAuthLoadView() {}
     override fun onFriendsListLoadView() {
@@ -205,7 +226,7 @@ class ActivityMain :
             val isAvatar = sp.getBoolean("isAvatar", false)
             if (isAvatar) {
                 try {
-                    if (webSocketClient.connection.readyState.ordinal != 0) {
+                    if (!webSocketClient.connection.isClosed) {
                         val retrofit = Retrofit.Builder()
                                 .baseUrl("http://imagerc.ddns.net:80/avatar/")
                                 .addConverterFactory(ScalarsConverterFactory.create())
@@ -273,7 +294,7 @@ class ActivityMain :
                             override fun onResponse(call: Call<String>, response: Response<String>) {
                                 if(response.isSuccessful){
                                     if(response.code() == 200){
-                                        if(webSocketClient.connection.readyState.ordinal == 0){
+                                        if(webSocketClient.connection.isClosed){
                                             Toast.makeText(
                                                     this@ActivityMain, "Отсутствует подключение к серверу",
                                                     Toast.LENGTH_SHORT
@@ -306,7 +327,6 @@ class ActivityMain :
     }
 
 
-
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         if(key.equals("changeNickName")){
             val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
@@ -318,9 +338,13 @@ class ActivityMain :
             val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
             fragment.setNewUserImage(urlAvatar)
         }
+        if(key.equals("onRestart")){
+           onRestart()
+        }
     }
 
     private fun initWebSocket(){
+        sqliteHelper.clearTable()
 //        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
         val chatservUri = URI(WEB_SOCKET_URL)
         createWebSocketClient(chatservUri)
@@ -336,12 +360,13 @@ class ActivityMain :
                 val tokenAuth = sp.getString("token", "")
                 if (tokenAuth != null) {
                     if (tokenAuth.isEmpty()) {
-                        bubbleNav.visibility = View.GONE
-                        loadFragment(AuthFragment.newInstance())
+                        runOnUiThread {
+                            loadFragment(3)
+                        }
                     } else{
                         val successAuthToken = SuccessAuthToken("AUTHTOKEN::", tokenAuth)
                         val msg = Json.encodeToString(successAuthToken)
-                        if(webSocketClient.connection.readyState.ordinal != 0){
+                        if(!webSocketClient.connection.isClosed){
                             webSocketClient.send(msg)
                         }
                     }
@@ -404,8 +429,7 @@ class ActivityMain :
                         deviceAuth(msg)
                     }
                     if (status == "ERROR") {
-                        bubbleNav.visibility = View.GONE
-                        loadFragment(AuthFragment.newInstance())
+                        loadFragment(3)
                     }
                 }
                 if (typeOper == "UPDATE") {
@@ -419,7 +443,7 @@ class ActivityMain :
                             ed.apply()
                             val confirmSetname = ConfirmSetName("SETNAME::", true, newName)
                             val msg = Json.encodeToString(confirmSetname)
-                            if (webSocketClient.connection.readyState.ordinal != 0) {
+                            if (!webSocketClient.connection.isClosed) {
                                 webSocketClient.send(msg)
                                 Toast.makeText(
                                     this@ActivityMain,
@@ -435,7 +459,7 @@ class ActivityMain :
                             ed.apply()
                             val confirmVisible = ConfirmUpVisible("VISIBLE::", true, isVisible)
                             val msg = Json.encodeToString(confirmVisible)
-                            if (webSocketClient.connection.readyState.ordinal != 0) {
+                            if (!webSocketClient.connection.isClosed) {
                                 webSocketClient.send(msg)
                             }
                             if (isVisible) {
@@ -508,19 +532,28 @@ class ActivityMain :
                                     msg.userManager,
                                     msg.enteredTime
                                 )
-                                val dialog_ids = sqliteHelper.getAllDlgFromDLG()
+                                val dialog_ids : MutableList<String> = mutableListOf(msg.dialog_id)
                                 val queryAllTagName = QueryAllTagName(
                                     "DOWNLOAD::",
                                     "ALLTAGNAME::",
                                     dialog_ids
                                 )
-                                val dataServerName = Json.encodeToString(queryAllTagName)
-                                webSocketClient.send(dataServerName)
+                                if (!webSocketClient.connection.isClosed) {
+                                    val dataServerName = Json.encodeToString(queryAllTagName)
+                                    webSocketClient.send(dataServerName)
+                                }
                             }
                         }
                         if (msg.substringBefore("::") == "NEWMSGDLG") {
                             val jsonData = msg.substringAfter("::")
                             messageToUser(jsonData)
+                        }
+                        if (msg.substringBefore("::") == "SIGNUP"){
+                            Toast.makeText(
+                                this@ActivityMain,
+                                "Вы были успешно зарегистрированы!",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                     if (status == "ERROR") {
@@ -529,6 +562,15 @@ class ActivityMain :
                                 this, "Не удалось создать чат",
                                 Toast.LENGTH_SHORT
                             ).show()
+                        }
+                        if (msg.substringBefore("::") == "SIGNUP"){
+                            Toast.makeText(
+                                this@ActivityMain,
+                                "Ошибка регистрации.\nПопробуйте еще раз.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            webSocketClient.close()
+                            initWebSocket()
                         }
                     }
                 }
@@ -551,14 +593,17 @@ class ActivityMain :
                                 "ALLTAGNAME::",
                                 dialog_ids
                             )
-                            val dataServerName = Json.encodeToString(queryAllTagName)
-                            webSocketClient.send(dataServerName)
-                            val queryAllFriends = QueryAllFriends("DOWNLOAD::", "ALLFRND::")
-                            val dataServerFriends = Json.encodeToString(queryAllFriends)
-                            webSocketClient.send(dataServerFriends)
-                            val queryAllMsg = QueryAllMsg("DOWNLOAD::", "ALLMSG::", dialog_ids)
-                            val dataServerMsg = Json.encodeToString(queryAllMsg)
-                            webSocketClient.send(dataServerMsg)
+                            if (!webSocketClient.connection.isClosed) {
+                                val dataServerName = Json.encodeToString(queryAllTagName)
+                                webSocketClient.send(dataServerName)
+                                val queryAllFriends = QueryAllFriends("DOWNLOAD::", "ALLFRND::")
+                                val dataServerFriends = Json.encodeToString(queryAllFriends)
+                                webSocketClient.send(dataServerFriends)
+                                val queryAllMsg = QueryAllMsg("DOWNLOAD::", "ALLMSG::", dialog_ids)
+                                val dataServerMsg = Json.encodeToString(queryAllMsg)
+                                webSocketClient.send(dataServerMsg)
+                            }
+
                         }
                         if (msg.substringBefore("::") == "ALLMSG") {
                             val jsonData = msg.substringAfter("::")
@@ -582,6 +627,9 @@ class ActivityMain :
                                 if (sqliteHelper.checkUserInChat(el.tagUser)) break
                                 sqliteHelper.addUserInChat(el.tagUser to el.nickUser)
                             }
+                            val ed = sp.edit()
+                            ed.putString("changeUserDlg", LocalDateTime.now().toString())
+                            ed.apply()
                         }
                         if (msg.substringBefore("::") == "ALLFRND") {
                             val jsonData = msg.substringAfter("::")
@@ -601,6 +649,9 @@ class ActivityMain :
                             val jsonData = msg.substringAfter("::")
                             val msg = Json.decodeFromString<ResultActionWithFrnd>(jsonData)
                             sqliteHelper.addUserInFriend(msg)
+                            val ed = sp.edit()
+                            ed.putString("changeStatus", LocalDateTime.now().toString())
+                            ed.apply()
                             if(tagUser == msg.tagUserSender){
                                 Toast.makeText(
                                     this@ActivityMain,
@@ -611,8 +662,16 @@ class ActivityMain :
                         }
                         if (msg.substringBefore("::") == "DELETE"){
                             val jsonData = msg.substringAfter("::")
-                            val msg = Json.decodeFromString<ResultCnfrmAddFriend>(jsonData)
+                            val msg = Json.decodeFromString<ResultDeleteFrined>(jsonData)
                             sqliteHelper.deleteFriend(msg)
+                            val ed = sp.edit()
+                            if(msg.typeDelete == "DELFROMFRND"){
+                                ed.putString("changeStatus", LocalDateTime.now().toString())
+                            }
+                            if(msg.typeDelete == "DELFROMREQ"){
+                                ed.putString("changeStatusReq", LocalDateTime.now().toString())
+                            }
+                            ed.apply()
                             if(tagUser == msg.tagUserOur){
                                 Toast.makeText(
                                     this@ActivityMain,
@@ -625,6 +684,10 @@ class ActivityMain :
                             val jsonData = msg.substringAfter("::")
                             val msg = Json.decodeFromString<ResultCnfrmAddFriend>(jsonData)
                             sqliteHelper.updateStatusFriend(msg)
+                            val ed = sp.edit()
+                            ed.putString("changeStatusCNFRM", LocalDateTime.now().toString())
+                            ed.putString("changeStatus", LocalDateTime.now().toString())
+                            ed.apply()
                             if(tagUser == msg.tagUserOur){
                                 Toast.makeText(
                                     this@ActivityMain,
@@ -633,9 +696,24 @@ class ActivityMain :
                                 ).show()
                             }
                         }
+                        if (msg.substringBefore("::") == "FIND"){
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ResultFindUser>(jsonData)
+                            val ed = sp.edit()
+                            ed.putString("nameUserFind", msg.nameUserFriend)
+                            ed.putString("tagUserFind", msg.tagUserFriend)
+                            ed.putString("changeStatusFind", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
                     }
                     if (status == "ERROR"){
-
+                        if (msg.substringBefore("::") == "FIND"){
+                            Toast.makeText(
+                                this@ActivityMain,
+                                "Данный пользователь не найден",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             }
@@ -652,7 +730,6 @@ class ActivityMain :
             "OFFLINE" -> {
                 val idWithName = message.substringAfter("::")
                 val id = idWithName.substringBefore("::")
-                val name = idWithName.substringAfter("::")
                 sqliteHelper.deleteUserFromOnline(id)
             }
             "MESSAGE_FROM" -> {
@@ -773,11 +850,13 @@ class ActivityMain :
             var msg = Json.encodeToString(confirmAuth)
             tagUser = sp.getString("tagUser", null)!!
 
-            bubbleNav.visibility = View.VISIBLE
-            loadFragment(UserFragment.newInstance())
-            supportActionBar?.title = resources.getString(R.string.profile)
+            if(bubbleNav.currentActiveItemPosition in 0..2){
+                loadFragment(bubbleNav.currentActiveItemPosition)
+            } else{
+             loadFragment(0)
+            }
 
-            if(webSocketClient.connection.readyState.ordinal != 0){
+            if(!webSocketClient.connection.isClosed){
                 webSocketClient.send(msg)
                 val queryAllDlg = QueryAllDlg("DOWNLOAD::", "ALLDLG::", obj.tagUser)
                 msg = Json.encodeToString(queryAllDlg)
@@ -791,7 +870,6 @@ class ActivityMain :
             ).show()
         }
     }
-
     private fun authorization(data: String){
         try {
             val obj = Json.decodeFromString<DataOfUser>(data)
@@ -813,10 +891,13 @@ class ActivityMain :
 
             tagUser = sp.getString("tagUser", null)!!
 
-            bubbleNav.visibility = View.VISIBLE
-            loadFragment(UserFragment.newInstance())
-            supportActionBar?.title = resources.getString(R.string.profile)
-            if(webSocketClient.connection.readyState.ordinal != 0){
+            if(bubbleNav.currentActiveItemPosition in 0..2){
+                loadFragment(bubbleNav.currentActiveItemPosition)
+            } else{
+                loadFragment(0)
+            }
+
+            if(!webSocketClient.connection.isClosed){
                 webSocketClient.send(msg)
                 val queryAllDlg = QueryAllDlg("DOWNLOAD::", "ALLDLG::", obj.tagUser)
                 msg = Json.encodeToString(queryAllDlg)
@@ -830,10 +911,6 @@ class ActivityMain :
             ).show()
         }
     }
-
-
-
-
 }
 
 

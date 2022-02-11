@@ -45,7 +45,7 @@ class MyAdapterForFriends(_ourTag : String) : BaseAdapter() {
                             Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                if(webSocketClient.connection.readyState.ordinal == 0) {
+                if(webSocketClient.connection.isClosed) {
                     Toast.makeText(context, "Отсутствует подключение к серверу",
                             Toast.LENGTH_SHORT).show()
                     return@setOnClickListener

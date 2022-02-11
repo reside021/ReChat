@@ -3,6 +3,7 @@ package com.example.myapplication.ui
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -18,7 +19,8 @@ import com.example.myapplication.adapters.MyAdapterForChat
 import com.example.myapplication.R
 
 
-class ChatFragment : Fragment() {
+class ChatFragment : Fragment(),
+    SharedPreferences.OnSharedPreferenceChangeListener{
 
     internal interface OnFragmentSendDataListener {
         fun onChatLoadView()
@@ -29,6 +31,7 @@ class ChatFragment : Fragment() {
     }
 
     private var fragmentSendDataListener: OnFragmentSendDataListener? = null
+    private lateinit var sp : SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,12 +48,9 @@ class ChatFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentSendDataListener?.onChatLoadView()
-    }
-
-    fun setUserData(myAdapterForChat: MyAdapterForChat){
+        sp = requireActivity().getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+        sp.registerOnSharedPreferenceChangeListener(this)
         val listViewChat = requireView().findViewById<ListView>(R.id.listViewChat)
-        listViewChat.adapter = myAdapterForChat
         listViewChat.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
             val intent = Intent(activity, ChatPeople::class.java);
             val idUser = view.findViewById<TextView>(R.id.idUser)
@@ -72,6 +72,24 @@ class ChatFragment : Fragment() {
                 alertDialog.dismiss()
             }
             return@OnItemLongClickListener true
+        }
+
+    }
+    fun setUserData(myAdapterForChat: MyAdapterForChat){
+        val listViewChat = requireView().findViewById<ListView>(R.id.listViewChat)
+        listViewChat.adapter = myAdapterForChat
+    }
+
+    override fun onStart() {
+        super.onStart()
+        fragmentSendDataListener?.onChatLoadView()
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        if(this.isVisible){
+            if(key.equals("changeUserDlg")){
+                fragmentSendDataListener?.onChatLoadView()
+            }
         }
     }
 }

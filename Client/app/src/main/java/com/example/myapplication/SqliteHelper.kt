@@ -4,10 +4,12 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.icu.text.SimpleDateFormat
 import android.util.Log
 import com.example.myapplication.dataClasses.DataOfFriends
 import com.example.myapplication.dataClasses.ResultActionWithFrnd
 import com.example.myapplication.dataClasses.ResultCnfrmAddFriend
+import com.example.myapplication.dataClasses.ResultDeleteFrined
 
 class SqliteHelper(context: Context) :
         SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
@@ -29,7 +31,7 @@ class SqliteHelper(context: Context) :
         db?.execSQL(tableFriends)
 
         val tableMsgDlg = "CREATE TABLE IF NOT EXISTS $MSGDLGTABLE " +
-                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $SENDER TEXT, $TYPEMSG TEXT, $TEXTMSG TEXT, $TIMECREATED TEXT)"
+                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $SENDER TEXT, $TYPEMSG TEXT, $TEXTMSG TEXT, $TIMECREATED INTEGER)"
         db?.execSQL(tableMsgDlg)
 
         val tableUserDlg = "CREATE TABLE IF NOT EXISTS $USERDLGTABLE " +
@@ -230,7 +232,7 @@ class SqliteHelper(context: Context) :
     }
 
 
-    fun addMsgInTable(dialogID : String, sender : String, typeMsg : String, text : String, timecreated : String ) : Boolean{
+    fun addMsgInTable(dialogID : String, sender : String, typeMsg : String, text : String, timecreated : Int ) : Boolean{
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(DIALOG_ID, dialogID)
@@ -240,7 +242,7 @@ class SqliteHelper(context: Context) :
         values.put(TIMECREATED, timecreated)
         val success = db.insert(MSGDLGTABLE, null, values)
         db.close()
-        Log.d("________InsertedInTblMsg_________", "$success")
+        Log.d("________InsertedInTblMsg_________", "$text $timecreated")
         return (Integer.parseInt("$success") != -1)
     }
 
@@ -257,6 +259,8 @@ class SqliteHelper(context: Context) :
                     val timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(TIMECREATED))
                     val typeMsg = cursor.getString(cursor.getColumnIndexOrThrow(TYPEMSG))
                     allMsg.add(arrayOf(sender, text, timeCreated, typeMsg))
+
+                    Log.d("____DB____", "$text + $typeMsg + $sender + $timeCreated")
                 } while (cursor.moveToNext())
             }
         }
@@ -292,7 +296,7 @@ class SqliteHelper(context: Context) :
         values.put(ENTEREDTIME, enteredTime)
         val success = db.insert(USERDLGTABLE, null, values)
         db.close()
-        Log.d("________InsertedInTblMsg_________", "$success")
+        Log.d("________InsertedInTblDlg_________", "$success")
         return (Integer.parseInt("$success") != -1)
     }
 
@@ -361,7 +365,7 @@ class SqliteHelper(context: Context) :
         Log.d("________UpdateInTblListUsersChat_________", "")
     }
 
-    fun deleteFriend(msg : ResultCnfrmAddFriend){
+    fun deleteFriend(msg : ResultDeleteFrined){
         val db = this.writableDatabase
         db.delete(FRIENDSTABLE, "$TAGSENDERFRND = ? AND $TAGRECEIVERFRND = ?", arrayOf(msg.tagUserFriend, msg.tagUserOur))
         db.delete(FRIENDSTABLE, "$TAGSENDERFRND = ? AND $TAGRECEIVERFRND = ?", arrayOf(msg.tagUserOur, msg.tagUserFriend))
@@ -426,7 +430,7 @@ class SqliteHelper(context: Context) :
 
     companion object {
         private val DB_NAME = "UserChat"
-        private val DB_VERSION = 1;
+        private val DB_VERSION = 2;
 
         private val ONLINE_USERS = "OnlineUsers" // tablename
         private val TAG_USER = "Tag_Of_User" // field in table

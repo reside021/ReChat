@@ -10,6 +10,7 @@ import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.R
 import com.example.myapplication.dataClasses.ConfirmAddFriend
+import com.example.myapplication.dataClasses.DeleteFriend
 import com.example.myapplication.dataClasses.NewUserDLGTable
 import com.squareup.picasso.MemoryPolicy
 import com.squareup.picasso.NetworkPolicy
@@ -43,7 +44,7 @@ class MyAdapterForRequest(_ourTag : String): BaseAdapter() {
             val addFriendBtn = newView.findViewById<Button>(R.id.addFriendBtn)
             val deleteFriendBtn = newView.findViewById<Button>(R.id.deleteFriendBtn)
             addFriendBtn.setOnClickListener {
-                if(webSocketClient.connection.readyState.ordinal == 0){
+                if(webSocketClient.connection.isClosed){
                     Toast.makeText(
                         context, "Отсутствует подключение к серверу",
                         Toast.LENGTH_SHORT
@@ -55,13 +56,13 @@ class MyAdapterForRequest(_ourTag : String): BaseAdapter() {
                 }
             }
             deleteFriendBtn.setOnClickListener {
-                if(webSocketClient.connection.readyState.ordinal == 0){
+                if(webSocketClient.connection.isClosed){
                     Toast.makeText(
                         context, "Отсутствует подключение к серверу",
                         Toast.LENGTH_SHORT
                     ).show()
                 } else{
-                    val dataUser = ConfirmAddFriend("FRND::", "DELETE::", idOfUser.text.toString())
+                    val dataUser =  DeleteFriend("FRND::", "DELETE::", idOfUser.text.toString(), "DELFROMREQ")
                     val msg = Json.encodeToString(dataUser)
                     webSocketClient.send(msg)
                 }

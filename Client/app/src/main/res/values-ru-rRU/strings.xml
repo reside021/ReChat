@@ -36,4 +36,5 @@
     <string name="add_to_friends">Добавить в друзья</string>
     <string name="remove_from_friends">Удалить из друзей</string>
     <string name="request">Запросы</string>
+    <string name="status_connect">Подключение к серверу:</string>
 </resources>

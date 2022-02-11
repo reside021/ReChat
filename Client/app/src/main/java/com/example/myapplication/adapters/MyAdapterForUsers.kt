@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import com.example.myapplication.ActivityMain
+import com.example.myapplication.ActivityMain.Companion.sqliteHelper
+import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.R
 import com.example.myapplication.dataClasses.NewUserDLGTable
 import com.squareup.picasso.MemoryPolicy
@@ -15,7 +17,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class MyAdapterForUsers() : BaseAdapter() {
-    private val list : List<Pair<String, String>> = ActivityMain.sqliteHelper.getAllUsersOnline().toList()
+    private val list : List<Pair<String, String>> = sqliteHelper.getAllUsersOnline().toList()
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
         val context = parent?.context
         val sp = context!!.getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
@@ -40,21 +42,21 @@ class MyAdapterForUsers() : BaseAdapter() {
                 .into(imageOfUser)
             addChat.setOnClickListener {
                 val tagUser = list[position].first
-                if(ActivityMain.sqliteHelper.checkUserInChat(tagUser)) {
+                if(sqliteHelper.checkUserInChat(tagUser)) {
                     Toast.makeText(context, "C данным пользователем уже существует чат",
                         Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                if(ActivityMain.webSocketClient.connection.readyState.ordinal == 0) {
+                if(webSocketClient.connection.isClosed) {
                     Toast.makeText(context, "Отсутствует подключение к серверу",
                         Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                ActivityMain.sqliteHelper.addUserInChat(list[position])
-                if(!ActivityMain.sqliteHelper.checkExistChatWithUser(ourTag, tagUser)){
+                sqliteHelper.addUserInChat(list[position])
+                if(!sqliteHelper.checkExistChatWithUser(ourTag, tagUser)){
                     val newUser = NewUserDLGTable("NEWUSERDLG::", tagUser)
                     val msg = Json.encodeToString(newUser)
-                    ActivityMain.webSocketClient.send(msg)
+                    webSocketClient.send(msg)
                 }
             }
             return newView

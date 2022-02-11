@@ -68,7 +68,7 @@ class UserFragment : Fragment(){
                         ).show()
                         return@setPositiveButton
                     }
-                    if(webSocketClient.connection.readyState.ordinal == 0){
+                    if(webSocketClient.connection.isClosed){
                         Toast.makeText(
                             activity, "Отсутствует подключение к серверу",
                             Toast.LENGTH_SHORT
@@ -127,7 +127,7 @@ class UserFragment : Fragment(){
         }
         switchBeOnline.setOnCheckedChangeListener { _, isChecked ->
             if(isChecked){
-                if(webSocketClient.connection.readyState.ordinal == 0){
+                if(webSocketClient.connection.isClosed){
                     Toast.makeText(
                             activity, "Отсутствует подключение к серверу",
                             Toast.LENGTH_SHORT
@@ -140,7 +140,7 @@ class UserFragment : Fragment(){
                     webSocketClient.send(msg)
                 }
             }else{
-                if(webSocketClient.connection.readyState.ordinal == 0){
+                if(webSocketClient.connection.isClosed){
                     Toast.makeText(
                             activity, "Отсутствует подключение к серверу",
                             Toast.LENGTH_SHORT

@@ -8,5 +8,5 @@ data class DataOfMessage(
     val sender: String,
     val typeMsg: String,
     val textMsg: String,
-    val timeCreated: String
+    val timeCreated: Int
 )

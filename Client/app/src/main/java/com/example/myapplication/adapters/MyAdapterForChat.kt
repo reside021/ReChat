@@ -7,14 +7,15 @@ import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
+import com.example.myapplication.ActivityMain
+import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 import com.example.myapplication.R
 import com.squareup.picasso.MemoryPolicy
 import com.squareup.picasso.NetworkPolicy
 import com.squareup.picasso.Picasso
 
-class MyAdapterForChat(_list: MutableList<Pair<String,String>>) : BaseAdapter() {
-    private val list : MutableList<Pair<String, String>> = _list
-
+class MyAdapterForChat() : BaseAdapter() {
+    private val list : MutableList<Pair<String, String>> = sqliteHelper.getAllUsersChat()
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
         val context = parent?.context
         val newView : View

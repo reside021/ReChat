@@ -87,6 +87,7 @@ const string ADD = "ADD::";
 const string _DELETE = "DELETE::";
 const string CNFRMADD = "CNFRMADD::";
 const string ALLFRND = "ALLFRND::";
+const string FIND = "FIND::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -306,7 +307,7 @@ int main() {
                     ws->send(online(entry.first), uWS::OpCode::TEXT);
                 }
                 updateName(userData);
-                ws->publish(BROADCAST_CHANNEL, online(userData->uId));
+                //ws->publish(BROADCAST_CHANNEL, online(userData->uId));
 
                 cout << "New user connected, id = " << userData->uId << endl;
                 cout << "Users connected: " << userNames.size() << endl;
@@ -420,7 +421,6 @@ int main() {
                     };
                     string outgoingMessage = FORDB + SQL + INSERT + SIGNUP + (string)jsonOut.dump();
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
-                    cout << "User #" << authorId << " has registered" << endl;
                 }
                 if (isAuthUser(jsonData["type"])) {
                     if (IsServerDBNotActive()) {
@@ -435,6 +435,7 @@ int main() {
                         updateName(userData);
                         string userChannel = "user#" + userData->uId;
                         ws->subscribe(userChannel);
+                        ws->subscribe(BROADCAST_CHANNEL);
                         if (!jsonData["isVisible"]) {
                             updateGhostUser(userData);
                         }
@@ -544,11 +545,22 @@ int main() {
                     }
                     else if (jsonData["typeAction"] == _DELETE) {
                         string tagUserFriend = jsonData["tagUserFriend"];
+                        string typeDelete = jsonData["typeDelete"];
+                        json jsonOut = {
+                            {"tagUserFriend", tagUserFriend},
+                            {"tagUserOur", authorId},
+                            {"typeDelete", typeDelete}
+                        };
+                        string outgoingMessage = FORDB + SQL + _DELETE + FRND + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    else if (jsonData["typeAction"] == FIND) {
+                        string tagUserFriend = jsonData["tagUserFriend"];
                         json jsonOut = {
                             {"tagUserFriend", tagUserFriend},
                             {"tagUserOur", authorId}
                         };
-                        string outgoingMessage = FORDB + SQL + _DELETE + FRND + (string)jsonOut.dump();
+                        string outgoingMessage = FORDB + SQL + SELECT + FRND + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                 }
@@ -589,6 +601,19 @@ int main() {
                     }
                 }
                 if (isResultFromDB(jsonData["type"])) {
+                    if (jsonData["oper"] == SIGNUP) {
+                        if (jsonData["success"]) {
+                            string authorId = jsonData["authorId"];
+                            string outgoingMsg = RESULTDB + INSERT + SUCCESS + SIGNUP;
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            cout << "User #" << authorId << " has registered" << endl;
+                        }
+                        else {
+                            string authorId = jsonData["authorId"];
+                            string outgoingMsg = RESULTDB + INSERT + _ERROR + SIGNUP;
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                        }
+                    }
                     if (jsonData["oper"] == AUTH) {
                         if (jsonData["success"]) {
                             string authorId = jsonData["authorId"];
@@ -604,13 +629,13 @@ int main() {
                                 {"isAvatar", isAvatar},
                                 {"token", token}
                             };
-                            string outgoingMsg = AUTH + SUCCESS + (string)jsonOut.dump();
-                            ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                            string outgoingMsg = RESULTDB + AUTH + SUCCESS + (string)jsonOut.dump();
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
                         }
                         else {
                             string authorId = jsonData["authorId"];
-                            string outgoingMsg = AUTH + _ERROR + "none";
-                            ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                            string outgoingMsg = RESULTDB + AUTH + _ERROR + "none";
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
                         }
                     }
                     if (jsonData["oper"] == AUTHTOKEN) {
@@ -631,8 +656,8 @@ int main() {
                         }
                         else {
                             string authorId = jsonData["authorId"];
-                            string outgoingMsg = AUTHTOKEN + _ERROR + "none";
-                            ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
+                            string outgoingMsg = RESULTDB + AUTHTOKEN + _ERROR + "none";
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
                         }
                     }
                     if (jsonData["oper"] == UPDATE) {
@@ -682,11 +707,11 @@ int main() {
                     if (jsonData["oper"] == NEWUSERDLG) {
                         if (jsonData["success"]) {
                             json jsonOut = {
-                            {"Icreater", true},
-                            {"dialog_id", jsonData["dialog_id"]},
-                            {"userManager", jsonData["userManager"]},
-                            {"enteredTime",jsonData["enteredTime"]},
-                            {"userCompanion", jsonData["userCompanion"]}
+                                {"Icreater", true},
+                                {"dialog_id", jsonData["dialog_id"]},
+                                {"userManager", jsonData["userManager"]},
+                                {"enteredTime",jsonData["enteredTime"]},
+                                {"userCompanion", jsonData["userCompanion"]}
                             };
                             string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
                             string userManager = jsonData["userManager"];
@@ -694,11 +719,11 @@ int main() {
                             ws->publish("user#" + userManager, outgoingMsg, uWS::OpCode::TEXT, false);
                             if (userManager != userCompanion) {
                                 json jsonOut = {
-                                {"Icreater", false},
-                                {"dialog_id", jsonData["dialog_id"]},
-                                {"userManager", jsonData["userManager"]},
-                                {"enteredTime",jsonData["enteredTime"]},
-                                {"userCompanion", jsonData["userCompanion"]}
+                                    {"Icreater", false},
+                                    {"dialog_id", jsonData["dialog_id"]},
+                                    {"userManager", jsonData["userManager"]},
+                                    {"enteredTime",jsonData["enteredTime"]},
+                                    {"userCompanion", jsonData["userCompanion"]}
                                 };
                                 string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
                                 ws->publish("user#" + userCompanion, outgoingMsg, uWS::OpCode::TEXT, false);
@@ -819,13 +844,11 @@ int main() {
                                 string outgoingMsg = RESULTDB + FRND + SUCCESS + ADD + (string)jsonOut.dump();
                                 ws->publish("user#" + tagUserSender, outgoingMsg, uWS::OpCode::TEXT, false);
                                 ws->publish("user#" + tagUserReceiver, outgoingMsg, uWS::OpCode::TEXT, false);
-                                cout << endl << outgoingMsg << endl;
                                 cout << "User #" << tagUserSender << " added " << tagUserReceiver << " as a friend " << endl;
                             }
                             else {
                                 string outgoingMsg = RESULTDB + FRND + _ERROR + ADD;
                                 string tagUserSender = jsonData["tagUserSender"]; 
-                                cout << endl << outgoingMsg << endl;
                                 ws->publish("user#" + tagUserSender, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }
@@ -833,14 +856,15 @@ int main() {
                             if (jsonData["success"]) {
                                 string tagUserFriend = jsonData["tagUserReceiver"];
                                 string tagUserOur = jsonData["tagUserSender"];
+                                string typeDelete = jsonData["typeDelete"];
                                 json jsonOut = {
                                 {"tagUserFriend", tagUserFriend},
                                 {"tagUserOur", tagUserOur},
+                                {"typeDelete", typeDelete}
                                 };
                                 string outgoingMsg = RESULTDB + FRND + SUCCESS + _DELETE + (string)jsonOut.dump();
                                 ws->publish("user#" + tagUserFriend, outgoingMsg, uWS::OpCode::TEXT, false);
                                 ws->publish("user#" + tagUserOur, outgoingMsg, uWS::OpCode::TEXT, false);
-                                cout << endl << outgoingMsg << endl;
                                 cout << "User #" << tagUserOur << " deleted " << tagUserFriend << " from friends " << endl;
                             }
                             else {
@@ -867,8 +891,26 @@ int main() {
                             else {
                                 string outgoingMsg = RESULTDB + FRND + _ERROR + CNFRMADD;
                                 string tagUserOur = jsonData["tagUserOur"];
-                                cout << endl << outgoingMsg << endl;
                                 ws->publish("user#" + tagUserOur, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        else if (jsonData["typeAction"] == FIND) {
+                            if (jsonData["success"]) {
+                                string tagUserFriend = jsonData["tagUserReceiver"];
+                                string nameUserFriend = jsonData["nameUserReceiver"];
+                                string tagUserSender = jsonData["tagUserSender"];
+                                json jsonOut = {
+                                {"tagUserFriend", tagUserFriend},
+                                {"nameUserFriend", nameUserFriend}
+                                };
+                                string outgoingMsg = RESULTDB + FRND + SUCCESS + FIND + (string)jsonOut.dump();
+                                ws->publish("user#" + tagUserSender, outgoingMsg, uWS::OpCode::TEXT, false);
+                                cout << "User #" << tagUserSender << " added " << tagUserFriend << " as a friend " << endl;
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + FRND + _ERROR + FIND;
+                                string tagUserSender = jsonData["tagUserSender"];
+                                ws->publish("user#" + tagUserSender, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }
                     }

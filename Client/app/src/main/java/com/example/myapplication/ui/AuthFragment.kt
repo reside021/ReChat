@@ -95,18 +95,19 @@ class AuthFragment : Fragment() {
                 }
                 val dataSignUpUser = SignUpUser("SIGNUP::", loginsign, pass1sign, usernamesign)
                 val msg = Json.encodeToString(dataSignUpUser)
-                if(webSocketClient.connection.readyState.ordinal == 0){
+                if(webSocketClient.connection.isClosed){
                     Toast.makeText(
                         activity,
                         "Отсутствует подключение к серверу",
                         Toast.LENGTH_SHORT
                     ).show()
                     return@setOnClickListener
+                }else{
+                    webSocketClient.send(msg)
+                    alertDialog.dismiss()
                 }
-                webSocketClient.send(msg)
-                alertDialog.dismiss()
             }
-            if(webSocketClient.connection.readyState.ordinal == 0){
+            if(webSocketClient.connection.isClosed){
                 Toast.makeText(
                     activity,
                     "Отсутствует подключение к серверу",
@@ -136,7 +137,7 @@ class AuthFragment : Fragment() {
                 }
                 val dataUser = LoginDataUser("AUTH::", false, loginAuth, passAuth)
                 val msg = Json.encodeToString(dataUser)
-                if(webSocketClient.connection.readyState.ordinal == 0){
+                if(webSocketClient.connection.isClosed){
                     Toast.makeText(
                         activity,
                         "Отсутствует подключение к серверу",
@@ -148,7 +149,7 @@ class AuthFragment : Fragment() {
                     alertDialog.dismiss()
                 }
             }
-            if(webSocketClient.connection.readyState.ordinal == 0){
+            if(webSocketClient.connection.isClosed){
                 Toast.makeText(
                     activity,
                     "Отсутствует подключение к серверу",

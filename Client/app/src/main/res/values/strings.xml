@@ -38,4 +38,7 @@
     <string name="add_to_friends">Add to friends</string>
     <string name="remove_from_friends">Remove from friends</string>
     <string name="request">Request</string>
+    <string name="status_connect">Connecting to the server:</string>
+    <string name="icon_ok">✔</string>
+    <string name="icon_cross">❌</string>
 </resources>

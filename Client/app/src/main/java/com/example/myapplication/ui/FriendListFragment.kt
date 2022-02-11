@@ -40,21 +40,24 @@ class FriendListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentSendDataListener?.onFriendsListLoadView()
-    }
-
-    fun setUserData(myAdapterForFriends: MyAdapterForFriends){
         val listViewFriends = requireView().findViewById<ListView>(R.id.listViewFriends)
-        listViewFriends.adapter = myAdapterForFriends
         listViewFriends.setOnItemClickListener { parent, view, position, id ->
             val intent = Intent(activity, FriendsProfile::class.java);
             val tagUser = view.findViewById<TextView>(R.id.idUser)
             val nameOfUser = view.findViewById<TextView>(R.id.userName)
             intent.putExtra("idTag", tagUser.text)
-            // проверка на наличие в друзьях sql
             intent.putExtra("nameOfUser", nameOfUser.text)
             startActivity(intent)
         }
     }
 
+    fun setUserData(myAdapterForFriends: MyAdapterForFriends){
+        val listViewFriends = requireView().findViewById<ListView>(R.id.listViewFriends)
+        listViewFriends.adapter = myAdapterForFriends
+    }
+
+    override fun onStart() {
+        super.onStart()
+        fragmentSendDataListener?.onFriendsListLoadView()
+    }
 }

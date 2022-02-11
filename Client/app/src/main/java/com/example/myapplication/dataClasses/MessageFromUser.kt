@@ -8,7 +8,7 @@ data class MessageFromUser(
     val sender: String,
     val typeMsg: String,
     val textMsg: String,
-    val timeCreated: String,
+    val timeCreated: Int,
     val receiverId: String,
     val nameSender: String
 )

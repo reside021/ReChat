@@ -29,6 +29,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.io.File
+import java.time.LocalDateTime
 import java.util.*
 
 
@@ -105,6 +106,15 @@ class ChatPeople : AppCompatActivity() {
         ed.apply()
     }
 
+    override fun onRestart() {
+        super.onRestart()
+        if(webSocketClient.connection.isClosed) {
+            val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+            val ed = sp.edit()
+            ed.putString("onRestart", LocalDateTime.now().toString())
+            ed.apply()
+        }
+    }
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
@@ -170,7 +180,7 @@ class ChatPeople : AppCompatActivity() {
     fun onSendMsgClick(view: View) {
         view.startAnimation(animAlpha)
         try{
-            if(webSocketClient.connection.readyState.ordinal == 0){
+            if(webSocketClient.connection.isClosed){
                 Toast.makeText(this, "Отсутствует подключение к серверу",
                         Toast.LENGTH_SHORT).show()
                 return
@@ -198,7 +208,7 @@ class ChatPeople : AppCompatActivity() {
                     override fun onResponse(call: Call<String>, response: Response<String>) {
                         if(response.isSuccessful){
                             if(response.code() == 200){
-                                if(webSocketClient.connection.readyState.ordinal == 0){
+                                if(webSocketClient.connection.isClosed){
                                     Toast.makeText(
                                         this@ChatPeople, "Отсутствует подключение к серверу",
                                         Toast.LENGTH_SHORT

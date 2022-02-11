@@ -144,7 +144,7 @@ namespace WSClientDB
         public string sender { get; set; }
         public string typeMsg { get; set; }
         public string textMsg { get; set; }
-        public string timeCreated { get; set; }
+        public int timeCreated { get; set; }
     }
     public class ListDataOfMessage
     {
@@ -160,7 +160,6 @@ namespace WSClientDB
         public string tagUser { get; set; }
         public string nickUser { get; set; }
     }
-
     public class DataOfTagName
     {
         public string type { get; set; }
@@ -184,10 +183,11 @@ namespace WSClientDB
         public string oper { get; set; } // type oper
         public string typeAction { get; set; } // type action with friends
         public string tagUserSender { get; set; } // userSender
-        public string nameUserSender { get; set; }
-        public string tagUserReceiver { get; set; } // userReceiver
-        public string nameUserReceiver { get; set; }
+        public string nameUserSender { get; set; } // userSender name
+        public string tagUserReceiver { get; set; } // userReceiver tag
+        public string nameUserReceiver { get; set; } // userReceiver name
         public bool success { get; set; } // status
+        public string typeDelete { get; set; } // type delete for client
     }
     public class UpdateFriend
     {
@@ -209,6 +209,12 @@ namespace WSClientDB
         public bool success { get; set; }
         public List<DataOfFriendsTable> listOfData { get; set; }
         public string tagUser { get; set; }
+    }
+    public class DeleteFriend
+    {
+        public string tagUserFriend { get; set; }
+        public string tagUserOur { get; set; }
+        public string typeDelete { get; set; }
     }
     class Program
     {
@@ -239,6 +245,7 @@ namespace WSClientDB
         const string DELETE = "DELETE::";
         const string CNFRMADD = "CNFRMADD::";
         const string ALLFRND = "ALLFRND::";
+        const string FIND = "FIND::";
 
         static WebSocket webSocket;
         static SqlConnection sqlConnection;
@@ -258,37 +265,72 @@ namespace WSClientDB
 
         private static void InsertDataSignUp(string loginUser, string passUser, string nickUser, string tagUser)
         {
-            sqlConnection.Open();
-            sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "Insert into InfoUsers values(@taguser, @nickuser, @isVisible, @isAvatar)";
-            SqlParameter sqlParameter = new SqlParameter("@taguser", tagUser);
-            sqlCommand.Parameters.Add(sqlParameter);
-            SqlParameter sqlParameter1 = new SqlParameter("@nickuser", nickUser);
-            sqlCommand.Parameters.Add(sqlParameter1);
-            SqlParameter sqlParameter2 = new SqlParameter("@isVisible", false);
-            sqlCommand.Parameters.Add(sqlParameter2);
-            SqlParameter sqlParameter3 = new SqlParameter("@isAvatar", false);
-            sqlCommand.Parameters.Add(sqlParameter3);
-            sqlCommand.ExecuteNonQuery();
-            sqlCommand.Parameters.Clear();
-            sqlCommand.CommandText = "Insert into UsersData values(@loginuser, @passuser, @taguser,@deviceToken)";
-            SqlParameter sqlParameter4 = new SqlParameter("@loginuser", loginUser);
-            sqlCommand.Parameters.Add(sqlParameter4);
-            SqlParameter sqlParameter5 = new SqlParameter("@passuser", passUser);
-            sqlCommand.Parameters.Add(sqlParameter5);
-            SqlParameter sqlParameter6 = new SqlParameter("@taguser", tagUser);
-            sqlCommand.Parameters.Add(sqlParameter6);
-            SqlParameter sqlParameter7 = new SqlParameter("@deviceToken", "");
-            sqlCommand.Parameters.Add(sqlParameter7);
-            sqlCommand.ExecuteNonQuery();
-            sqlCommand.Parameters.Clear();
-            sqlConnection.Close();
-            Console.WriteLine($"[MSG] -> SIGNUP^Insert into UsersData and InfoUsers");
+            ResultDB resultDB = new ResultDB();
+            resultDB.type = RESULTDB;
+            resultDB.oper = SIGNUP;
+            resultDB.authorId = tagUser;
+            resultDB.success = false;
+            bool check_1 = false;
+            bool check_2 = false;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = "Insert into InfoUsers values(@taguser, @nickuser, @isVisible, @isAvatar)";
+                SqlParameter sqlParameter = new SqlParameter("@taguser", tagUser);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter1 = new SqlParameter("@nickuser", nickUser);
+                sqlCommand.Parameters.Add(sqlParameter1);
+                SqlParameter sqlParameter2 = new SqlParameter("@isVisible", false);
+                sqlCommand.Parameters.Add(sqlParameter2);
+                SqlParameter sqlParameter3 = new SqlParameter("@isAvatar", false);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
+                check_1 = true;
+            }
+            catch
+            {
+                sqlConnection.Close();
+                check_1 = false;
+            }
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = "Insert into UsersData values(@loginuser, @passuser, @taguser,@deviceToken)";
+                SqlParameter sqlParameter4 = new SqlParameter("@loginuser", loginUser);
+                sqlCommand.Parameters.Add(sqlParameter4);
+                SqlParameter sqlParameter5 = new SqlParameter("@passuser", passUser);
+                sqlCommand.Parameters.Add(sqlParameter5);
+                SqlParameter sqlParameter6 = new SqlParameter("@taguser", tagUser);
+                sqlCommand.Parameters.Add(sqlParameter6);
+                SqlParameter sqlParameter7 = new SqlParameter("@deviceToken", "");
+                sqlCommand.Parameters.Add(sqlParameter7);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
+                check_2 = true;
+            }
+            catch
+            {
+                sqlConnection.Close();
+                check_2 = false;
+            }
+            if ((check_1 && check_2) == true)
+            {
+                resultDB.success = true;
+                AddInGlobalChat(tagUser);
+            }
+                string jsonResult = JsonConvert.SerializeObject(resultDB);
+            webSocket.Send(jsonResult);
+            Console.WriteLine($"[MSG] -> SIGNUP^Insert into InfoUsers ({check_1}) and UsersData ({check_2}) - ({resultDB.success})");
         }
         private static void InsertDataNewMsgDLG(string dialog_id, string sender, string typeMsg, string text, string receiverId)
         {
             var nameSender = SlctAllTagNameHelper(sender);
-            DateTime timeCreated = DateTime.UtcNow;
+            int timeCreated = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText = "Insert into MsgDlgTable values(@dialog_id, @sender, @typeMsg, @textMsg, @timeCreated)";
@@ -335,20 +377,21 @@ namespace WSClientDB
             DateTime enteredTime = DateTime.UtcNow;
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "Insert into UserDlgTable values(@dialog_id, @tagUser, @enteredTime)";
+            sqlCommand.CommandText =
+                @"Insert into UserDlgTable values
+                    (@dialog_id, @userCompanion, @enteredTime),
+                    (@dialog_id, @userManager, @enteredTime)";
             SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
             sqlCommand.Parameters.Add(sqlParameter);
-            SqlParameter sqlParameter1 = new SqlParameter("@tagUser", userCompanion);
+            SqlParameter sqlParameter1 = new SqlParameter("@userCompanion", userCompanion);
             sqlCommand.Parameters.Add(sqlParameter1);
             SqlParameter sqlParameter2 = new SqlParameter("@enteredTime", enteredTime);
             sqlCommand.Parameters.Add(sqlParameter2);
+            SqlParameter sqlParameter3 = new SqlParameter("@userManager", userManager);
+            sqlCommand.Parameters.Add(sqlParameter3);
             SuccessCreateUserDlg successCreateUserDlg = new SuccessCreateUserDlg();
             try
             {
-                sqlCommand.ExecuteNonQuery();
-                sqlCommand.Parameters.Remove(sqlParameter1);
-                sqlParameter1 = new SqlParameter("@tagUser", userManager);
-                sqlCommand.Parameters.Add(sqlParameter1);
                 sqlCommand.ExecuteNonQuery();
                 successCreateUserDlg.type = RESULTDB;
                 successCreateUserDlg.oper = NEWUSERDLG;
@@ -370,7 +413,6 @@ namespace WSClientDB
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable");
         }
-
         private static string getToken(string tagUser)
         {
             var token = JwtBuilder.Create()
@@ -560,7 +602,7 @@ namespace WSClientDB
                     string _sender = sqlDataReader.GetString(2);
                     string _typeMsg = sqlDataReader.GetString(3);
                     string _textMsg = sqlDataReader.GetString(4);
-                    string _timeCreated = sqlDataReader.GetDateTime(5).ToString();
+                    int _timeCreated = sqlDataReader.GetInt32(5);
                     dataOfMessages.Add(new DataOfMessage()
                     {
                         dialog_id = _dialogId,
@@ -806,21 +848,30 @@ namespace WSClientDB
         }
         private static void AddInGlobalChat(string userTag)
         {
-            string dialog_id = GROUP + "0";
-            DateTime enteredTime = DateTime.UtcNow;
-            sqlConnection.Open();
-            sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "Insert into UserDlgTable values(@dialog_id, @tagUser, @enteredTime)";
-            SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
-            sqlCommand.Parameters.Add(sqlParameter);
-            SqlParameter sqlParameter1 = new SqlParameter("@tagUser", userTag);
-            sqlCommand.Parameters.Add(sqlParameter1);
-            SqlParameter sqlParameter2 = new SqlParameter("@enteredTime", enteredTime);
-            sqlCommand.Parameters.Add(sqlParameter2);
-            sqlCommand.ExecuteNonQuery();
-            sqlCommand.Parameters.Clear();
+            bool success = false;
+            try
+            {
+                string dialog_id = GROUP + "0";
+                DateTime enteredTime = DateTime.UtcNow;
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = "Insert into UserDlgTable values(@dialog_id, @tagUser, @enteredTime)";
+                SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter1 = new SqlParameter("@tagUser", userTag);
+                sqlCommand.Parameters.Add(sqlParameter1);
+                SqlParameter sqlParameter2 = new SqlParameter("@enteredTime", enteredTime);
+                sqlCommand.Parameters.Add(sqlParameter2);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                success = true;
+            }
+            catch
+            {
+                success = false;
+            }
             sqlConnection.Close();
-            Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable");
+            Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable ({success})");
         }
         private static void SelectDeviceForAuth(string userTag, string token)
         {
@@ -961,14 +1012,15 @@ namespace WSClientDB
             Console.WriteLine($"[MSG] -> ConfirmAddFriend^{updateFriend.tagUserOur} -> {updateFriend.tagUserFriend} ^ {resultActionFrnd.success}");
         }
 
-        private static void DeleteFriend(UpdateFriend updateFriend)
+        private static void DeleteFriend(DeleteFriend deleteFriend)
         {
             ResultActionFrnd resultActionFrnd = new ResultActionFrnd();
             resultActionFrnd.type = RESULTDB;
             resultActionFrnd.oper = FRND;
-            resultActionFrnd.tagUserSender = updateFriend.tagUserOur;
-            resultActionFrnd.tagUserReceiver = updateFriend.tagUserFriend;
+            resultActionFrnd.tagUserSender = deleteFriend.tagUserOur;
+            resultActionFrnd.tagUserReceiver = deleteFriend.tagUserFriend;
             resultActionFrnd.typeAction = DELETE;
+            resultActionFrnd.typeDelete = deleteFriend.typeDelete;
             try
             {
                 sqlConnection.Open();
@@ -978,9 +1030,9 @@ namespace WSClientDB
                     (tagSenderFrnd = @tagUserFriend AND tagReceiverFrnd = @tagUserOur)
                     OR
                     (tagSenderFrnd = @tagUserOur AND tagReceiverFrnd = @tagUserFriend)";
-                SqlParameter sqlParameter = new SqlParameter("@tagUserFriend", updateFriend.tagUserFriend);
+                SqlParameter sqlParameter = new SqlParameter("@tagUserFriend", deleteFriend.tagUserFriend);
                 sqlCommand.Parameters.Add(sqlParameter);
-                SqlParameter sqlParameter2 = new SqlParameter("@tagUserOur", updateFriend.tagUserOur);
+                SqlParameter sqlParameter2 = new SqlParameter("@tagUserOur", deleteFriend.tagUserOur);
                 sqlCommand.Parameters.Add(sqlParameter2);
                 sqlCommand.ExecuteNonQuery();
                 sqlCommand.Parameters.Clear();
@@ -993,7 +1045,7 @@ namespace WSClientDB
             sqlConnection.Close();
             string jsonResult = JsonConvert.SerializeObject(resultActionFrnd);
             webSocket.Send(jsonResult);
-            Console.WriteLine($"[MSG] -> DeleteFriend^{updateFriend.tagUserOur} -> {updateFriend.tagUserFriend} ^ {resultActionFrnd.success}");
+            Console.WriteLine($"[MSG] -> DeleteFriend^{deleteFriend.tagUserOur} -> {deleteFriend.tagUserFriend} ^ {resultActionFrnd.success}");
         }
 
         private static void SelectDataForAllFriends(string tagUser)
@@ -1042,6 +1094,46 @@ namespace WSClientDB
             webSocket.Send(jsonResult);
             Console.WriteLine($"[MSG] -> DownLoadFriends^{tagUser} ({dataOfFriends.success})");
         }
+        private static void FindFriend(UpdateFriend updateFriend)
+        {
+            ResultActionFrnd resultActionFrnd = new ResultActionFrnd();
+            resultActionFrnd.type = RESULTDB;
+            resultActionFrnd.oper = FRND;
+            resultActionFrnd.tagUserSender = updateFriend.tagUserOur;
+            resultActionFrnd.typeAction = FIND;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"select tagUser, nickUser from InfoUsers where tagUser = @tagUser";
+                SqlParameter sqlParameter = new SqlParameter("@tagUser", updateFriend.tagUserFriend);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                if (sqlDataReader.HasRows)
+                {
+                    while (sqlDataReader.Read())
+                    {
+                        resultActionFrnd.tagUserReceiver = sqlDataReader.GetString(0);
+                        resultActionFrnd.nameUserReceiver = sqlDataReader.GetString(1);
+                    }
+                    resultActionFrnd.success = true;
+                }
+                else
+                {
+                    resultActionFrnd.success = false;
+                }
+                sqlCommand.Parameters.Clear();
+            }
+            catch
+            {
+                resultActionFrnd.success = false;
+            }
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(resultActionFrnd);
+            webSocket.Send(jsonResult);
+            Console.WriteLine($"[MSG] -> FindedFriend^{updateFriend.tagUserOur} -> {updateFriend.tagUserFriend} ^ {resultActionFrnd.success}");
+        }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
             if (e.Message.IndexOf(FORDB) == -1) return;
@@ -1063,7 +1155,6 @@ namespace WSClientDB
                         message = message.Substring(SIGNUP.Length);
                         SignUp signUp = JsonConvert.DeserializeObject<SignUp>(message);
                         InsertDataSignUp(signUp.loginUser, signUp.passUser, signUp.nickName, signUp.authorId);
-                        AddInGlobalChat(signUp.authorId);
                     }
                     if(message.IndexOf(NEWUSERDLG) != -1)
                     {
@@ -1128,6 +1219,12 @@ namespace WSClientDB
                             SelectDataForAllFriends(downLoadAllDlg.tagUser);
                         }
                     }
+                    if (message.IndexOf(FRND) != -1)
+                    {
+                        message = message.Substring(FRND.Length);
+                        UpdateFriend updateFriend = JsonConvert.DeserializeObject<UpdateFriend>(message);
+                        FindFriend(updateFriend);
+                    }
                 }
                 if (message.IndexOf(UPDATE) != -1)
                 {
@@ -1171,8 +1268,8 @@ namespace WSClientDB
                     if (message.IndexOf(FRND) != -1)
                     {
                         message = message.Substring(FRND.Length);
-                        UpdateFriend updateFriend = JsonConvert.DeserializeObject<UpdateFriend>(message);
-                        DeleteFriend(updateFriend);
+                        DeleteFriend deleteFriend = JsonConvert.DeserializeObject<DeleteFriend>(message);
+                        DeleteFriend(deleteFriend);
                     }
                 }
             }
