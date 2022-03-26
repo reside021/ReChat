@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReChatWeb</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.2/mdb.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="./style/style.css?<?=time()?>">
+</head>
+
+<body>
+    <div class = "mainContainer">
+        <div class = "contentBlock bg-light">
+            <div class="startScreen">
+                <div><h1 class="display-1">ReChatWeb</h1></div>
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <div style="display: none" class="authUser bg-white shadow-4 rounded">
+                <div><h1 class="display-1">ReChatWeb</h1></div>
+                <div class="loginField">
+                    <div class="form-outline">
+                        <input type="text" id="inputLoginUser" class="form-control" />
+                        <label class="form-label" for="inputLoginUser">Логин</label>
+                    </div>
+                    <div class="form-outline">
+                        <input type="password" id="inputPassLogin" class="form-control" />
+                        <label class="form-label" for="inputPassLogin">Пароль</label>
+                    </div>
+                    <div><button class="btn btn-primary loginUser">Войти</button></div>
+                    <div><a class="openSignField">Еще не зарегистрированы?</a></div>
+                </div>
+                <div class="signUpField" style="display: none">
+                    <div class="form-outline">
+                        <input type="text" id="inputSignLogin" class="form-control" />
+                        <label class="form-label" for="inputSignLogin">Логин</label>
+                    </div>
+                    <div class="form-outline">
+                        <input type="text" id="inputSignName" class="form-control" data-mdb-showcounter="true" maxlength="20" />
+                        <label class="form-label" for="inputSignName">Имя пользователя</label>
+                        <div class="form-helper"></div>
+                    </div>
+                    <div class="form-outline">
+                        <input type="password" id="inputPassSign1" class="form-control" />
+                        <label class="form-label" for="inputPassSign1">Пароль</label>
+                    </div>
+                    <div class="form-outline">
+                        <input type="password" id="inputPassSign2" class="form-control" />
+                        <label class="form-label" for="inputPassSign2">Повторите пароль</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="checkBoxSign" />
+                        <label class="form-check-label" for="checkBoxSign">Я согласен с правилами использования и политикой конфиденциальности</label>
+                    </div>
+                    <button class="btn btn-primary registerUser">Зарегистрироваться</button>
+                    <a class="openLoginField">Уже зарегистрированы?</a>
+                </div>
+            </div>
+            <div style="display: none" class="mainContent">
+                    <ul class="nav nav-tabs nav-fill mb-3 bg-white shadow-4" id="mainTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a
+                                    class="nav-link active profileTab"
+                                    id="mainTab-tab-1"
+                                    data-mdb-toggle="tab"
+                                    href="#ex2-tabs-1"
+                                    role="tab"
+                                    aria-controls="ex2-tabs-1"
+                                    aria-selected="true"
+                            >Профиль</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a
+                                    class="nav-link chatTab"
+                                    id="mainTab-tab-2"
+                                    data-mdb-toggle="tab"
+                                    href="#ex2-tabs-2"
+                                    role="tab"
+                                    aria-controls="ex2-tabs-2"
+                                    aria-selected="false"
+                            >Чаты</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a
+                                    class="nav-link peopleTab"
+                                    id="mainTab-tab-3"
+                                    data-mdb-toggle="tab"
+                                    href="#ex2-tabs-3"
+                                    role="tab"
+                                    aria-controls="ex2-tabs-3"
+                                    aria-selected="false"
+                            >Люди</a>
+                        </li>
+                    </ul>
+                    <div class="activity">
+                        <div class="tab-content" id="ex2-content">
+                            <div    class="tab-pane fade show active"
+                                    id="ex2-tabs-1"
+                                    role="tabpanel"
+                                    aria-labelledby="ex2-tab-1">
+                                <div class="profile">
+                                    <div class="dataOfUser bg-white shadow-4 rounded">
+                                        <div class="imageOfUser">
+                                            <img
+                                                    id="imageOfUser"
+                                                    height="180px"
+                                                    width="180px"
+                                                    src="./img/user_photo.png"
+                                                    class="img-fluid rounded-circle border border-dark"
+                                                    alt="Avatar"
+                                                    onmouseover="hoverAvatar(this)"
+                                                    onmouseout="unHoverAvatar(this)"
+                                            />
+                                        </div>
+                                        <div class="infoOfUser">
+                                            <div class="blockName">
+                                                <div><p class="h1" id="nameOfUser"></p></div>
+                                                <div><img class="editName" src="img/pen.png" height="25px" width="25px" /></div>
+                                                <div style="display: none" id="newNameOfUser" class="newNOU input-group mb-3">
+                                                    <input
+                                                            type="text"
+                                                            class="form-control newNameUser"
+                                                            placeholder="Новое имя пользователя"
+                                                            aria-label="Recipient's username"
+                                                            aria-describedby="button-addon2"
+                                                    />
+                                                    <button class="btn btn-outline-primary changeName" type="button" data-mdb-ripple-color="dark">
+                                                        Изменить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="blockTag">
+                                                <p class="h4" id="labelTOU">Тег:</p>
+                                                <p class="h4" id="tagOfUser"></p>
+                                            </div>
+                                            <div class="newAvatarMsg">
+                                                <div>
+                                                    <form id="formLoadAvatar" enctype="multipart/form-data" method="post">
+                                                        <div id="dnd-max-size" class="file-upload-wrapper">
+                                                            <input
+                                                                type="file"
+                                                                id="newAvatar"
+                                                                class="file-upload-input"
+                                                                accept="image/jpeg,image/png"
+                                                                data-mdb-max-file-size="1M"
+                                                                data-mdb-file-upload="file-upload">
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                                <button class="btn btn-outline-primary" onclick="saveNewAvatar()">Сохранить</button>
+                                            </div>
+                                        </div>
+                                        <div class="exitUser">
+                                             <i class="fa-solid fa-arrow-right-from-bracket" onclick="exitFromAcc()"></i>
+                                        </div>
+                                    </div>
+                                    <div class="detailDataOfUser bg-white shadow-4 rounded">
+                                        <div>
+                                            <div>
+                                                <label class="form-check-label" for="isVisibleUser">Видимость для всех</label>
+                                                <label class="form-check-label" for="isVisibleUser" id="visibleStatus"></label>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="isVisibleUser" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div    class="tab-pane fade"
+                                    id="ex2-tabs-2"
+                                    role="tabpanel"
+                                    aria-labelledby="ex2-tab-2">
+                                <div class="chat">
+                                    <div class="chatChannel list-group" id="myList" role="tablist"></div>
+                                    <div class="msgBlock">
+                                        <div class="msgWindow tab-content bg-white shadow-4">
+                                            <div class="tab-pane fade active show" id="default" role="tabpanel">Выберите чат для общения</div>
+                                        </div>
+                                        <div style="display: none" class="blockImgMsg input-group">
+                                            <input
+                                                    type="file"
+                                                    class="form-control"
+                                                    accept="image/jpeg,image/png"
+                                                    data-mdb-max-file-size="1M"
+                                                    data-mdb-file-upload="file-upload"
+                                                    id="fileImgMsg"/>
+                                        </div>
+                                        <div class="inputMsg input-group mb-3 hide" style="display: none">
+                                            <textarea class="textAreaMsg form-control" aria-describedby="button-addMsg" rows="2"></textarea>
+                                            <button type="button" class="button-addImg btn btn-outline-primary"> 🖿 </button>
+                                            <button class="sendMsg btn btn-outline-primary" type="button" id="button-addMsg" data-mdb-ripple-color="dark">
+                                                Отправить
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div    class="tab-pane fade"
+                                    id="ex2-tabs-3"
+                                    role="tabpanel"
+                                    aria-labelledby="ex2-tab-3">
+                                <div class="people">
+                                    <ul class="nav nav-tabs nav-fill mb-3 bg-white shadow-4" id="peopleTab" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <a
+                                                    class="nav-link active"
+                                                    id="people-tab-1"
+                                                    data-mdb-toggle="tab"
+                                                    href="#friendsTab"
+                                                    role="tab"
+                                                    aria-controls="people-tabs-1"
+                                                    aria-selected="true"
+                                            >Друзья</a>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <a
+                                                    class="nav-link"
+                                                    id="people-tab-2"
+                                                    data-mdb-toggle="tab"
+                                                    href="#usersTab"
+                                                    role="tab"
+                                                    aria-controls="people-tabs-2"
+                                                    aria-selected="false"
+                                            >Пользователи</a>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <a
+                                                    class="nav-link"
+                                                    id="people-tab-3"
+                                                    data-mdb-toggle="tab"
+                                                    href="#requestsTabs"
+                                                    role="tab"
+                                                    aria-controls="people-tabs-3"
+                                                    aria-selected="false"
+                                            >Заявки</a>
+                                        </li>
+                                    </ul>
+                                    <div class="tab-content" id="people-content">
+                                        <div    class="tab-pane fade show active"
+                                                id="friendsTab"
+                                                role="tabpanel"
+                                                aria-labelledby="ex2-tab-1">
+                                            <div class="friendsList list-group" id="friendsList" role="tablist"></div>
+                                        </div>
+                                        <div    class="tab-pane fade"
+                                                id="usersTab"
+                                                role="tabpanel"
+                                                aria-labelledby="ex2-tab-2">
+                                            <div class="formSearchPeople input-group">
+                                                <div class="form-outline">
+                                                    <input type="search" id="searchPeople" class="form-control" oninput="onTextChangedSearched(this)"/>
+                                                    <label class="form-label" for="searchPeople">Поиск пользователя (тег)</label>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary" onclick="searchPeople()">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                            </div>
+                                            <div style="display: none" class="searchList list-group" id="searchList" role="tablist"></div>
+                                            <div class="usersList list-group" id="usersList" role="tablist"></div>
+                                        </div>
+                                        <div    class="tab-pane fade"
+                                                id="requestsTabs"
+                                                role="tabpanel"
+                                                aria-labelledby="ex2-tab-3">
+                                            <div class="requestsList list-group" id="requestsList" role="tablist"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <div style="display: none" class="userProfile bg-light border">
+                <div class="dataOfUser bg-white rounded">
+                    <div class="blockInfo">
+                        <div class="imageOfUser">
+                        <img
+                                id="user_imageOfUser"
+                                height="180px"
+                                width="180px"
+                                src="./img/user_photo.png"
+                                class="img-fluid rounded-circle border border-dark"
+                                alt="Avatar"
+                                onerror="this.onerror=null; this.src='./img/user_photo.png'"
+                        />
+                    </div>
+                        <div class="infoOfUser">
+                                <div><p class="h1" id="user_nameOfUser"></p></div>
+                                <div class="blockTag">
+                                    <p class="h4" id="user_labelTOU">Тег:</p>
+                                    <p class="h5" id="user_tagOfUser"></p>
+                                </div>
+                                <div class="blockFriendsStatus">
+                                    <p class="h4" id="user_labelSF">Статус:</p>
+                                    <p class="h5" id="user_statusFriends"></p>
+                                    <button type="button" id="user_ActionsFriends" class="actWithFriends btn btn-outline-primary btn-rounded" data-mdb-ripple-color="#000000"> button </button>
+                                </div>
+                        </div>
+                    </div>
+                    <div class="closeInfo">
+                        <button type="button" class="closeWindow btn btn-outline-danger btn-floating" onclick="closeUserClick()"> <i class="fa-solid fa-xmark"></i> </button>
+                    </div>
+                </div>
+                <div class="detailDataOfUser bg-white shadow-4 rounded">
+                    <div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: none" class="errorScreen">
+                <div><h1 class="display-1">ReChatWeb</h1></div>
+                <div class="errorMsg">
+                    <h3>Сервер устал...</h3>
+                    <h3>Пожалуйста, попробуйте позже</h3>
+                </div>
+                <img width="300" src="img/robot.png">
+            </div>
+        </div>
+    </div>
+    <!-- MDB -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.2/mdb.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="./src/main.js?<?=time()?>"></script>
+</body>
+</html>

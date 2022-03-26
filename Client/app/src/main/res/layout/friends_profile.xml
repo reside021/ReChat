@@ -27,7 +27,6 @@
             android:layout_marginTop="5dp"
             android:background="@drawable/round"
             android:backgroundTint="@color/white"
-            android:onClick="changePhotoClick"
             android:scaleType="centerCrop"
             android:src="@drawable/user_profile_photo"/>
         <TextView

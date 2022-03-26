@@ -8,5 +8,6 @@ data class ConfirmAuth(
     val confirmAuth: Boolean,
     val nickname: String,
     val tagUser: String,
-    val isVisible: Boolean
+    val isVisible: Boolean,
+    val token : String
 )

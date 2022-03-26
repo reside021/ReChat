@@ -64,25 +64,25 @@
             android:layout_height="wrap_content"
             android:minHeight="45dp"
             android:background="@android:color/transparent"
-            android:layout_marginStart="15dp"
-            android:layout_gravity="fill_vertical"
+            android:layout_marginStart="20dp"
+            android:layout_gravity="center"
             android:inputType="textMultiLine"
-            android:hint="@string/Message"/>
+            android:hint="@string/Message" />
         <ImageButton
             android:id="@+id/choose_img_msg"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.2"
+            android:layout_width="55dp"
+            android:layout_height="50dp"
             android:src="@drawable/gallery_icon"
             android:backgroundTint="#00FFFFFF"
-            android:scaleType="centerCrop"/>
+            android:scaleType="centerCrop"
+            android:layout_gravity="bottom"/>
         <ImageButton
             android:src="@drawable/paper_airplane"
-            android:layout_width="0dp"
+            android:layout_width="55dp"
             android:backgroundTint="#00FFFFFF"
             android:scaleType="centerCrop"
-            android:layout_height="match_parent"
-            android:layout_weight="0.2"
-            android:onClick="onSendMsgClick"/>
+            android:layout_height="50dp"
+            android:onClick="onSendMsgClick"
+            android:layout_gravity="bottom"/>
     </LinearLayout>
 </LinearLayout>

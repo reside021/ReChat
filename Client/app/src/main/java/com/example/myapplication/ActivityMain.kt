@@ -25,6 +25,9 @@ import com.example.myapplication.ui.*
 import com.gauravk.bubblenavigation.BubbleNavigationLinearView
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.squareup.picasso.Picasso
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
+import io.jsonwebtoken.security.Keys
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -41,6 +44,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.io.File
 import java.net.URI
+import java.security.Key
 import java.time.LocalDateTime
 
 
@@ -59,7 +63,7 @@ class ActivityMain :
     companion object {
         const val WEB_SOCKET_URL = "ws://servchat.ddns.net:9001"
         const val IMAGE_REQUEST = 1
-        const val VERSION_APP = "0.2"
+        const val VERSION_APP = "0.3"
         lateinit var webSocketClient : WebSocketClient
         lateinit var sqliteHelper: SqliteHelper
     }
@@ -79,15 +83,12 @@ class ActivityMain :
         sp.registerOnSharedPreferenceChangeListener(this)
         bubbleNav = findViewById(R.id.bottom_navigation_view_linear)
 
-
-
         isActVersion()
 
         loadFragment(-1)
         bubbleNav.setNavigationChangeListener { view, position ->
             loadFragment(position)
         }
-
     }
 
 
@@ -331,12 +332,23 @@ class ActivityMain :
         if(key.equals("changeNickName")){
             val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
             val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
-            fragment.setNewUserName(userName)
+            if(fragment.isVisible){
+                fragment.setNewUserName(userName)
+            }
+        }
+        if(key.equals("changeVisible")){
+            val isVisible = sp.getBoolean("isVisible", false)!!
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            if(fragment.isVisible){
+                fragment.setNewVisible(isVisible)
+            }
         }
         if(key.equals("changeAvatar")){
             val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$tagUser.jpg"
             val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
-            fragment.setNewUserImage(urlAvatar)
+            if(fragment.isVisible){
+                fragment.setNewUserImage(urlAvatar)
+            }
         }
         if(key.equals("onRestart")){
            onRestart()
@@ -456,6 +468,7 @@ class ActivityMain :
                             val isVisible = msg.substringAfter("::").toBoolean()
                             val ed = sp.edit()
                             ed.putBoolean("isVisible", isVisible)
+                            ed.putString("changeVisible", LocalDateTime.now().toString())
                             ed.apply()
                             val confirmVisible = ConfirmUpVisible("VISIBLE::", true, isVisible)
                             val msg = Json.encodeToString(confirmVisible)
@@ -536,7 +549,8 @@ class ActivityMain :
                                 val queryAllTagName = QueryAllTagName(
                                     "DOWNLOAD::",
                                     "ALLTAGNAME::",
-                                    dialog_ids
+                                    dialog_ids,
+                                    sp.getString("token","")!!
                                 )
                                 if (!webSocketClient.connection.isClosed) {
                                     val dataServerName = Json.encodeToString(queryAllTagName)
@@ -579,6 +593,7 @@ class ActivityMain :
                         if (msg.substringBefore("::") == "ALLDLG") {
                             val jsonData = msg.substringAfter("::")
                             val msg = Json.decodeFromString<ListDataOfDlg>(jsonData)
+                            if (!checkVerifyJWT(msg.token)) return;
                             val dataOfDialog: List<DataOfDialog> = msg.listOfData
                             for (el in dataOfDialog) {
                                 sqliteHelper.addUserInDLG(
@@ -591,15 +606,16 @@ class ActivityMain :
                             val queryAllTagName = QueryAllTagName(
                                 "DOWNLOAD::",
                                 "ALLTAGNAME::",
-                                dialog_ids
+                                dialog_ids,
+                                sp.getString("tokenQuery","")!!
                             )
                             if (!webSocketClient.connection.isClosed) {
                                 val dataServerName = Json.encodeToString(queryAllTagName)
                                 webSocketClient.send(dataServerName)
-                                val queryAllFriends = QueryAllFriends("DOWNLOAD::", "ALLFRND::")
+                                val queryAllFriends = QueryAllFriends("DOWNLOAD::", "ALLFRND::", sp.getString("tokenQuery","")!!)
                                 val dataServerFriends = Json.encodeToString(queryAllFriends)
                                 webSocketClient.send(dataServerFriends)
-                                val queryAllMsg = QueryAllMsg("DOWNLOAD::", "ALLMSG::", dialog_ids)
+                                val queryAllMsg = QueryAllMsg("DOWNLOAD::", "ALLMSG::", dialog_ids, sp.getString("tokenQuery","")!!)
                                 val dataServerMsg = Json.encodeToString(queryAllMsg)
                                 webSocketClient.send(dataServerMsg)
                             }
@@ -608,6 +624,7 @@ class ActivityMain :
                         if (msg.substringBefore("::") == "ALLMSG") {
                             val jsonData = msg.substringAfter("::")
                             val msg = Json.decodeFromString<ListDataOfMsg>(jsonData)
+                            if (!checkVerifyJWT(msg.token)) return;
                             val dataOfMessage: List<DataOfMessage> = msg.listOfData
                             for (el in dataOfMessage) {
                                 sqliteHelper.addMsgInTable(
@@ -622,6 +639,7 @@ class ActivityMain :
                         if (msg.substringBefore("::") == "ALLTAGNAME") {
                             val jsonData = msg.substringAfter("::")
                             val msg = Json.decodeFromString<ListTagName>(jsonData)
+                            if (!checkVerifyJWT(msg.token)) return;
                             val dataOfNickname: List<DataOfNickName> = msg.listOfData
                             for (el in dataOfNickname) {
                                 if (sqliteHelper.checkUserInChat(el.tagUser)) break
@@ -634,6 +652,7 @@ class ActivityMain :
                         if (msg.substringBefore("::") == "ALLFRND") {
                             val jsonData = msg.substringAfter("::")
                             val msg = Json.decodeFromString<ListDataOfFriends>(jsonData)
+                            if (!checkVerifyJWT(msg.token)) return;
                             val dataOfFriends: List<DataOfFriends> = msg.listOfData
                             for (el in dataOfFriends) {
                                 sqliteHelper.addUserInFriendDW(el)
@@ -665,9 +684,7 @@ class ActivityMain :
                             val msg = Json.decodeFromString<ResultDeleteFrined>(jsonData)
                             sqliteHelper.deleteFriend(msg)
                             val ed = sp.edit()
-                            if(msg.typeDelete == "DELFROMFRND"){
-                                ed.putString("changeStatus", LocalDateTime.now().toString())
-                            }
+                            ed.putString("changeStatus", LocalDateTime.now().toString())
                             if(msg.typeDelete == "DELFROMREQ"){
                                 ed.putString("changeStatusReq", LocalDateTime.now().toString())
                             }
@@ -785,50 +802,49 @@ class ActivityMain :
     }
     private fun messagePrint(jsonData: String){
         try{
-        val msg = Json.decodeFromString<MessageFromUser>(jsonData)
-        if(msg.dialog_id.substringBefore("#") == "GROUP"){
-            if(msg.sender == sp.getString("tagUser", "NONE")) return
-            sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
-            if(msg.receiverId != sp.getString("idActive", "NONE")) return
-        }else{
-            sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
-            if(sp.getString("idActive", "NONE") != msg.sender) return
-        }
-        if(!sp.getBoolean("active", false)) return
-            var nameOfSender = sqliteHelper.getNameInUserChat(msg.sender)
-            if (nameOfSender.isEmpty()){
-                nameOfSender = resources.getString(R.string.user_name)
+            val msg = Json.decodeFromString<MessageFromUser>(jsonData)
+            if(msg.dialog_id.substringBefore("#") == "GROUP"){ // для групп
+                if(msg.sender == sp.getString("tagUser", "NONE")) return // скип добавления в бд, если это отправили мы
+                sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
+                if(msg.receiverId != sp.getString("idActive", "NONE")) return // скип отрисовки, если мы не в чате
+            }else{ // для лс
+                sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
+                if(sp.getString("idActive", "NONE") != msg.sender) return // скип отрисовки, если мы не в чате
             }
-            val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            var newView = inflater.inflate(R.layout.message_from, null)
-            when (msg.typeMsg) {
-                "IMAGE" -> {
-                    newView = inflater.inflate(R.layout.message_from_image, null)
-                    val nameImg = msg.textMsg
-                    var chatName = msg.dialog_id.replace("#", "%23")
-                    chatName = chatName.replace("::", "--")
-                    val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
-                    val imageInMessage = newView.findViewById<ImageView>(R.id.msgFromImage)
-                    Picasso.get()
-                        .load(urlImg)
-                        .placeholder(R.drawable.error_image)
-                        .into(imageInMessage)
+            if(!sp.getBoolean("active", false)) return
+                var nameOfSender = sqliteHelper.getNameInUserChat(msg.sender)
+                if (nameOfSender.isEmpty()){
+                    nameOfSender = resources.getString(R.string.user_name)
                 }
-                "TEXT" -> {
-                    newView.findViewById<TextView>(R.id.msgFrom).text = msg.textMsg
+                val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                var newView = inflater.inflate(R.layout.message_from, null)
+                when (msg.typeMsg) {
+                    "IMAGE" -> {
+                        newView = inflater.inflate(R.layout.message_from_image, null)
+                        val nameImg = msg.textMsg
+                        var chatName = msg.dialog_id.replace("#", "%23")
+                        chatName = chatName.replace("::", "--")
+                        val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
+                        val imageInMessage = newView.findViewById<ImageView>(R.id.msgFromImage)
+                        Picasso.get()
+                            .load(urlImg)
+                            .placeholder(R.drawable.error_image)
+                            .into(imageInMessage)
+                    }
+                    "TEXT" -> {
+                        newView.findViewById<TextView>(R.id.msgFrom).text = msg.textMsg
+                    }
                 }
-            }
-            newView.findViewById<TextView>(R.id.senderName).text = nameOfSender
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            mainWindowOuter.addView(newView, lp)
-            scrollView.post(Runnable() {
-                scrollView.fullScroll(View.FOCUS_DOWN)
-            })
-        } catch (ex: Exception){
-        }
+                newView.findViewById<TextView>(R.id.senderName).text = nameOfSender
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                mainWindowOuter.addView(newView, lp)
+                scrollView.post(Runnable() {
+                    scrollView.fullScroll(View.FOCUS_DOWN)
+                })
+        } catch (ex: Exception){ }
     }
 
     private fun deviceAuth(data: String){
@@ -846,7 +862,8 @@ class ActivityMain :
                 true,
                 obj.nickname,
                 obj.tagUser,
-                obj.isVisible)
+                obj.isVisible,
+                getJwt(obj.tagUser))
             var msg = Json.encodeToString(confirmAuth)
             tagUser = sp.getString("tagUser", null)!!
 
@@ -858,7 +875,7 @@ class ActivityMain :
 
             if(!webSocketClient.connection.isClosed){
                 webSocketClient.send(msg)
-                val queryAllDlg = QueryAllDlg("DOWNLOAD::", "ALLDLG::", obj.tagUser)
+                val queryAllDlg = QueryAllDlg("DOWNLOAD::", "ALLDLG::", obj.tagUser, sp.getString("tokenQuery","")!!)
                 msg = Json.encodeToString(queryAllDlg)
                 webSocketClient.send(msg)
             }
@@ -886,7 +903,8 @@ class ActivityMain :
                 true,
                 obj.nickname,
                 obj.tagUser,
-                obj.isVisible)
+                obj.isVisible,
+                getJwt(obj.tagUser))
             var msg = Json.encodeToString(confirmAuth)
 
             tagUser = sp.getString("tagUser", null)!!
@@ -899,7 +917,12 @@ class ActivityMain :
 
             if(!webSocketClient.connection.isClosed){
                 webSocketClient.send(msg)
-                val queryAllDlg = QueryAllDlg("DOWNLOAD::", "ALLDLG::", obj.tagUser)
+                val queryAllDlg = QueryAllDlg(
+                    "DOWNLOAD::",
+                    "ALLDLG::",
+                    obj.tagUser,
+                    sp.getString("tokenQuery","")!!
+                )
                 msg = Json.encodeToString(queryAllDlg)
                 webSocketClient.send(msg)
             }
@@ -910,6 +933,24 @@ class ActivityMain :
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+    private fun getJwt(tagUser : String) : String{
+        val key: Key = Keys.secretKeyFor(SignatureAlgorithm.HS256)
+        val time = LocalDateTime.now().toString()
+        val platform = "Mobile"
+        val jws = Jwts.builder()
+                .setSubject(time)
+                .setIssuer(tagUser)
+                .setId(platform)
+                .signWith(key)
+                .compact()
+        val ed = sp.edit()
+        ed.putString("tokenQuery", jws)
+        ed.apply()
+        return jws
+    }
+    private fun checkVerifyJWT(token : String) : Boolean{
+        return (sp.getString("tokenQuery","")!! == token)
     }
 }
 

@@ -141,33 +141,11 @@ bool isDeleteAvatar(string message) {
     return message.find(DELETE_AVATAR) == 0;
 }
 
-string parseName(string message) {
-    return message.substr(SET_NAME.size());
-}
-
-
-string parseUserId(string message) {
-    string rest = message.substr(MESSAGE_TO.size());
-    int pos = rest.find("::"); // pos = 2
-    return rest.substr(0, pos); // example 11
-}
-
-string parseUserText(string message) {
-    string rest = message.substr(MESSAGE_TO.size());
-    int pos = rest.find("::"); // pos = 2
-    return rest.substr(pos + 2); // example "Привет от пети"
-}
 
 bool isMessageTo(string message) {
     return message.find(MESSAGE_TO) == 0;
 }
 
-string messageFromUser(string user_id, string sender, string message) {
-    return "MESSAGE_FROM::" + user_id + "::[" + sender + "] " + message;
-}
-string messageFromGlobal(string user_id, string sender, string message) {
-    return "MESSAGE_FROM::" + user_id + "::[" + sender + "] " + message;
-}
 
 string generateUUID() {
     boost::uuids::random_generator uuid_gen;
@@ -179,28 +157,6 @@ string generateUUID() {
 
 bool isSignNewUser(string message) {
     return message.find(SIGNUP) == 0;
-}
-
-string parseNewUserLogin(string message) {
-    string rest = message.substr(SIGNUP.size());
-    int pos = rest.find("::");
-    return rest.substr(0, pos); 
-}
-
-string parseNewUserPassword(string message) {
-    string rest = message.substr(SIGNUP.size());
-    int pos = rest.find("::"); 
-    rest = rest.substr(pos + 2);
-    pos = rest.find("::");
-    return rest.substr(0, pos);
-}
-
-string parseNewUserNickname(string message) {
-    string rest = message.substr(SIGNUP.size());
-    int pos = rest.find("::");
-    rest = rest.substr(pos + 2);
-    pos = rest.find("::");
-    return rest.substr(pos + 2);
 }
 
 bool isConnectionServerDB(string message) {
@@ -231,42 +187,12 @@ bool isFrnd(string message) {
 bool isDownLoadData(string message) {
     return message.find(DOWNLOAD) == 0;
 }
-string parseUserLogin(string message) {
-    string rest = message.substr(AUTH.size());
-    int pos = rest.find("::");
-    return rest.substr(0, pos);
-}
 
-string parseUserPass(string message) {
-    string rest = message.substr(AUTH.size());
-    int pos = rest.find("::");
-    return rest.substr(pos + 2);
-}
 bool isResultFromDB(string message) {
     return message.find(RESULTDB) == 0;
 }
-string parseResultDB(string message) {
-    string rest = message.substr(RESULTDB.size());
-    int pos = rest.find("::");
-    return rest.substr(0, pos);
-}
-string parseResultDBAuthor(string message) {
-    string rest = message.substr(RESULTDB.size());
-    int pos = rest.find("::");
-    rest = rest.substr(pos + 2);
-    pos = rest.find("::");
-    return rest.substr(0, pos);
-}
-string parseResultDBName(string message) {
-    int pos = message.rfind("::");
-    string rest = message.substr(0, pos);
-    pos = rest.rfind("::");
-    return rest.substr(pos + 2);
-}
-string parseResultDBuId(string message) {
-    int pos = message.rfind("::");
-    return message.substr(pos + 2);
-}
+
+
 string parseIsVisible(bool isVisible) {
     if (isVisible)
         return "true";
@@ -336,32 +262,6 @@ int main() {
                     string text = jsonData["text"];
                     string dialog_id = jsonData["dialog_id"];
                     string typeMsg = jsonData["typeMsg"];
-                    // отправить получателю
-                    //if (receiverId == "0") {
-                    //    json jsonOut = {
-                    //        {"dialog_id", dialog_id},
-                    //        {"sender", authorId},
-                    //        {"typeMsg", typeMsg},
-                    //        {"text", text},
-                    //        {"receiverId", receiverId}
-                    //    };
-                        //string outgoingMessage = MESSAGEFROM + (string)jsonOut.dump();
-                       // ws->publish(BROADCAST_CHANNEL, outgoingMessage, uWS::OpCode::TEXT, false);
-                    //    string outgoingMessage = FORDB + SQL + INSERT + NEWMSGDLG + (string)jsonOut.dump();
-                    //    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
-                    //}
-                    //else {
-                    //    json jsonOut = {
-                    //        {"dialog_id", dialog_id},
-                    //        {"sender", authorId},
-                    //        {"typeMsg", typeMsg},
-                    //        {"text", text},
-                    //        {"receiverId", receiverId}
-                    //    };
-                    //    string outgoingMessage = FORDB + SQL + INSERT + NEWMSGDLG + (string)jsonOut.dump();
-                    //    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
-                    //    }
-                    //}
                     json jsonOut = {
                             {"dialog_id", dialog_id},
                             {"sender", authorId},
@@ -431,7 +331,7 @@ int main() {
                         ws->publish(BROADCAST_CHANNEL, offline(userData->uId));
                         deleteName(userData);
                         userData->name = jsonData["nickname"];
-                        userData->uId = jsonData["tagUser"];
+                        userData->uId = jsonData["tagUser"];                      
                         updateName(userData);
                         string userChannel = "user#" + userData->uId;
                         ws->subscribe(userChannel);
@@ -444,6 +344,7 @@ int main() {
                         }
                         cout << "User #" << authorId << " has been authorized -> new id: " << userData->uId << endl;
                         cout << "Users connected: " << userNames.size() << endl;
+                        cout << endl << jsonData["token"] << endl;
                         return;
                     }
                     string loginUser = jsonData["loginAuth"];
@@ -571,7 +472,8 @@ int main() {
                     }
                     if (jsonData["table"] == ALLDLG) {
                         json jsonOut = {
-                            {"tagUser", jsonData["tagUser"]}
+                            {"tagUser", jsonData["tagUser"]},
+                            {"token", jsonData["token"]}
                         };
                         string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLDLG + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
@@ -579,7 +481,8 @@ int main() {
                     if (jsonData["table"] == ALLMSG) {
                         json jsonOut = {
                             {"dialog_ids", jsonData["dialog_ids"]},
-                            {"authorId", authorId}
+                            {"authorId", authorId},
+                            {"token", jsonData["token"]}
                         };
                         string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLMSG + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
@@ -587,14 +490,16 @@ int main() {
                     if (jsonData["table"] == ALLTAGNAME) {
                         json jsonOut = {
                             {"dialog_ids", jsonData["dialog_ids"]},
-                            {"authorId", authorId}
+                            {"authorId", authorId},
+                            {"token", jsonData["token"]}
                         };
                         string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLTAGNAME + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                     if (jsonData["table"] == ALLFRND) {
                         json jsonOut = {
-                            {"tagUser", authorId}
+                            {"tagUser", authorId},
+                            {"token", jsonData["token"]}
                         };
                         string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLFRND + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
@@ -770,7 +675,8 @@ int main() {
                         if (jsonData["table"] == ALLDLG) {
                             if (jsonData["success"]) {
                                 json jsonOut = {
-                                    {"listOfData", jsonData["listOfData"]}
+                                    {"listOfData", jsonData["listOfData"]},
+                                    {"token", jsonData["token"]}
                                 };
                                 string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLDLG + (string)jsonOut.dump();
                                 string tagUser = jsonData["tagUser"];
@@ -785,7 +691,8 @@ int main() {
                         if (jsonData["table"] == ALLMSG) {
                             if (jsonData["success"]) {
                                 json jsonOut = {
-                                    {"listOfData", jsonData["listOfData"]}
+                                    {"listOfData", jsonData["listOfData"]},
+                                    {"token", jsonData["token"]}
                                 };
                                 string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLMSG + (string)jsonOut.dump();
                                 string tagUser = jsonData["tagUser"];
@@ -800,7 +707,8 @@ int main() {
                         if (jsonData["table"] == ALLTAGNAME) {
                             if (jsonData["success"]) {
                                 json jsonOut = {
-                                    {"listOfData", jsonData["listOfData"]}
+                                    {"listOfData", jsonData["listOfData"]},
+                                    {"token", jsonData["token"]}
                                 };
                                 string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLTAGNAME + (string)jsonOut.dump();
                                 string tagUser = jsonData["tagUser"];
@@ -815,7 +723,8 @@ int main() {
                         if (jsonData["table"] == ALLFRND) {
                             if (jsonData["success"]) {
                                 json jsonOut = {
-                                    {"listOfData", jsonData["listOfData"]}
+                                    {"listOfData", jsonData["listOfData"]},
+                                    {"token", jsonData["token"]}
                                 };
                                 string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLFRND + (string)jsonOut.dump();
                                 string tagUser = jsonData["tagUser"];

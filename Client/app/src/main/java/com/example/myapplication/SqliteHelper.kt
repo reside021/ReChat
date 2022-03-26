@@ -31,11 +31,19 @@ class SqliteHelper(context: Context) :
         db?.execSQL(tableFriends)
 
         val tableMsgDlg = "CREATE TABLE IF NOT EXISTS $MSGDLGTABLE " +
-                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $SENDER TEXT, $TYPEMSG TEXT, $TEXTMSG TEXT, $TIMECREATED INTEGER)"
+                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "$DIALOG_ID TEXT, "+
+                "$SENDER TEXT, " +
+                "$TYPEMSG TEXT, " +
+                "$TEXTMSG TEXT, " +
+                "$TIMECREATED INTEGER)"
         db?.execSQL(tableMsgDlg)
 
         val tableUserDlg = "CREATE TABLE IF NOT EXISTS $USERDLGTABLE " +
-                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $DIALOG_ID TEXT, $TAG_USER TEXT, $ENTEREDTIME TEXT)"
+                "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "$DIALOG_ID TEXT, " +
+                "$TAG_USER TEXT, " +
+                "$ENTEREDTIME TEXT)"
         db?.execSQL(tableUserDlg)
 
 
@@ -232,7 +240,7 @@ class SqliteHelper(context: Context) :
     }
 
 
-    fun addMsgInTable(dialogID : String, sender : String, typeMsg : String, text : String, timecreated : Int ) : Boolean{
+    fun addMsgInTable(dialogID : String, sender : String, typeMsg : String, text : String, timecreated : Int) : Boolean{
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(DIALOG_ID, dialogID)

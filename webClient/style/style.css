@@ -1,0 +1,274 @@
+html, body, .mainContainer{
+    height: 100%;
+}
+.contentBlock{
+    min-height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.mainContent{
+    width: 1078px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+.activity{
+    min-width: 960px;
+    height: 100%;
+}
+.activity .tab-content, #ex2-tabs-2, .chat{
+    min-width: 768px;
+}
+#ex2-content{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#ex2-tabs-1{
+    min-width: 768px;
+}
+.display-1{
+    margin-bottom: 30px;
+}
+.authUser{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 50px 20px;
+}
+.loginField, .signUpField{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 15px;
+}
+.loginField a:hover, .signUpField a:hover, .exitUser:hover{
+    text-shadow: black 0.1px 0.1px 0.2px;
+    cursor: pointer;
+}
+
+.loginField div, .signUpField button{
+    margin-bottom: 15px;
+}
+.signUpField div{
+    margin-bottom: 25px;
+}
+.dataOfUser{
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.imageOfUser img{
+    margin: 50px;
+}
+.infoOfUser{
+    padding: 35px 0px;
+}
+#tagOfUser, #user_tagOfUser, #user_statusFriends{
+    padding-left: 10px;
+}
+
+.detailDataOfUser{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.detailDataOfUser div{
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 30px;
+}
+.detailDataOfUser label{
+    align-self: center;
+}
+.chat{
+    height: 100%;
+    display: flex;
+}
+.chatChannel{
+    width: 300px;
+}
+.msgBlock{
+    height: 100%;
+    max-width: 100%;
+    border-radius: 0.5rem;
+    margin-left: 10px;
+    display: flex;
+    flex-direction: column;
+}
+#default {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.fr{
+    text-align: left;
+    align-self: start;
+}
+.we{
+    text-align: right;
+    align-self: end;
+}
+#visibleStatus{
+    margin-left: 10px;
+}
+.imageOfUser{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.changeAvatar{
+    margin-bottom: 15px;
+}
+.newAvatarMsg{
+    display: flex;
+    align-items: center;
+}
+.newAvatarMsg button, .blockFriendsStatus button{
+    margin-left: 20px;
+}
+#imageOfUser, #user_imageOfUser{
+    width: 180px;
+    height: 180px;
+}
+.blockName, .blockTag, .newAvatarMsg, .blockFriendsStatus{
+    display: flex;
+    align-items: center;
+    padding: 5px 0px;
+}
+#newNameOfUser, #nameOfUser, #tagOfUser, #labelTOU{
+    margin: 0px !important;
+}
+.editName{
+    margin-inline: 5px;
+}
+.editName:hover{
+    cursor: pointer;
+}
+.chatWindow li{
+    border: none !important;
+}
+.chatWindow li .textMsg{
+    max-width: 600px;
+    word-wrap: break-word;
+    padding: 5px 15px;
+}
+.chatWindow .fr .textMsg{
+    border-radius: 0.5rem 0.5rem 0.5rem 0rem;
+}
+.chatWindow .we .textMsg{
+    border-radius: 0.5rem 0.5rem 0rem 0.5rem;
+}
+.msgWindow{
+    margin-bottom: 10px;
+    height: 79vh;
+}
+.inputMsg{
+    height: 60px;
+}
+textarea{
+    height: 60px !important;
+    resize: none;
+}
+.imgMsg{
+    max-height: 400px;
+    max-width: 400px;
+}
+.blockMsgScroll{
+    height: 100%;
+    overflow: auto;
+}
+.msgBlock input{
+    margin-bottom: 5px !important;
+}
+.elementFriends, .elementUsers, .elementRequests{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+}
+.elementFriends:hover, .elementUsers:hover, .elementRequests:hover{
+    cursor: pointer;
+}
+.elementFriends .blockFriendsInfo, .elementUsers .blockUsersInfo, .elementRequests .blockRequestsInfo{
+    display: flex;
+    align-items: center;
+}
+.elementFriends .nameFriends, .elementUsers .nameUsers, .elementRequests .nameUsers{
+    font-size: 1.5em;
+    padding: 0px 20px;
+}
+.blockFriendsInfo img, .blockUsersInfo img, .blockRequestsInfo img{
+    width: 60px;
+    height: 60px;
+}
+.actionsFriend{
+    margin-inline: 10px;
+    font-size: 1.1em;
+}
+.userProfile{
+    position: fixed;
+    top: 5%;
+    left: 20%;
+    min-width: 768px;
+    width: 60%;
+    height: 100%;
+    z-index:99;
+}
+.userProfile .dataOfUser{
+    display: flex;
+    justify-content: space-between;
+}
+.userProfile .blockInfo{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.userProfile .closeInfo{
+    align-self: flex-start;
+    margin: 5px;
+}
+.userProfile .closeWindow{
+    font-size: 1.5em;
+}
+.formSearchPeople{
+    width: 100%;
+    margin-bottom: 10px;
+}
+.formSearchPeople div{
+    width: 90%;
+}
+.formSearchPeople button{
+    width: 10%;
+}
+.profile .exitUser{
+    width: calc(100% - 725px);
+    font-size: 1.5em;
+    display: flex;
+    justify-content: center;
+    align-self: flex-start;
+    margin-top: 10px;
+    color: #f93154;
+}
+.startScreen, .errorScreen, .errorMsg{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.errorMsg{
+    margin-bottom: 30px;
+}
+.errorMsg h1{
+    padding: 20px;
+}
+.friendsList, .requestsList{
+    overflow: auto;
+    height: 82vh;
+}
+.usersList, .searchList{
+    overflow: auto;
+    height: 76vh;
+}

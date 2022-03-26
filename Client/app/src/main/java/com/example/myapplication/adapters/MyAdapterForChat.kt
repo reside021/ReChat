@@ -24,6 +24,7 @@ class MyAdapterForChat() : BaseAdapter() {
             newView = layoutInflater.inflate(R.layout.chat_element, parent, false)
             val nameOfUser = newView.findViewById<TextView>(R.id.userName)
             val idOfUser = newView.findViewById<TextView>(R.id.idUser)
+            val countNewMsg = newView.findViewById<TextView>(R.id.countNewMsg)
             nameOfUser.text = list[position].second
             idOfUser.text = list[position].first
             val userTag = idOfUser.text

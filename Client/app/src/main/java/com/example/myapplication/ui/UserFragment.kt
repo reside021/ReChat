@@ -170,4 +170,7 @@ class UserFragment : Fragment(){
         requireView().findViewById<TextView>(R.id.nameOfUser).text = newName
     }
 
+    fun setNewVisible(newVisible : Boolean){
+        requireView().findViewById<SwitchCompat>(R.id.switchBeOnline).isChecked = newVisible
+    }
 }

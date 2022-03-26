@@ -4,5 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ListDataOfFriends(
-    val listOfData : List<DataOfFriends>
+    val listOfData : List<DataOfFriends>,
+    val token : String
 )

@@ -5,217 +5,10 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using JWT.Builder;
 using JWT.Algorithms;
+using WSClientDB.dataClasses;
 
 namespace WSClientDB
 {
-    class SecureConnection
-    {
-        public string type, key;                                  
-    }
-    public class MsgFromServer
-    {
-        public string usefulMsgForDB { get; set; }
-        public string typeMsg { get; set; }
-        public string textMsg { get; set; }
-    }
-    public class SignUp
-    {
-        public string authorId { get; set; }
-        public string loginUser { get; set; }
-        public string nickName { get; set; }
-        public string passUser { get; set; }
-    }
-    public class Auth
-    {
-        public string authorId { get; set; }
-        public string loginUser { get; set; }
-        public string passUser { get; set; }
-    }
-    public class AuthToken
-    {
-        public string tagUser { get; set; }
-        public string token { get; set; }
-    }
-
-    public class DownLoadAllDlg
-    {
-        public string tagUser { get; set; }
-    }
-    public class DownLoadAllMsg
-    {
-        public List<string> dialog_ids { get; set; }
-        public string authorId { get; set; }
-    }
-    public class DownLoadAllTagName
-    {
-        public List<string> dialog_ids { get; set; }
-        public string authorId { get; set; }
-    }
-    public class ResultDB // for auth of user
-    {
-        public string type { get; set; } // RESULTBD
-        public string oper{ get; set; } // type oper
-        public string authorId { get; set; } // authorId
-        public string nickName { get; set; } // name
-        public string tag { get; set; } // uId
-        public bool isVisible { get; set; } // isVisible for all
-        public bool isAvatar { get; set; } // have avatar?
-        public bool success { get; set; } // status
-        public string token { get; set; } // jwt
-    }
-    public class NewName
-    {
-        public string tagId { get; set; }
-        public string newName { get; set; }
-    }
-    public class UpdateVisible
-    {
-        public string tagUser { get; set; }
-        public bool isVisible { get; set; }
-    }
-    public class UpdateAvatar
-    {
-        public string tagId { get; set; }
-    }
-    public class SuccessUpdate
-    {
-        public string type { get; set; }
-        public string oper { get; set; } // type oper
-        public string typeUpdate { get; set; } // where updating
-        public bool success { get; set; }
-        public string tagId { get; set; }
-        public string newName { get; set; }
-        public bool isVisible { get; set; }
-    }
-    public class NewUserDLG
-    {
-        public string userCompanion { get; set; }
-        public string userManager { get; set; }
-    }
-    public class SuccessInsertMsgDlg
-    {
-        public string type { get; set; }
-        public string oper { get; set; } // type oper
-        public bool success { get; set; }
-        public string dialog_id { get; set; }
-        public string sender { get; set; }
-        public string typeMsg { get; set; }
-        public string textMsg { get; set; }
-        public string timeCreated { get; set; }
-        public string receiverId { get; set; }
-        public string nameSender { get; set; }
-    }
-    public class NewMsgDLG
-    {
-        public string dialog_id { get; set; }
-        public string sender { get; set; }
-        public string typeMsg { get; set; }
-        public string text { get; set; }
-        public string receiverId { get; set; }
-    }
-    public class SuccessCreateUserDlg
-    {
-        public string type { get; set; }
-        public string oper { get; set; } // type oper
-        public bool success { get; set; }
-        public string dialog_id { get; set; }
-        public string userManager { get; set; }
-        public string userCompanion { get; set; }
-        public string enteredTime { get; set; }
-    }
-    public class DataOfDialog
-    {
-        public string dialog_id { get; set; }
-        public string tagUser { get; set; }
-        public string enteredTime { get; set; }
-    }
-    public class ListDataOfDialog
-    {
-        public string type { get; set; }
-        public string oper { get; set; } // type oper
-        public string table { get; set; }
-        public bool success { get; set; }
-        public List<DataOfDialog> listOfData { get; set; }
-        public string tagUser {get; set;}
-    }
-    public class DataOfMessage
-    {
-        public string dialog_id { get; set; }
-        public string sender { get; set; }
-        public string typeMsg { get; set; }
-        public string textMsg { get; set; }
-        public int timeCreated { get; set; }
-    }
-    public class ListDataOfMessage
-    {
-        public string type { get; set; }
-        public string oper { get; set; } // type oper
-        public string table { get; set; }
-        public bool success { get; set; }
-        public List<DataOfMessage> listOfData { get; set; }
-        public string tagUser { get; set; }
-    }
-    public class DataOfNickName
-    {
-        public string tagUser { get; set; }
-        public string nickUser { get; set; }
-    }
-    public class DataOfTagName
-    {
-        public string type { get; set; }
-        public string oper { get; set; } // type oper
-        public string table { get; set; }
-        public bool success { get; set; }
-        public List<DataOfNickName> listOfData { get; set; }
-        public string tagUser { get; set; }
-    }
-    public class ActionsWithFrnd
-    {
-        public string typeAction { get; set; }
-        public string tagUserSender { get; set; }
-        public string nameUserSender { get; set; }
-        public string tagUserReceiver { get; set; }
-        public string nameUserReceiver { get; set; }
-    }
-    public class ResultActionFrnd 
-    {
-        public string type { get; set; } // RESULTBD
-        public string oper { get; set; } // type oper
-        public string typeAction { get; set; } // type action with friends
-        public string tagUserSender { get; set; } // userSender
-        public string nameUserSender { get; set; } // userSender name
-        public string tagUserReceiver { get; set; } // userReceiver tag
-        public string nameUserReceiver { get; set; } // userReceiver name
-        public bool success { get; set; } // status
-        public string typeDelete { get; set; } // type delete for client
-    }
-    public class UpdateFriend
-    {
-        public string tagUserFriend { get; set; }
-        public string tagUserOur { get; set; }
-    }
-    public class DataOfFriendsTable
-    {
-        public string tagSenderFrnd { get; set; }
-        public string tagReceiverFrnd { get; set; }
-        public string nameFrnd { get; set; }
-        public int status { get; set; }
-    }
-    public class DataOfFriendsList
-    {
-        public string type { get; set; }
-        public string oper { get; set; } // type oper
-        public string table { get; set; }
-        public bool success { get; set; }
-        public List<DataOfFriendsTable> listOfData { get; set; }
-        public string tagUser { get; set; }
-    }
-    public class DeleteFriend
-    {
-        public string tagUserFriend { get; set; }
-        public string tagUserOur { get; set; }
-        public string typeDelete { get; set; }
-    }
     class Program
     {
         const string FORDB = "FORDB::";
@@ -419,6 +212,7 @@ namespace WSClientDB
                       .WithAlgorithm(new HMACSHA256Algorithm()) // symmetric
                       .WithSecret(tagUser)
                       .AddClaim("tagUser", tagUser)
+                      .AddClaim("timeEntry", DateTime.Now)
                       .AddClaim("iss", "Server_ReChat")
                       .Encode();
             return token;
@@ -520,7 +314,7 @@ namespace WSClientDB
             sqlConnection.Close();
             return listDlg;
         }
-        private static void SelectDataForAllDlg(string tagUser)
+        private static void SelectDataForAllDlg(string tagUser, string token)
         {
             var listDlg = GetInfoAboutDialogs(tagUser);
             ListDataOfDialog listDataOfDialog = new ListDataOfDialog();
@@ -580,6 +374,7 @@ namespace WSClientDB
             listDataOfDialog.success = true;
             listDataOfDialog.listOfData = dataOfDialogs;
             listDataOfDialog.tagUser = tagUser;
+            listDataOfDialog.token = token;
             string jsonResult = JsonConvert.SerializeObject(listDataOfDialog);
             webSocket.Send(jsonResult);
             Console.WriteLine($"[MSG] -> DownLoadDialog^{tagUser}");
@@ -617,7 +412,7 @@ namespace WSClientDB
             sqlConnection.Close();
             return dataOfMessages;
         }
-        private static void SelectDataForAllMsg(List<string> dialog_ids, string authorId)
+        private static void SelectDataForAllMsg(List<string> dialog_ids, string authorId, string token)
         {
             foreach(var el in dialog_ids)
             {
@@ -631,6 +426,7 @@ namespace WSClientDB
                     listDataOfMessage.success = true;
                     listDataOfMessage.listOfData = dataOfMessages;
                     listDataOfMessage.tagUser = authorId;
+                    listDataOfMessage.token = token;
                     string jsonResult = JsonConvert.SerializeObject(listDataOfMessage);
                     webSocket.Send(jsonResult);
                 }
@@ -653,7 +449,7 @@ namespace WSClientDB
             if (objectName != null) name = objectName.ToString();
             return name;
         }
-        private static void SelectDataForAllTagName(List<string> dialog_ids, string authorId)
+        private static void SelectDataForAllTagName(List<string> dialog_ids, string authorId, string token)
         {
             List<DataOfNickName> listTagName = new List<DataOfNickName>();
             foreach (var el in dialog_ids)
@@ -691,6 +487,7 @@ namespace WSClientDB
                 }
             }
             DataOfTagName dataOfTagName = new DataOfTagName();
+            dataOfTagName.token = token;
             if (listTagName.Count != 0)
             {
                 dataOfTagName.type = RESULTDB;
@@ -1048,7 +845,7 @@ namespace WSClientDB
             Console.WriteLine($"[MSG] -> DeleteFriend^{deleteFriend.tagUserOur} -> {deleteFriend.tagUserFriend} ^ {resultActionFrnd.success}");
         }
 
-        private static void SelectDataForAllFriends(string tagUser)
+        private static void SelectDataForAllFriends(string tagUser, string token)
         {
 
             DataOfFriendsList dataOfFriends = new DataOfFriendsList();
@@ -1056,6 +853,7 @@ namespace WSClientDB
             dataOfFriends.oper = DOWNLOAD;
             dataOfFriends.table = ALLFRND;
             dataOfFriends.tagUser = tagUser;
+            dataOfFriends.token = token;
             List<DataOfFriendsTable> listFriends = new List<DataOfFriendsTable>();
             try
             {
@@ -1198,25 +996,25 @@ namespace WSClientDB
                         {
                             message = message.Substring(ALLDLG.Length);
                             DownLoadAllDlg downLoadAllDlg = JsonConvert.DeserializeObject<DownLoadAllDlg>(message);
-                            SelectDataForAllDlg(downLoadAllDlg.tagUser);
+                            SelectDataForAllDlg(downLoadAllDlg.tagUser, downLoadAllDlg.token);
                         }
                         if (message.IndexOf(ALLMSG) != -1)
                         {
                             message = message.Substring(ALLMSG.Length);
                             DownLoadAllMsg downLoadAllMsg = JsonConvert.DeserializeObject<DownLoadAllMsg>(message);
-                            SelectDataForAllMsg(downLoadAllMsg.dialog_ids, downLoadAllMsg.authorId);
+                            SelectDataForAllMsg(downLoadAllMsg.dialog_ids, downLoadAllMsg.authorId, downLoadAllMsg.token);
                         }
                         if (message.IndexOf(ALLTAGNAME) != -1)
                         {
                             message = message.Substring(ALLTAGNAME.Length);
                             DownLoadAllTagName downLoadAllTagName = JsonConvert.DeserializeObject<DownLoadAllTagName>(message);
-                            SelectDataForAllTagName(downLoadAllTagName.dialog_ids, downLoadAllTagName.authorId);
+                            SelectDataForAllTagName(downLoadAllTagName.dialog_ids, downLoadAllTagName.authorId, downLoadAllTagName.token);
                         }
                         if (message.IndexOf(ALLFRND) != -1)
                         {
                             message = message.Substring(ALLFRND.Length);
                             DownLoadAllDlg downLoadAllDlg = JsonConvert.DeserializeObject<DownLoadAllDlg>(message);
-                            SelectDataForAllFriends(downLoadAllDlg.tagUser);
+                            SelectDataForAllFriends(downLoadAllDlg.tagUser, downLoadAllDlg.token);
                         }
                     }
                     if (message.IndexOf(FRND) != -1)

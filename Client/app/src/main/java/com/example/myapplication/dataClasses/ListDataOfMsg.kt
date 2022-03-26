@@ -4,5 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ListDataOfMsg(
-    val listOfData: List<DataOfMessage>
+    val listOfData: List<DataOfMessage>,
+    val token : String
 )

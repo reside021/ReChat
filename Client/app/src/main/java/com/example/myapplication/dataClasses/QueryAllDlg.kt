@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 data class QueryAllDlg(
     val type: String,
     val table: String,
-    val tagUser: String
+    val tagUser: String,
+    val token: String
 )

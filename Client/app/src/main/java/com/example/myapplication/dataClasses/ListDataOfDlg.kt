@@ -4,5 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ListDataOfDlg(
-    val listOfData: List<DataOfDialog>
+    val listOfData: List<DataOfDialog>,
+    val token : String
 )
