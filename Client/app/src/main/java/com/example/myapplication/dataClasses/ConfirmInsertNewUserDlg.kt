@@ -8,5 +8,6 @@ data class ConfirmInsertNewUserDlg(
     val dialog_id: String,
     val userManager: String,
     val enteredTime: String,
-    val userCompanion: String
+    val userCompanion: String,
+    val countMsg : Int
 )

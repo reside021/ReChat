@@ -13,5 +13,8 @@ namespace WSClientDB.dataClasses
         public string tagId { get; set; }
         public string newName { get; set; }
         public bool isVisible { get; set; }
+        public int countMsg { get; set; }
+        public string dialog { get; set; }
+        public string needTagUser { get; set; }
     }
 }

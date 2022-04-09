@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 data class DataOfDialog(
     val dialog_id: String,
     val tagUser: String,
-    val enteredTime: String
+    val enteredTime: String,
+    val countMsg: Int
 )

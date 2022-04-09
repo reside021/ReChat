@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -91,7 +93,6 @@ class ActivityMain :
         }
     }
 
-
     private fun isActVersion(){
         val retrofit: Retrofit = Retrofit.Builder()
             .baseUrl("http://imagerc.ddns.net:80/")
@@ -175,8 +176,9 @@ class ActivityMain :
     override fun onUserLoadView() {
         val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
         val isAvatar = sp.getBoolean("isAvatar", false)
+        val queryImg  =sp.getString("queryImg","0")
         val urlAvatar = if(isAvatar){
-            "http://imagerc.ddns.net:80/avatar/avatarImg/$tagUser.jpg"
+            "http://imagerc.ddns.net:80/avatar/avatarImg/$tagUser.jpg?time=$queryImg"
         } else{
             ""
         }
@@ -185,7 +187,8 @@ class ActivityMain :
         fragment.setUserData(tagUser, userName, isAvatar, urlAvatar, isVisible)
     }
     override fun onChatLoadView() {
-        val myAdapterForChat = MyAdapterForChat()
+        val queryImg  = sp.getString("queryImg","0")!!
+        val myAdapterForChat = MyAdapterForChat(tagUser, queryImg)
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as ChatFragment
         fragment.setUserData(myAdapterForChat)
     }
@@ -193,17 +196,20 @@ class ActivityMain :
     override fun onFirstDisplayLoadView() {}
     override fun onAuthLoadView() {}
     override fun onFriendsListLoadView() {
-        val myAdapterForFriends = MyAdapterForFriends(tagUser)
+        val queryImg  = sp.getString("queryImg","0")!!
+        val myAdapterForFriends = MyAdapterForFriends(tagUser, queryImg)
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as FriendListFragment
         fragment.setUserData(myAdapterForFriends)
     }
     override fun onUserListLoadView() {
-        val myAdapterForUsers = MyAdapterForUsers()
+        val queryImg  = sp.getString("queryImg","0")!!
+        val myAdapterForUsers = MyAdapterForUsers(queryImg)
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as UserListFragment
         fragment.setUserData(myAdapterForUsers)
     }
     override fun onFrndListRequestLoadView() {
-        val myAdapterForRequest = MyAdapterForRequest(tagUser)
+        val queryImg  = sp.getString("queryImg","0")!!
+        val myAdapterForRequest = MyAdapterForRequest(tagUser, queryImg)
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as FrndListRequestFragment
         fragment.setUserData(myAdapterForRequest)
     }
@@ -352,6 +358,12 @@ class ActivityMain :
         }
         if(key.equals("onRestart")){
            onRestart()
+        }
+        if(key.equals("changeChatList")){
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as ChatFragment
+            if(fragment.isVisible){
+                fragment.onStart()
+            }
         }
     }
 
@@ -507,6 +519,11 @@ class ActivityMain :
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
+                        if (msg.substringBefore("::") == "COUNTMSG") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json.decodeFromString<ConfirmUpdateCountMsg>(jsonData)
+                            sqliteHelper.UpdateCountMsg(newData)
+                        }
                     }
                     if (status == "ERROR") {
                         if (msg == "NEWNAME::") {
@@ -533,7 +550,8 @@ class ActivityMain :
                                 sqliteHelper.addUserInDLG(
                                     msg.dialog_id,
                                     msg.userCompanion,
-                                    msg.enteredTime
+                                    msg.enteredTime,
+                                    msg.countMsg
                                 )
                                 Toast.makeText(
                                     this, "С пользователем создан чат",
@@ -543,7 +561,8 @@ class ActivityMain :
                                 sqliteHelper.addUserInDLG(
                                     msg.dialog_id,
                                     msg.userManager,
-                                    msg.enteredTime
+                                    msg.enteredTime,
+                                    msg.countMsg
                                 )
                                 val dialog_ids : MutableList<String> = mutableListOf(msg.dialog_id)
                                 val queryAllTagName = QueryAllTagName(
@@ -599,7 +618,8 @@ class ActivityMain :
                                 sqliteHelper.addUserInDLG(
                                     el.dialog_id,
                                     el.tagUser,
-                                    el.enteredTime
+                                    el.enteredTime,
+                                    el.countMsg
                                 )
                             }
                             val dialog_ids = sqliteHelper.getAllDlgFromDLG()
@@ -802,48 +822,71 @@ class ActivityMain :
     }
     private fun messagePrint(jsonData: String){
         try{
+            var sender = "";
             val msg = Json.decodeFromString<MessageFromUser>(jsonData)
-            if(msg.dialog_id.substringBefore("#") == "GROUP"){ // для групп
+            val ed = sp.edit()
+            if(msg.dialog_id.substringBefore("#") == "GROUP")
+            { // для групп
+                sender = msg.receiverId;
                 if(msg.sender == sp.getString("tagUser", "NONE")) return // скип добавления в бд, если это отправили мы
                 sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
+                ed.putString("changeChatList", LocalDateTime.now().toString())
+                ed.apply()
                 if(msg.receiverId != sp.getString("idActive", "NONE")) return // скип отрисовки, если мы не в чате
-            }else{ // для лс
+            }
+            else
+            { // для лс
+                sender = msg.sender;
                 sqliteHelper.addMsgInTable(msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated)
-                if(sp.getString("idActive", "NONE") != msg.sender) return // скип отрисовки, если мы не в чате
+                ed.putString("changeChatList", LocalDateTime.now().toString())
+                ed.apply()
+                if(msg.sender != sp.getString("idActive", "NONE")) return // скип отрисовки, если мы не в чате
             }
             if(!sp.getBoolean("active", false)) return
-                var nameOfSender = sqliteHelper.getNameInUserChat(msg.sender)
-                if (nameOfSender.isEmpty()){
-                    nameOfSender = resources.getString(R.string.user_name)
+            var nameOfSender = sqliteHelper.getNameInUserChat(msg.sender)
+            if (nameOfSender.isEmpty())
+            {
+                nameOfSender = resources.getString(R.string.user_name)
+            }
+            val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            var newView = inflater.inflate(R.layout.message_from, null)
+            when (msg.typeMsg) {
+                "IMAGE" -> {
+                    newView = inflater.inflate(R.layout.message_from_image, null)
+                    val nameImg = msg.textMsg
+                    var chatName = msg.dialog_id.replace("#", "%23")
+                    chatName = chatName.replace("::", "--")
+                    val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
+                    val imageInMessage = newView.findViewById<ImageView>(R.id.msgFromImage)
+                    Picasso.get()
+                        .load(urlImg)
+                        .placeholder(R.drawable.error_image)
+                        .into(imageInMessage)
                 }
-                val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-                var newView = inflater.inflate(R.layout.message_from, null)
-                when (msg.typeMsg) {
-                    "IMAGE" -> {
-                        newView = inflater.inflate(R.layout.message_from_image, null)
-                        val nameImg = msg.textMsg
-                        var chatName = msg.dialog_id.replace("#", "%23")
-                        chatName = chatName.replace("::", "--")
-                        val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
-                        val imageInMessage = newView.findViewById<ImageView>(R.id.msgFromImage)
-                        Picasso.get()
-                            .load(urlImg)
-                            .placeholder(R.drawable.error_image)
-                            .into(imageInMessage)
-                    }
-                    "TEXT" -> {
-                        newView.findViewById<TextView>(R.id.msgFrom).text = msg.textMsg
-                    }
+                "TEXT" -> {
+                    newView.findViewById<TextView>(R.id.msgFrom).text = msg.textMsg
                 }
-                newView.findViewById<TextView>(R.id.senderName).text = nameOfSender
-                val lp = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                mainWindowOuter.addView(newView, lp)
-                scrollView.post(Runnable() {
-                    scrollView.fullScroll(View.FOCUS_DOWN)
-                })
+            }
+            newView.findViewById<TextView>(R.id.senderName).text = nameOfSender
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            mainWindowOuter.addView(newView, lp)
+            scrollView.post(Runnable() {
+                scrollView.fullScroll(View.FOCUS_DOWN)
+            })
+            if(webSocketClient.connection.isClosed){
+                Toast.makeText(
+                    this@ActivityMain, "Отсутствует подключение к серверу",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else{
+                val updateCountMsg =
+                    UpdateCountMsg("UPDATE::", "COUNTMSG::", msg.dialog_id, sender, "1")
+                val dataServerName = Json.encodeToString(updateCountMsg)
+                webSocketClient.send(dataServerName)
+            }
         } catch (ex: Exception){ }
     }
 

@@ -17,6 +17,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.ActivityMain.Companion.sqliteHelper
+import com.example.myapplication.dataClasses.SuccessSetAvatar
+import com.example.myapplication.dataClasses.UpdateCountMsg
 import com.example.myapplication.interfaces.UploadImgMsg
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.squareup.picasso.Picasso
@@ -47,6 +49,7 @@ class ChatPeople : AppCompatActivity() {
     private lateinit var sp : SharedPreferences
     private var hasImg : Boolean = false
     private lateinit var uriImg : Uri
+    private lateinit var countNewMsg : String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.chat_window)
@@ -74,7 +77,7 @@ class ChatPeople : AppCompatActivity() {
         }
         idUser = intent.extras?.getString("idTag").toString()
         val nameOfUser = intent.extras?.getString("nameOfUser").toString()
-
+        countNewMsg = intent.extras?.getString("countNewMsg").toString()
         supportActionBar?.apply {
             title = nameOfUser
             setDisplayHomeAsUpEnabled(true)
@@ -169,9 +172,22 @@ class ChatPeople : AppCompatActivity() {
                 }
             }
             mainWindowInclude.addView(newView, lp)
-            scrollView.post(Runnable(){
-                scrollView.fullScroll(View.FOCUS_DOWN)
-            })
+        }
+        scrollView.post {
+            Thread.sleep(250);
+            scrollView.fullScroll(View.FOCUS_DOWN)
+        }
+        if (countNewMsg.toInt() < 1) return
+        if(webSocketClient.connection.isClosed){
+            Toast.makeText(
+                this@ChatPeople, "Отсутствует подключение к серверу",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else{
+            val updateCountMsg =
+                UpdateCountMsg("UPDATE::", "COUNTMSG::", dialog_id, idUser, countNewMsg)
+            val dataServerName = Json.encodeToString(updateCountMsg)
+            webSocketClient.send(dataServerName)
         }
     }
 

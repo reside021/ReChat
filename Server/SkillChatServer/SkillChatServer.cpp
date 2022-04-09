@@ -88,6 +88,7 @@ const string _DELETE = "DELETE::";
 const string CNFRMADD = "CNFRMADD::";
 const string ALLFRND = "ALLFRND::";
 const string FIND = "FIND::";
+const string COUNTMSG = "COUNTMSG::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -191,7 +192,9 @@ bool isDownLoadData(string message) {
 bool isResultFromDB(string message) {
     return message.find(RESULTDB) == 0;
 }
-
+bool isUpdate(string message) {
+    return message.find(UPDATE) == 0;
+}
 
 string parseIsVisible(bool isVisible) {
     if (isVisible)
@@ -344,7 +347,6 @@ int main() {
                         }
                         cout << "User #" << authorId << " has been authorized -> new id: " << userData->uId << endl;
                         cout << "Users connected: " << userNames.size() << endl;
-                        cout << endl << jsonData["token"] << endl;
                         return;
                     }
                     string loginUser = jsonData["loginAuth"];
@@ -390,6 +392,19 @@ int main() {
                     };
                     string outgoingMessage = FORDB + SQL + UPDATE + VISIBLE + (string)jsonOut.dump();
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
+                if (isUpdate(jsonData["type"])) {
+                    if (jsonData["objectUpdate"] == COUNTMSG) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dialog", jsonData["dialog"]},
+                            {"needTagUser", jsonData["tagUser"]},
+                            {"countMsg", jsonData["countMsg"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + COUNTMSG + (string)jsonOut.dump();
+                        cout << endl << outgoingMessage << endl;
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
                 }
                 if (isConnectionServerDB(jsonData["type"])) {
                     if (isTrustServer(jsonData["key"])) {
@@ -608,6 +623,18 @@ int main() {
                                 ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }
+                        if (jsonData["typeUpdate"] == COUNTMSG) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                json jsonOut = {
+                                   {"dialog", jsonData["dialog"]},
+                                   {"needTagUser", jsonData["needTagUser"]},
+                                   {"countMsg", jsonData["countMsg"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + COUNTMSG + (string)jsonOut.dump();
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
                     }
                     if (jsonData["oper"] == NEWUSERDLG) {
                         if (jsonData["success"]) {
@@ -616,7 +643,8 @@ int main() {
                                 {"dialog_id", jsonData["dialog_id"]},
                                 {"userManager", jsonData["userManager"]},
                                 {"enteredTime",jsonData["enteredTime"]},
-                                {"userCompanion", jsonData["userCompanion"]}
+                                {"userCompanion", jsonData["userCompanion"]},
+                                {"countMsg", 0}
                             };
                             string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
                             string userManager = jsonData["userManager"];
@@ -628,7 +656,8 @@ int main() {
                                     {"dialog_id", jsonData["dialog_id"]},
                                     {"userManager", jsonData["userManager"]},
                                     {"enteredTime",jsonData["enteredTime"]},
-                                    {"userCompanion", jsonData["userCompanion"]}
+                                    {"userCompanion", jsonData["userCompanion"]},
+                                    {"countMsg", 0}
                                 };
                                 string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
                                 ws->publish("user#" + userCompanion, outgoingMsg, uWS::OpCode::TEXT, false);
@@ -794,7 +823,6 @@ int main() {
                                 string outgoingMsg = RESULTDB + FRND + SUCCESS + CNFRMADD + (string)jsonOut.dump();
                                 ws->publish("user#" + tagUserFriend, outgoingMsg, uWS::OpCode::TEXT, false);
                                 ws->publish("user#" + tagUserOur, outgoingMsg, uWS::OpCode::TEXT, false);
-                                cout << endl << outgoingMsg << endl;
                                 cout << "User #" << tagUserOur << " added " << tagUserFriend << " as a friend " << endl;
                             }
                             else {

@@ -6,10 +6,8 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.icu.text.SimpleDateFormat
 import android.util.Log
-import com.example.myapplication.dataClasses.DataOfFriends
-import com.example.myapplication.dataClasses.ResultActionWithFrnd
-import com.example.myapplication.dataClasses.ResultCnfrmAddFriend
-import com.example.myapplication.dataClasses.ResultDeleteFrined
+import android.widget.Toast
+import com.example.myapplication.dataClasses.*
 
 class SqliteHelper(context: Context) :
         SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
@@ -43,7 +41,8 @@ class SqliteHelper(context: Context) :
                 "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                 "$DIALOG_ID TEXT, " +
                 "$TAG_USER TEXT, " +
-                "$ENTEREDTIME TEXT)"
+                "$ENTEREDTIME TEXT," +
+                "$COUNTMSG INTEGER)"
         db?.execSQL(tableUserDlg)
 
 
@@ -223,7 +222,7 @@ class SqliteHelper(context: Context) :
     fun getAllUsersChat(): MutableList<Pair<String,String>>{
         val allUser = mutableListOf<Pair<String, String>>()
         val db = readableDatabase
-        val selectALLQuery = "SELECT * FROM $LIST_USERS_CHAT"
+        val selectALLQuery = "SELECT $TAG_USER, $NAME_USER FROM $LIST_USERS_CHAT"
         val cursor = db.rawQuery(selectALLQuery, null)
         if (cursor != null) {
             if (cursor.moveToFirst()) {
@@ -276,32 +275,30 @@ class SqliteHelper(context: Context) :
         db.close()
         return allMsg
     }
-    fun qq() : MutableList<Array<String>>{
-        val allMsg = mutableListOf<Array<String>>()
+    fun getCountNewMsg(ourTag : String, tagUser: String) : Int{
+        var countNewMsg = 0
         val db = readableDatabase
-        val selectALLQuery = "SELECT * FROM $USERDLGTABLE"
+        val selectALLQuery = "SELECT (COUNT(M.$DIALOG_ID) - U.$COUNTMSG) AS countMsg FROM $MSGDLGTABLE AS M INNER JOIN $USERDLGTABLE AS U ON M.$DIALOG_ID = U.$DIALOG_ID WHERE U.$TAG_USER = '$tagUser' AND M.$SENDER <> '$ourTag'"
         val cursor = db.rawQuery(selectALLQuery, null)
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val dialog_id = cursor.getString(cursor.getColumnIndexOrThrow(DIALOG_ID))
-                    val tagUser = cursor.getString(cursor.getColumnIndexOrThrow(TAG_USER))
-                    val timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(TIMECREATED))
-                    allMsg.add(arrayOf(dialog_id, tagUser, timeCreated))
+                    countNewMsg = cursor.getInt(cursor.getColumnIndexOrThrow("countMsg"))
                 } while (cursor.moveToNext())
             }
         }
         cursor.close()
         db.close()
-        return allMsg
+        return countNewMsg
     }
 
-    fun addUserInDLG(dialogID : String, tagUser : String,  enteredTime : String ) : Boolean{
+    fun addUserInDLG(dialogID : String, tagUser : String,  enteredTime : String, countMsg : Int ) : Boolean{
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(DIALOG_ID, dialogID)
         values.put(TAG_USER, tagUser)
         values.put(ENTEREDTIME, enteredTime)
+        values.put(COUNTMSG, countMsg)
         val success = db.insert(USERDLGTABLE, null, values)
         db.close()
         Log.d("________InsertedInTblDlg_________", "$success")
@@ -420,25 +417,33 @@ class SqliteHelper(context: Context) :
         Log.d("________UpdateNameInTblFreinds_________", "")
     }
 
-    fun getCountMsgDlg() :  String{
-        val db = this.readableDatabase
-        val selectQuery = "SELECT $DIALOG_ID FROM $USERDLGTABLE"
-        val cursor = db.rawQuery(selectQuery, null)
-        if(cursor != null){
+    fun UpdateCountMsg(data : ConfirmUpdateCountMsg){
+        val dialogID =  data.dialog
+        val needTagUser = data.needTagUser
+        val countMsg = data.countMsg
+        var currentCountMsg = -1;
+        val readDB = readableDatabase
+        val selectALLQuery2 = "SELECT $COUNTMSG FROM $USERDLGTABLE WHERE $DIALOG_ID = '$dialogID' AND $TAG_USER = '$needTagUser'"
+        val cursor = readDB.rawQuery(selectALLQuery2, null)
+        if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    return cursor.getString(cursor.getColumnIndexOrThrow(DIALOG_ID))
+                    currentCountMsg = cursor.getInt(cursor.getColumnIndexOrThrow(COUNTMSG))
                 } while (cursor.moveToNext())
             }
         }
         cursor.close()
+        readDB.close()
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COUNTMSG, currentCountMsg + countMsg)
+        db.update(USERDLGTABLE, values, "$DIALOG_ID = ? AND $TAG_USER = ?", arrayOf(dialogID, needTagUser))
         db.close()
-        return ""
     }
 
     companion object {
         private val DB_NAME = "UserChat"
-        private val DB_VERSION = 2;
+        private val DB_VERSION = 3;
 
         private val ONLINE_USERS = "OnlineUsers" // tablename
         private val TAG_USER = "Tag_Of_User" // field in table
@@ -456,6 +461,7 @@ class SqliteHelper(context: Context) :
 
         private val USERDLGTABLE = "UserDlgTable" // tablename
         private val ENTEREDTIME = "EnteredTime"
+        private val COUNTMSG = "countMsg"
 
         private val FRIENDSTABLE = "FriendsTable" // tablename
         private val TAGSENDERFRND = "tagSenderFrnd" // field in table

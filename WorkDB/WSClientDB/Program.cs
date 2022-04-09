@@ -39,6 +39,7 @@ namespace WSClientDB
         const string CNFRMADD = "CNFRMADD::";
         const string ALLFRND = "ALLFRND::";
         const string FIND = "FIND::";
+        const string COUNTMSG = "COUNTMSG::";
 
         static WebSocket webSocket;
         static SqlConnection sqlConnection;
@@ -338,7 +339,8 @@ namespace WSClientDB
                             string _dialogId = sqlDataReader.GetString(1);
                             string _tagUser = dlg.Substring(dlg.IndexOf("#") + 1);
                             string _enteredTime = sqlDataReader.GetDateTime(3).ToString();
-                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime });
+                            int _countMsg = sqlDataReader.GetInt32(4);
+                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg });
                         }
                     }
                     sqlCommand.Parameters.Clear();
@@ -361,7 +363,8 @@ namespace WSClientDB
                             string _dialogId = sqlDataReader.GetString(1);
                             string _tagUser = sqlDataReader.GetString(2);
                             string _enteredTime = sqlDataReader.GetDateTime(3).ToString();
-                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime });
+                            int _countMsg = sqlDataReader.GetInt32(4);
+                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg});
                         }
                     }
                     sqlCommand.Parameters.Clear();
@@ -376,6 +379,7 @@ namespace WSClientDB
             listDataOfDialog.tagUser = tagUser;
             listDataOfDialog.token = token;
             string jsonResult = JsonConvert.SerializeObject(listDataOfDialog);
+            Console.WriteLine(jsonResult);
             webSocket.Send(jsonResult);
             Console.WriteLine($"[MSG] -> DownLoadDialog^{tagUser}");
         }
@@ -932,6 +936,52 @@ namespace WSClientDB
             webSocket.Send(jsonResult);
             Console.WriteLine($"[MSG] -> FindedFriend^{updateFriend.tagUserOur} -> {updateFriend.tagUserFriend} ^ {resultActionFrnd.success}");
         }
+        private static void UpdateCountMessage(UpdateCountMsg updateCountMsg)
+        {
+            var countMessge = Convert.ToInt32(updateCountMsg.countMsg);
+            var dialog = updateCountMsg.dialog;
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = COUNTMSG;
+            successUpdate.tagId = updateCountMsg.tagUser;
+            successUpdate.dialog = dialog;
+            successUpdate.needTagUser = updateCountMsg.needTagUser;
+            successUpdate.countMsg = countMessge;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update UserDlgTable set countMsg = countMsg + @countMessage where dialog_id = @dialog AND tagUser = @needTagUser";
+                SqlParameter sqlParameter = new SqlParameter("@countMessage", countMessge);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter2 = new SqlParameter("@dialog", dialog);
+                sqlCommand.Parameters.Add(sqlParameter2);
+                SqlParameter sqlParameter3 = new SqlParameter("@needTagUser", updateCountMsg.needTagUser);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                if (dialog.Substring(0, dialog.IndexOf("#") + 1) == GROUP)
+                {
+                    sqlCommand.CommandText =
+                    @"update UserDlgTable set countMsg = countMsg + @countMessage where dialog_id = @dialog AND tagUser = @ourTag;";
+                    SqlParameter sqlParameter4 = new SqlParameter("@ourTag", updateCountMsg.tagUser);
+                    sqlCommand.Parameters.Add(sqlParameter4);
+                    sqlCommand.ExecuteNonQuery();
+                }
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
             if (e.Message.IndexOf(FORDB) == -1) return;
@@ -1027,13 +1077,13 @@ namespace WSClientDB
                 if (message.IndexOf(UPDATE) != -1)
                 {
                     message = message.Substring(UPDATE.Length);
-                    if(message.IndexOf(NEWNAME) != -1)
+                    if (message.IndexOf(NEWNAME) != -1)
                     {
                         message = message.Substring(NEWNAME.Length);
                         NewName newName = JsonConvert.DeserializeObject<NewName>(message);
                         UpdateNameOfUser(newName.tagId, newName.newName);
                     }
-                    if(message.IndexOf(VISIBLE) != -1)
+                    if (message.IndexOf(VISIBLE) != -1)
                     {
                         message = message.Substring(VISIBLE.Length);
                         UpdateVisible updateVisible = JsonConvert.DeserializeObject<UpdateVisible>(message);
@@ -1058,6 +1108,12 @@ namespace WSClientDB
                         message = message.Substring(FRND.Length);
                         UpdateFriend updateFriend = JsonConvert.DeserializeObject<UpdateFriend>(message);
                         UpdateFriend(updateFriend);
+                    }
+                    if (message.IndexOf(COUNTMSG) != -1)
+                    {
+                        message = message.Substring(COUNTMSG.Length);
+                        UpdateCountMsg updateCountMsg = JsonConvert.DeserializeObject<UpdateCountMsg>(message);
+                        UpdateCountMessage(updateCountMsg);
                     }
                 }
                 if (message.IndexOf(DELETE) != -1)

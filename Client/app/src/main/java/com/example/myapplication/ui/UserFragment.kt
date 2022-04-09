@@ -120,8 +120,6 @@ class UserFragment : Fragment(){
             val imageOfUser = requireView().findViewById<ImageView>(R.id.imageOfUser)
             Picasso.get()
                     .load(urlAvatar)
-                    .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
-                    .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
                     .placeholder(R.drawable.user_profile_photo)
                     .into(imageOfUser)
         }
@@ -160,8 +158,6 @@ class UserFragment : Fragment(){
         val imageOfUser = requireView().findViewById<ImageView>(R.id.imageOfUser)
         Picasso.get()
                 .load(urlAvatar)
-                .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
-                .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
                 .placeholder(R.drawable.user_profile_photo)
                 .into(imageOfUser)
     }

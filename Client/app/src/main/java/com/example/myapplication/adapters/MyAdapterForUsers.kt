@@ -16,7 +16,8 @@ import com.squareup.picasso.Picasso
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class MyAdapterForUsers() : BaseAdapter() {
+class MyAdapterForUsers(queryImg : String) : BaseAdapter() {
+    private val queryImg = queryImg
     private val list : List<Pair<String, String>> = sqliteHelper.getAllUsersOnline().toList()
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
         val context = parent?.context
@@ -33,11 +34,9 @@ class MyAdapterForUsers() : BaseAdapter() {
             val tagUser = list[position].first
             val idOfUser = newView.findViewById<TextView>(R.id.idUser)
             idOfUser.text = tagUser
-            val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$tagUser.jpg"
+            val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$tagUser.jpg?time=$queryImg"
             Picasso.get()
                 .load(urlAvatar)
-                .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
-                .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
                 .placeholder(R.drawable.user_profile_photo)
                 .into(imageOfUser)
             addChat.setOnClickListener {
