@@ -85,6 +85,11 @@ class ActivityMain :
         sp.registerOnSharedPreferenceChangeListener(this)
         bubbleNav = findViewById(R.id.bottom_navigation_view_linear)
 
+
+        val ed = sp.edit()
+        ed.putString("queryImg", LocalDateTime.now().toString())
+        ed.apply()
+
         isActVersion()
 
         loadFragment(-1)
@@ -176,7 +181,7 @@ class ActivityMain :
     override fun onUserLoadView() {
         val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
         val isAvatar = sp.getBoolean("isAvatar", false)
-        val queryImg  =sp.getString("queryImg","0")
+        val queryImg = sp.getString("queryImg","0")
         val urlAvatar = if(isAvatar){
             "http://imagerc.ddns.net:80/avatar/avatarImg/$tagUser.jpg?time=$queryImg"
         } else{

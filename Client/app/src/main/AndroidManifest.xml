@@ -13,15 +13,23 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
         android:usesCleartextTraffic="true">
-        <activity android:name=".ActivityMain"
-            android:screenOrientation="portrait">
+        <activity
+            android:name=".ActivityMain"
+            android:screenOrientation="portrait"
+            android:configChanges="uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".FriendsProfile"
-            android:screenOrientation="portrait"/>
-        <activity android:name=".ChatPeople"/>
+        <activity
+            android:name=".FriendsProfile"
+            android:screenOrientation="portrait"
+            android:configChanges="uiMode"/>
+        <activity
+            android:name=".ChatPeople"
+            android:theme="@style/CustomTheme"
+            android:configChanges="uiMode"
+            android:label=""/>
     </application>
 </manifest>

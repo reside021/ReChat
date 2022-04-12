@@ -11,7 +11,9 @@ import android.view.View
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.*
+import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import com.example.myapplication.dataClasses.Msg
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -45,6 +47,7 @@ class ChatPeople : AppCompatActivity() {
     private lateinit var editTextMessage : EditText
     private lateinit var mainWindowInclude : LinearLayout
     private lateinit var idUser : String
+    private lateinit var nameOfUser : String
     private lateinit var dialog_id: String
     private lateinit var sp : SharedPreferences
     private var hasImg : Boolean = false
@@ -76,10 +79,23 @@ class ChatPeople : AppCompatActivity() {
             editTextMessage.isEnabled = true
         }
         idUser = intent.extras?.getString("idTag").toString()
-        val nameOfUser = intent.extras?.getString("nameOfUser").toString()
+        nameOfUser = intent.extras?.getString("nameOfUser").toString()
         countNewMsg = intent.extras?.getString("countNewMsg").toString()
+
+        val queryImg = sp.getString("queryImg","0")
+        val toolBar : Toolbar = findViewById(R.id.toolbar)
+        val nameOfUserView = toolBar.findViewById<TextView>(R.id.nameOfUserThisChat)
+        nameOfUserView.setOnClickListener(openUserProfile)
+        val avatarUserView = toolBar.findViewById<ImageView>(R.id.avatarUserDialog)
+        avatarUserView.setOnClickListener(openUserProfile)
+        val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$idUser.jpg?time=$queryImg"
+        Picasso.get()
+            .load(urlAvatar)
+            .placeholder(R.drawable.user_photo_white)
+            .into(avatarUserView)
+        nameOfUserView.text = nameOfUser
+        setSupportActionBar(toolBar)
         supportActionBar?.apply {
-            title = nameOfUser
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowHomeEnabled(true)
         }
@@ -87,6 +103,14 @@ class ChatPeople : AppCompatActivity() {
         mainWindowOuter = mainWindowInclude
         dialog_id = sqliteHelper.getDialogIdWithUser(idUser)
         recoveryAllMsg(dialog_id)
+    }
+
+    private val openUserProfile = View.OnClickListener {
+        if(idUser == "0") return@OnClickListener
+        val intent = Intent(this, FriendsProfile::class.java);
+        intent.putExtra("idTag", idUser)
+        intent.putExtra("nameOfUser", nameOfUser)
+        startActivity(intent)
     }
 
     override fun onStart() {

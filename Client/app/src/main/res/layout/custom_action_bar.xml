@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/customToolbar">
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:id="@+id/avatarUser"
+        android:layout_marginHorizontal="10dp"
+        android:src="@drawable/user_profile_photo_white"
+        android:layout_gravity="center"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/nameChat"
+        android:text="sdfdsdfs"
+        android:layout_gravity="center"
+        android:textSize="22sp"
+        android:textColor="@color/white"/>
+</androidx.appcompat.widget.Toolbar>

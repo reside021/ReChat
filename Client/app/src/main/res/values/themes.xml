@@ -11,10 +11,7 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
-        <!-- colorAccent is used as the default value for colorControlActivated
-         which is used to tint widgets -->
-        <!-- THIS IS WHAT YOU'RE LOOKING FOR -->
         <item name="colorAccent">@color/purple_500</item>
+        <item name="colorPrimaryDark">@color/purple_700</item>
     </style>
 </resources>
