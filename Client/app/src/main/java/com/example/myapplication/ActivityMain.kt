@@ -556,7 +556,8 @@ class ActivityMain :
                                     msg.dialog_id,
                                     msg.userCompanion,
                                     msg.enteredTime,
-                                    msg.countMsg
+                                    msg.countMsg,
+                                    0
                                 )
                                 Toast.makeText(
                                     this, "С пользователем создан чат",
@@ -567,7 +568,8 @@ class ActivityMain :
                                     msg.dialog_id,
                                     msg.userManager,
                                     msg.enteredTime,
-                                    msg.countMsg
+                                    msg.countMsg,
+                                    0
                                 )
                                 val dialog_ids : MutableList<String> = mutableListOf(msg.dialog_id)
                                 val queryAllTagName = QueryAllTagName(
@@ -624,7 +626,8 @@ class ActivityMain :
                                     el.dialog_id,
                                     el.tagUser,
                                     el.enteredTime,
-                                    el.countMsg
+                                    el.countMsg,
+                                    el.lastTimeMsg
                                 )
                             }
                             val dialog_ids = sqliteHelper.getAllDlgFromDLG()

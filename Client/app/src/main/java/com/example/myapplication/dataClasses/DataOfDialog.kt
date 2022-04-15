@@ -7,5 +7,6 @@ data class DataOfDialog(
     val dialog_id: String,
     val tagUser: String,
     val enteredTime: String,
-    val countMsg: Int
+    val countMsg: Int,
+    val lastTimeMsg : Int
 )

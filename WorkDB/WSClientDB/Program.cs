@@ -142,6 +142,8 @@ namespace WSClientDB
             try
             {
                 sqlCommand.ExecuteNonQuery();
+                sqlCommand.CommandText = "Update UserDlgTable set lastTimeMsg = @timeCreated where dialog_id = @dialog_id";
+                sqlCommand.ExecuteNonQuery();
                 successInsertMsgDlg.type = RESULTDB;
                 successInsertMsgDlg.oper = NEWMSGDLG;
                 successInsertMsgDlg.success = true;
@@ -173,8 +175,8 @@ namespace WSClientDB
             sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText =
                 @"Insert into UserDlgTable values
-                    (@dialog_id, @userCompanion, @enteredTime),
-                    (@dialog_id, @userManager, @enteredTime)";
+                    (@dialog_id, @userCompanion, @enteredTime, 0, @enteredTime),
+                    (@dialog_id, @userManager, @enteredTime, 0, @enteredTime)";
             SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
             sqlCommand.Parameters.Add(sqlParameter);
             SqlParameter sqlParameter1 = new SqlParameter("@userCompanion", userCompanion);
@@ -340,7 +342,8 @@ namespace WSClientDB
                             string _tagUser = dlg.Substring(dlg.IndexOf("#") + 1);
                             string _enteredTime = sqlDataReader.GetDateTime(3).ToString();
                             int _countMsg = sqlDataReader.GetInt32(4);
-                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg });
+                            int _lastTimeMsg = sqlDataReader.GetInt32(5);
+                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg, lastTimeMsg = _lastTimeMsg});
                         }
                     }
                     sqlCommand.Parameters.Clear();
@@ -364,7 +367,8 @@ namespace WSClientDB
                             string _tagUser = sqlDataReader.GetString(2);
                             string _enteredTime = sqlDataReader.GetDateTime(3).ToString();
                             int _countMsg = sqlDataReader.GetInt32(4);
-                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg});
+                            int _lastTimeMsg = sqlDataReader.GetInt32(5);
+                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg, lastTimeMsg = _lastTimeMsg});
                         }
                     }
                     sqlCommand.Parameters.Clear();

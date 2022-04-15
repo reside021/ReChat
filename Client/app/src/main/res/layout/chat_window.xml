@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -31,12 +32,13 @@
                 android:id="@+id/nameOfUserThisChat"/>
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
-<ScrollView
-    android:id="@+id/scrollChat"
-    android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1"
-    android:layout_marginBottom="10dp">
+    <ScrollView
+        android:id="@+id/scrollChat"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="10dp"
+        android:layout_below="@id/appBarLayout"
+        android:layout_above="@id/layoutAddImgMsg">
     <LinearLayout
         android:id="@+id/mainChatWindow"
         android:layout_width="match_parent"
@@ -46,12 +48,13 @@
 </ScrollView>
     <LinearLayout
         android:id="@+id/layoutAddImgMsg"
-        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:background="@color/backgroundColor"
-        android:layout_marginBottom="5dp">
+        android:layout_marginBottom="5dp"
+        android:layout_above="@id/fieldEdit"
+        android:visibility="gone">
         <RelativeLayout
             android:layout_width="80dp"
             android:layout_height="80dp"
@@ -78,6 +81,8 @@
         </RelativeLayout>
     </LinearLayout>
     <LinearLayout
+        android:id="@+id/fieldEdit"
+        android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -113,4 +118,4 @@
             android:onClick="onSendMsgClick"
             android:layout_gravity="bottom"/>
     </LinearLayout>
-</LinearLayout>
+</RelativeLayout>

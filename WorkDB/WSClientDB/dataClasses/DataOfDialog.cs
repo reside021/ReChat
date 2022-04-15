@@ -10,5 +10,6 @@ namespace WSClientDB.dataClasses
         public string tagUser { get; set; }
         public string enteredTime { get; set; }
         public int countMsg { get; set; }
+        public int lastTimeMsg { get; set; }
     }
 }

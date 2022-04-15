@@ -42,7 +42,8 @@ class SqliteHelper(context: Context) :
                 "$DIALOG_ID TEXT, " +
                 "$TAG_USER TEXT, " +
                 "$ENTEREDTIME TEXT," +
-                "$COUNTMSG INTEGER)"
+                "$COUNTMSG INTEGER," +
+                "$LASTTIMEMSG INTEGER)"
         db?.execSQL(tableUserDlg)
 
 
@@ -222,7 +223,7 @@ class SqliteHelper(context: Context) :
     fun getAllUsersChat(): MutableList<Pair<String,String>>{
         val allUser = mutableListOf<Pair<String, String>>()
         val db = readableDatabase
-        val selectALLQuery = "SELECT $TAG_USER, $NAME_USER FROM $LIST_USERS_CHAT"
+        val selectALLQuery = "SELECT L.$TAG_USER, L.$NAME_USER FROM $LIST_USERS_CHAT as L INNER JOIN $USERDLGTABLE as U on L.$TAG_USER = U.$TAG_USER ORDER BY U.$LASTTIMEMSG DESC "
         val cursor = db.rawQuery(selectALLQuery, null)
         if (cursor != null) {
             if (cursor.moveToFirst()) {
@@ -248,6 +249,9 @@ class SqliteHelper(context: Context) :
         values.put(TEXTMSG, text)
         values.put(TIMECREATED, timecreated)
         val success = db.insert(MSGDLGTABLE, null, values)
+        values.clear()
+        values.put(LASTTIMEMSG, timecreated)
+        db.update(USERDLGTABLE, values, "$DIALOG_ID = ?", arrayOf(dialogID))
         db.close()
         Log.d("________InsertedInTblMsg_________", "$text $timecreated")
         return (Integer.parseInt("$success") != -1)
@@ -292,13 +296,14 @@ class SqliteHelper(context: Context) :
         return countNewMsg
     }
 
-    fun addUserInDLG(dialogID : String, tagUser : String,  enteredTime : String, countMsg : Int ) : Boolean{
+    fun addUserInDLG(dialogID : String, tagUser : String,  enteredTime : String, countMsg : Int, lastTimeMsg : Int) : Boolean{
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(DIALOG_ID, dialogID)
         values.put(TAG_USER, tagUser)
         values.put(ENTEREDTIME, enteredTime)
         values.put(COUNTMSG, countMsg)
+        values.put(LASTTIMEMSG, lastTimeMsg)
         val success = db.insert(USERDLGTABLE, null, values)
         db.close()
         Log.d("________InsertedInTblDlg_________", "$success")
@@ -443,7 +448,7 @@ class SqliteHelper(context: Context) :
 
     companion object {
         private val DB_NAME = "UserChat"
-        private val DB_VERSION = 3;
+        private val DB_VERSION = 4;
 
         private val ONLINE_USERS = "OnlineUsers" // tablename
         private val TAG_USER = "Tag_Of_User" // field in table
@@ -462,6 +467,7 @@ class SqliteHelper(context: Context) :
         private val USERDLGTABLE = "UserDlgTable" // tablename
         private val ENTEREDTIME = "EnteredTime"
         private val COUNTMSG = "countMsg"
+        private val LASTTIMEMSG = "lastTimeMsg"
 
         private val FRIENDSTABLE = "FriendsTable" // tablename
         private val TAGSENDERFRND = "tagSenderFrnd" // field in table

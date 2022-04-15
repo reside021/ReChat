@@ -18,8 +18,11 @@ $(window).on('click', function (e){
     if(obj.classList.contains('registerUser')){
         funcRegisterUser();
     }
-    if(obj.classList.contains('list-group-item-action')){
-        $('#default').hide();
+    if(obj.classList.contains('badge')){
+        clearAndHideInputImgMsg();
+        $('.inputMsg').show();
+        activeChat = obj.parentElement.parentElement;
+        recoveryMsg(activeChat);
     }
     if(obj.classList.contains('changeAvatar')){
         $('.windowChangeAvatar').show();
@@ -47,6 +50,12 @@ $(window).on('click', function (e){
         $('.inputMsg').show();
         activeChat = obj;
         recoveryMsg(obj);
+    }
+    if(obj.classList.contains('dialogChatBlock')){
+        clearAndHideInputImgMsg();
+        $('.inputMsg').show();
+        activeChat = obj.parentElement;
+        recoveryMsg(activeChat);
     }
     if(obj.classList.contains('sendMsg')){
         sendMsg();
@@ -82,6 +91,9 @@ $(window).on('click', function (e){
     }
     if(obj.classList.contains('actWithFriends')){
         actWithFriends(obj);
+    }
+    if(obj.classList.contains('chatTab')){
+        setBadgeNewMsg()
     }
 });
 
@@ -276,6 +288,11 @@ function parseMessage(data) {
                             alert("Ошибка изменения имени");
                         }
                     }
+                    if (oper === "COUNTMSG")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        updateCountMsg(parseMsg)
+                    }
                 }
                 if (status === "ERROR")
                 {
@@ -306,12 +323,14 @@ function parseMessage(data) {
                             let dialog_id = this.dialog_id;
                             let tagUser = this.tagUser;
                             let enteredTime = this.enteredTime;
+                            let countMsg = this.countMsg;
+                            let lastTimeMsg = this.lastTimeMsg;
                             db.transaction(function(tx)
                             {
                                 tx.executeSql
                                 (
-                                    "INSERT INTO UserDlgTable values(?, ?, ?)",
-                                    [dialog_id, tagUser, enteredTime],
+                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?)",
+                                    [dialog_id, tagUser, enteredTime, countMsg, lastTimeMsg],
                                     null,
                                     null
                                 );
@@ -339,9 +358,9 @@ function parseMessage(data) {
                                     null,
                                     null
                                 );
-                                addChatInWindow();
                             });
                         });
+                        addChatInWindow();
                     }
                     if (oper === "ALLFRND")
                     {
@@ -396,6 +415,7 @@ function parseMessage(data) {
                                 );
                             });
                         });
+                        setBadgeNewMsg()
                     }
                 }
             }
@@ -410,6 +430,7 @@ function parseMessage(data) {
                     {
                         let dataMsg = JSON.parse(msg);
                         messageTo(dataMsg);
+                        updatePositionChat()
                     }
                     if (oper === "NEWUSERDLG")
                     {
@@ -423,8 +444,8 @@ function parseMessage(data) {
                             {
                                 tx.executeSql
                                 (
-                                    "INSERT INTO UserDlgTable values(?, ?, ?)",
-                                    [dialog_id, tagUser, enteredTime],
+                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?)",
+                                    [dialog_id, tagUser, enteredTime, 0, enteredTime],
                                     null,
                                     null
                                 );
@@ -437,8 +458,8 @@ function parseMessage(data) {
                             {
                                 tx.executeSql
                                 (
-                                    "INSERT INTO UserDlgTable values(?, ?, ?)",
-                                    [dialog_id, tagUser, enteredTime],
+                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?)",
+                                    [dialog_id, tagUser, enteredTime, 0, enteredTime],
                                     null,
                                     null
                                 );
@@ -602,6 +623,7 @@ function parseMessage(data) {
             let msg = data.slice(posTypeMsg + 2);
             let dataMsg = JSON.parse(msg);
             messagePrint(dataMsg);
+            updatePositionChat()
             break;
         }
         default:{
@@ -819,7 +841,7 @@ function workWithDB() {
     {
         tx.executeSql
         (
-            "CREATE TABLE UserDlgTable (dialog_id TEXT UNIQUE, tagUser TEXT, enteredTime TEXT)",
+            "CREATE TABLE UserDlgTable (dialog_id TEXT UNIQUE, tagUser TEXT, enteredTime TEXT, countMsg INTEGER, lastTimeMsg INTEGER)",
             [],
             null,
             null
@@ -898,7 +920,7 @@ function addChatInWindow() {
     {
         tx.executeSql
         (
-            "SELECT dialog_id, nameUser, L.tagUser FROM ListUsersChat as L INNER JOIN UserDlgTable as U on L.tagUser = U.tagUser",
+            "SELECT dialog_id, nameUser, L.tagUser FROM ListUsersChat as L INNER JOIN UserDlgTable as U on L.tagUser = U.tagUser ORDER BY U.lastTimeMsg DESC",
             [],
             function(tx, result)
             {
@@ -909,11 +931,35 @@ function addChatInWindow() {
                     let tagUser = result.rows.item(i)['tagUser'];
                     let dialog_id = "id-" + result.rows.item(i)['dialog_id'].replace('::', '--').replace('#','-');
                     let nameUser = result.rows.item(i)['nameUser'];
-                    newBlockChat += `<a class="list-group-item list-group-item-action" data-mdb-toggle="list" href="#${dialog_id}" role="tab" id="${tagUser}">${nameUser}</a>`;
+                    newBlockChat += `<a style="order: ${i}" class="dialogs list-group-item list-group-item-action" data-mdb-toggle="list" href="#${dialog_id}" role="tab" id="${tagUser}">
+                                        <div class="dialogChatBlock">
+                                        <span>${nameUser}</span>
+                                        <span style="display: none" class="badge bg-danger ms-2" id="badge-${dialog_id}">0</span>
+                                        </div>
+                                    </a>`;
                     newBlockMsg += `<div class="blockMsgScroll tab-pane fade" id="${dialog_id}" role="tabpanel"><ul class="chatWindow list-group"></div>`;
                 }
                 $('.chatChannel').html(newBlockChat);
                 $('.msgWindow').html(newBlockMsg);
+            },
+            null
+        )
+    });
+}
+function updatePositionChat(){
+    db.transaction(function(tx)
+    {
+        tx.executeSql
+        (
+            "SELECT dialog_id, nameUser, L.tagUser FROM ListUsersChat as L INNER JOIN UserDlgTable as U on L.tagUser = U.tagUser ORDER BY U.lastTimeMsg DESC",
+            [],
+            function(tx, result)
+            {
+                for(let i = 0; i < result.rows.length; i++)
+                {
+                    let tagUser = result.rows.item(i)['tagUser'];
+                    $(`.chatChannel #${tagUser}`).css({"order":`${i}`})
+                }
             },
             null
         )
@@ -967,6 +1013,7 @@ function getAllData() {
 }
 
 function recoveryMsg(obj) {
+    $('#default').hide();
     let idChat = obj.hash.slice(4);
     let idDB = idChat.replace('-','#').replace('--','::');
     let idChatImg = idDB.replace('#','%23').replace('::','--');
@@ -1022,6 +1069,21 @@ function recoveryMsg(obj) {
                 }
         }, null)
     });
+    let badge = $(obj).find('.badge')
+    let countNewMsg = badge[0].textContent
+    if(countNewMsg > 0){
+        let dataSend = {
+            type : "UPDATE::",
+            objectUpdate : "COUNTMSG::",
+            dialog : idDB,
+            tagUser : obj.id,
+            countMsg : countNewMsg
+        };
+        let jsonString = JSON.stringify(dataSend);
+        if(webSocket.readyState === WebSocket.OPEN){
+             webSocket.send(jsonString);
+        }
+    }
 }
 
 function sendMsg() {
@@ -1082,6 +1144,7 @@ function sendMsg() {
 }
 function messageTo(msg) {
     db.transaction(function(tx) {
+        tx.executeSql("UPDATE UserDlgTable SET lastTimeMsg = ? WHERE dialog_id = ?", [msg.timeCreated, msg.dialog_id], null, null);
         tx.executeSql("INSERT INTO MsgDlgTable values(?, ?, ?, ? ,?)", [msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated], null, null);
         let idChat = msg.dialog_id.replace('#','-').replace('::','--');
         let addedBlock = "";
@@ -1106,10 +1169,13 @@ function messagePrint(msg) {
     let dialog_id = msg.dialog_id;
     let pos = dialog_id.indexOf('#');
     let typeDialog = dialog_id.substring(0,pos);
+    let idDialog = msg.sender
     if (typeDialog === "GROUP"){
+        idDialog = dialog_id.slice(pos + 1)
         if (msg.sender === localStorage.getItem('tagUser')) return;
     }
     db.transaction(function(tx) {
+        tx.executeSql("UPDATE UserDlgTable SET lastTimeMsg = ? WHERE dialog_id = ?", [msg.timeCreated, msg.dialog_id], null, null);
         tx.executeSql("INSERT INTO MsgDlgTable values(?, ?, ?, ? ,?)", [msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated], null, null);
         let idChat = dialog_id.replace('#','-').replace('::','--');
         let addedBlock = "";
@@ -1127,6 +1193,26 @@ function messagePrint(msg) {
                             </li>`;
         }
         $('#id-'+`${idChat} .chatWindow`).append(addedBlock);
+        if($('#id-'+`${idChat}`).is(":hidden")){
+            let badge = $(`.chatChannel #${idDialog}`).find('.badge')
+            let countMsg = parseInt(badge[0].textContent, 10)
+            countMsg += 1
+            badge[0].textContent = countMsg
+            badge.show()
+        }
+        if($('#id-'+`${idChat}`).is(":visible")){
+            let dataSend = {
+                type : "UPDATE::",
+                objectUpdate : "COUNTMSG::",
+                dialog : dialog_id,
+                tagUser : idDialog,
+                countMsg : 1
+            };
+            let jsonString = JSON.stringify(dataSend);
+            if(webSocket.readyState === WebSocket.OPEN){
+                webSocket.send(jsonString);
+            }
+        }
         autoScrollDown();
     });
 }
@@ -1685,5 +1771,45 @@ function exitFromAcc() {
         tx.executeSql("DROP TABLE IF EXISTS MsgDlgTable", [], null, null);
         tx.executeSql("DROP TABLE IF EXISTS OnlineUsers", [], null, null);
         location.reload();
+    });
+}
+function setBadgeNewMsg(){
+    let dialogs = $('.dialogs')
+    let ourTag = localStorage.getItem('tagUser')
+    dialogs.each(function () {
+        let elem = this
+        db.transaction(function(tx) {
+            tx.executeSql(
+                "SELECT (COUNT(M.dialog_id) - U.countMsg) AS countMsg FROM MsgDlgTable AS M INNER JOIN UserDlgTable AS U ON M.dialog_id = U.dialog_id WHERE U.tagUser = ? AND M.sender <> ?",
+                [elem.id, ourTag],
+                function(tx, result) {
+                    for (let i = 0; i < result.rows.length; i++) {
+                        let countNewMsg = result.rows.item(i)['countMsg'];
+                        if(Number.isInteger(countNewMsg)){
+                            if(countNewMsg > 0){
+                                let badge = $(elem).find('.badge')
+                                badge[0].textContent = countNewMsg
+                                badge.show()
+                            }
+                        }
+                    }
+
+                }, null)
+        });
+    })
+
+}
+function updateCountMsg(parseMsg) {
+    let dialogId = parseMsg.dialog
+    let needTagUser = parseMsg.needTagUser
+    let countMsg = parseMsg.countMsg
+    let badge = $(`.chatChannel #${needTagUser}`).find('.badge')
+    db.transaction(function(tx) {
+        tx.executeSql(
+            "UPDATE UserDlgTable SET countMsg = countMsg + ? WHERE dialog_id = ? AND tagUser = ?",
+            [countMsg, dialogId, needTagUser],
+            null, null)
+        badge.hide()
+        badge[0].textContent = "0"
     });
 }

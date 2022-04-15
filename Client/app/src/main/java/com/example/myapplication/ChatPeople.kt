@@ -8,6 +8,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewTreeObserver
+import android.view.WindowManager
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.*
@@ -59,25 +61,9 @@ class ChatPeople : AppCompatActivity() {
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         animAlpha = AnimationUtils.loadAnimation(this, R.anim.alpha)
         editTextMessage = findViewById(R.id.editTextMessage)
-
         mainWindowInclude = findViewById(R.id.mainChatWindow)
-        findViewById<ImageView>(R.id.choose_img_msg).setOnClickListener {
-            it.startAnimation(animAlpha)
-            ImagePicker.with(this)
-                .crop()	    			//Crop image(Optional), Check Customization for more option
-                .compress(1024)			//Final image size will be less than 1 MB(Optional)
-                .maxResultSize(1080, 1080)	//Final image resolution will be less than 1080 x 1080(Optional)
-                .start(CHOOSE_IMG)
-        }
-        findViewById<ImageButton>(R.id.dltImgMsg).setOnClickListener {
-            it.startAnimation(animAlpha)
-            val placeForImg = findViewById<ImageView>(R.id.addingImgMsg)
-            placeForImg.setImageDrawable(null)
-            findViewById<LinearLayout>(R.id.layoutAddImgMsg)
-                .visibility = View.GONE
-            hasImg = false
-            editTextMessage.isEnabled = true
-        }
+        findViewById<ImageView>(R.id.choose_img_msg).setOnClickListener(chooseImgMsg)
+        findViewById<ImageButton>(R.id.dltImgMsg).setOnClickListener(dltImgMsg)
         idUser = intent.extras?.getString("idTag").toString()
         nameOfUser = intent.extras?.getString("nameOfUser").toString()
         countNewMsg = intent.extras?.getString("countNewMsg").toString()
@@ -112,7 +98,22 @@ class ChatPeople : AppCompatActivity() {
         intent.putExtra("nameOfUser", nameOfUser)
         startActivity(intent)
     }
-
+    private val dltImgMsg = View.OnClickListener {
+        it.startAnimation(animAlpha)
+        val placeForImg = findViewById<ImageView>(R.id.addingImgMsg)
+        placeForImg.setImageDrawable(null)
+        findViewById<LinearLayout>(R.id.layoutAddImgMsg).visibility = View.GONE
+        hasImg = false
+        editTextMessage.isEnabled = true
+    }
+    private val chooseImgMsg = View.OnClickListener {
+        it.startAnimation(animAlpha)
+        ImagePicker.with(this)
+            .crop()	    			//Crop image(Optional), Check Customization for more option
+            .compress(1024)			//Final image size will be less than 1 MB(Optional)
+            .maxResultSize(1080, 1080)	//Final image resolution will be less than 1080 x 1080(Optional)
+            .start(CHOOSE_IMG)
+    }
     override fun onStart() {
         super.onStart()
         // Store our shared preference

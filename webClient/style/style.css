@@ -272,3 +272,8 @@ textarea{
     overflow: auto;
     height: 76vh;
 }
+.dialogChatBlock{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
