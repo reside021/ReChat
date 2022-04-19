@@ -37,4 +37,7 @@
     <string name="remove_from_friends">Удалить из друзей</string>
     <string name="request">Запросы</string>
     <string name="status_connect">Подключение к серверу:</string>
+    <string name="nameOfChat">Название чата</string>
+    <string name="create_a_dialog">Создать диалог</string>
+    <string name="searchDlg">Введите имя или тег</string>
 </resources>

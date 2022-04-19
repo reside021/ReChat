@@ -325,12 +325,27 @@ function parseMessage(data) {
                             let enteredTime = this.enteredTime;
                             let countMsg = this.countMsg;
                             let lastTimeMsg = this.lastTimeMsg;
+                            let typeOfDlg = this.typeOfDlg;
+                            let rang = this.rang;
+                            let nameOfChat = this.nameOfChat;
                             db.transaction(function(tx)
                             {
+                                if (typeOfDlg === 1)
+                                {
+                                    let posOper = dialog_id.indexOf('#');
+                                    let tagChat = dialog_id.slice(posOper + 1);
+                                    tx.executeSql
+                                    (
+                                        "INSERT INTO ListUsersChat values(?, ?)",
+                                        [tagChat, nameOfChat],
+                                        null,
+                                        null
+                                    );
+                                }
                                 tx.executeSql
                                 (
-                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?)",
-                                    [dialog_id, tagUser, enteredTime, countMsg, lastTimeMsg],
+                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?, ?, ?)",
+                                    [dialog_id, tagUser, enteredTime, countMsg, lastTimeMsg, typeOfDlg, rang],
                                     null,
                                     null
                                 );
@@ -437,40 +452,75 @@ function parseMessage(data) {
                         let dataMsg = JSON.parse(msg);
                         let dialog_id = dataMsg.dialog_id;
                         let enteredTime = dataMsg.enteredTime;
-                        if (dataMsg.Icreater)
+                        let countMsg = dataMsg.countMsg
+                        let lastTimeMsg = dataMsg.lastTimeMsg
+                        let typeOfDlg = dataMsg.typeOfDlg;
+                        let rang = dataMsg.rang
+                        let nameOfChat = dataMsg.nameOfChat
+
+                        if (typeOfDlg === 0)
                         {
-                            let tagUser = dataMsg.userCompanion;
+                            if (dataMsg.Icreater)
+                            {
+                                let tagUser = dataMsg.userCompanion[0];
+                                db.transaction(function(tx)
+                                {
+                                    tx.executeSql
+                                    (
+                                        "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?, ?, ?)",
+                                        [dialog_id, tagUser, enteredTime, countMsg, lastTimeMsg, typeOfDlg, rang],
+                                        null,
+                                        null
+                                    );
+                                });
+                            }
+                            else
+                            {
+                                let tagUser = dataMsg.userManager;
+                                db.transaction(function(tx)
+                                {
+                                    tx.executeSql
+                                    (
+                                        "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?, ?, ?)",
+                                        [dialog_id, tagUser, enteredTime, countMsg, lastTimeMsg, typeOfDlg, rang],
+                                        null,
+                                        null
+                                    );
+                                });
+                            }
+                        }
+
+                        if (typeOfDlg === 1)
+                        {
+                            let posOper = dialog_id.indexOf('#');
+                            let tagChat = dialog_id.slice(posOper + 1);
                             db.transaction(function(tx)
                             {
                                 tx.executeSql
                                 (
-                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?)",
-                                    [dialog_id, tagUser, enteredTime, 0, enteredTime],
+                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?, ?, ?)",
+                                    [dialog_id, tagChat, enteredTime, countMsg, lastTimeMsg, typeOfDlg, rang],
                                     null,
                                     null
                                 );
-                            });
-                        }
-                        else
-                        {
-                            let tagUser = dataMsg.userManager;
-                            db.transaction(function(tx)
-                            {
                                 tx.executeSql
                                 (
-                                    "INSERT INTO UserDlgTable values(?, ?, ?, ?, ?)",
-                                    [dialog_id, tagUser, enteredTime, 0, enteredTime],
+                                    "INSERT INTO ListUsersChat values(?, ?)",
+                                    [tagChat, nameOfChat],
                                     null,
                                     null
                                 );
                             });
+                            addChatInWindow()
                         }
+
                         let allDlg = [`${dialog_id}`];
                         let data =
                             {
                                 type : "DOWNLOAD::",
                                 table : "ALLTAGNAME::",
-                                dialog_ids : allDlg
+                                dialog_ids : allDlg,
+                                token : localStorage.getItem('tokenQuery')
                             };
                         let jsonString = JSON.stringify(data);
                         if(webSocket.readyState === WebSocket.OPEN)
@@ -841,7 +891,18 @@ function workWithDB() {
     {
         tx.executeSql
         (
-            "CREATE TABLE UserDlgTable (dialog_id TEXT UNIQUE, tagUser TEXT, enteredTime TEXT, countMsg INTEGER, lastTimeMsg INTEGER)",
+            "DROP TABLE UserDlgTable ",
+            [],
+            null,
+            null
+        );
+    });
+
+    db.transaction(function(tx)
+    {
+        tx.executeSql
+        (
+            "CREATE TABLE UserDlgTable (dialog_id TEXT UNIQUE, tagUser TEXT, enteredTime INTEGER, countMsg INTEGER, lastTimeMsg INTEGER, typeOfDlg INTEGER, rang INTEGER)",
             [],
             null,
             null
@@ -1013,13 +1074,14 @@ function getAllData() {
 }
 
 function recoveryMsg(obj) {
+    console.dir(obj)
     $('#default').hide();
     let idChat = obj.hash.slice(4);
     let idDB = idChat.replace('-','#').replace('--','::');
     let idChatImg = idDB.replace('#','%23').replace('::','--');
     db.transaction(function(tx) {
         tx.executeSql(
-            "SELECT * FROM MsgDlgTable WHERE dialog_id = ? ORDER BY timeCreated",
+            "SELECT * FROM MsgDlgTable AS M LEFT JOIN ListUsersChat AS L ON M.sender = L.tagUser WHERE dialog_id = ? ORDER BY timeCreated",
             [idDB],
             async function(tx, result) {
             let addMsg = "";
@@ -1028,6 +1090,7 @@ function recoveryMsg(obj) {
                 let typeMsg = result.rows.item(i)['typeMsg'];
                 let textMsg = result.rows.item(i)['textMsg'];
                 let sender = result.rows.item(i)['sender'];
+                let nameOfSender = result.rows.item(i)['nameUser']
                 if(sender === localSender)
                 {
                     if (typeMsg === "TEXT")
@@ -1049,7 +1112,7 @@ function recoveryMsg(obj) {
                 {
                     if (typeMsg === "TEXT")
                     {
-                        addMsg += `<li class="list-group-item fr"><div class="textMsg bg-light shadow-2">${textMsg}</div></li>`;
+                        addMsg += `<li class="list-group-item fr"><div class="textMsg bg-light shadow-2">${textMsg}</div><div class="senderName">${nameOfSender}</div></li>`;
                     }
                     if (typeMsg === "IMAGE")
                     {
@@ -1059,6 +1122,7 @@ function recoveryMsg(obj) {
                                                     src="http://imagerc.ddns.net:80/userImgMsg/${idChatImg}/${textMsg}.jpg?time=${Date.now()}"
                                                     alt="No Found"/>
                                         </div>
+                                        <div class="senderName">${nameOfSender}</div>
                                     </li>`;
                     }
                 }
@@ -1174,47 +1238,53 @@ function messagePrint(msg) {
         idDialog = dialog_id.slice(pos + 1)
         if (msg.sender === localStorage.getItem('tagUser')) return;
     }
+    let nameOfSender = "Ghost"
     db.transaction(function(tx) {
         tx.executeSql("UPDATE UserDlgTable SET lastTimeMsg = ? WHERE dialog_id = ?", [msg.timeCreated, msg.dialog_id], null, null);
         tx.executeSql("INSERT INTO MsgDlgTable values(?, ?, ?, ? ,?)", [msg.dialog_id, msg.sender, msg.typeMsg, msg.textMsg, msg.timeCreated], null, null);
-        let idChat = dialog_id.replace('#','-').replace('::','--');
-        let addedBlock = "";
-        if (msg.typeMsg === "TEXT"){
-            addedBlock = `<li class="list-group-item fr"><div class="textMsg bg-light shadow-2">${msg.textMsg}</div></li>`;
-        }
-        if (msg.typeMsg === "IMAGE"){
-            let idChatImg = msg.dialog_id.replace('#','%23').replace('::','--');
-            addedBlock = `<li class="list-group-item fr">
+        tx.executeSql("select nameUser from ListUsersChat WHERE tagUser = ?", [msg.sender], function(tx, result) {
+            nameOfSender = result.rows.item(0)['nameUser'];
+            let idChat = dialog_id.replace('#','-').replace('::','--');
+            let addedBlock = "";
+            if (msg.typeMsg === "TEXT"){
+                addedBlock = `<li class="list-group-item fr"><div class="textMsg bg-light shadow-2">${msg.textMsg}</div><div class="senderName">${nameOfSender}</div></li>`;
+            }
+            if (msg.typeMsg === "IMAGE"){
+                let idChatImg = msg.dialog_id.replace('#','%23').replace('::','--');
+                addedBlock = `<li class="list-group-item fr">
                                 <div class="textMsg bg-light shadow-2">
                                     <img    class="img-fluid imgMsg"
                                             src="http://imagerc.ddns.net:80/userImgMsg/${idChatImg}/${msg.textMsg}.jpg?time=${Date.now()}"
                                             alt="No Found"/>
                                 </div>
+                                <div class="senderName">${nameOfSender}</div>
                             </li>`;
-        }
-        $('#id-'+`${idChat} .chatWindow`).append(addedBlock);
-        if($('#id-'+`${idChat}`).is(":hidden")){
-            let badge = $(`.chatChannel #${idDialog}`).find('.badge')
-            let countMsg = parseInt(badge[0].textContent, 10)
-            countMsg += 1
-            badge[0].textContent = countMsg
-            badge.show()
-        }
-        if($('#id-'+`${idChat}`).is(":visible")){
-            let dataSend = {
-                type : "UPDATE::",
-                objectUpdate : "COUNTMSG::",
-                dialog : dialog_id,
-                tagUser : idDialog,
-                countMsg : 1
-            };
-            let jsonString = JSON.stringify(dataSend);
-            if(webSocket.readyState === WebSocket.OPEN){
-                webSocket.send(jsonString);
             }
-        }
-        autoScrollDown();
+            $('#id-'+`${idChat} .chatWindow`).append(addedBlock);
+            if($('#id-'+`${idChat}`).is(":hidden")){
+                let badge = $(`.chatChannel #${idDialog}`).find('.badge')
+                let countMsg = parseInt(badge[0].textContent, 10)
+                countMsg += 1
+                badge[0].textContent = countMsg
+                badge.show()
+            }
+            if($('#id-'+`${idChat}`).is(":visible")){
+                let dataSend = {
+                    type : "UPDATE::",
+                    objectUpdate : "COUNTMSG::",
+                    dialog : dialog_id,
+                    tagUser : idDialog,
+                    countMsg : 1
+                };
+                let jsonString = JSON.stringify(dataSend);
+                if(webSocket.readyState === WebSocket.OPEN){
+                    webSocket.send(jsonString);
+                }
+            }
+            autoScrollDown();
+        }, null);
     });
+
 }
 function clearAndHideInputImgMsg() {
     $('.blockImgMsg').hide();
@@ -1544,10 +1614,12 @@ function addChat(obj) {
             function(tx, result) {
                 if (!result.rows.length)
                 {
+                    let allTagUsers = [`${tagUser}`]
                     // чата нет надо создать
                     let dataMsg = {
                         type : "NEWUSERDLG::",
-                        tagUser : tagUser
+                        tagUsers : allTagUsers,
+                        nameOfChat: ""
                     };
                     let jsonString = JSON.stringify(dataMsg);
                     if(webSocket.readyState === WebSocket.OPEN)

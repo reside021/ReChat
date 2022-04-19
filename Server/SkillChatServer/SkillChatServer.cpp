@@ -424,11 +424,11 @@ int main() {
                         ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
                         return;
                     }
-                    string userCompanion = jsonData["tagUser"];
                     string userManager = authorId;
                     json jsonOut = {
-                            {"userCompanion", userCompanion},
-                            {"userManager", userManager}
+                            {"userCompanion", jsonData["tagUsers"]},
+                            {"userManager", userManager},
+                            {"nameOfChat", jsonData["nameOfChat"]}
                     };
                     string outgoingMessage = FORDB + SQL + INSERT + NEWUSERDLG + (string)jsonOut.dump();
                     ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
@@ -638,29 +638,74 @@ int main() {
                     }
                     if (jsonData["oper"] == NEWUSERDLG) {
                         if (jsonData["success"]) {
-                            json jsonOut = {
-                                {"Icreater", true},
-                                {"dialog_id", jsonData["dialog_id"]},
-                                {"userManager", jsonData["userManager"]},
-                                {"enteredTime",jsonData["enteredTime"]},
-                                {"userCompanion", jsonData["userCompanion"]},
-                                {"countMsg", 0}
-                            };
-                            string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
-                            string userManager = jsonData["userManager"];
-                            string userCompanion = jsonData["userCompanion"];
-                            ws->publish("user#" + userManager, outgoingMsg, uWS::OpCode::TEXT, false);
-                            if (userManager != userCompanion) {
+                            if (jsonData["typeOfDlg"] == 0) {
                                 json jsonOut = {
-                                    {"Icreater", false},
+                                    {"Icreater", true},
                                     {"dialog_id", jsonData["dialog_id"]},
                                     {"userManager", jsonData["userManager"]},
                                     {"enteredTime",jsonData["enteredTime"]},
                                     {"userCompanion", jsonData["userCompanion"]},
-                                    {"countMsg", 0}
+                                    {"countMsg", 0},
+                                    {"lastTimeMsg", jsonData["lastTimeMsg"]},
+                                    {"typeOfDlg", jsonData["typeOfDlg"]},
+                                    {"rang", 1},
+                                    {"nameOfChat", jsonData["nameOfChat"]}
                                 };
                                 string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
-                                ws->publish("user#" + userCompanion, outgoingMsg, uWS::OpCode::TEXT, false);
+                                string userManager = jsonData["userManager"];
+                                string userCompanion = jsonData["userCompanion"][0];
+                                ws->publish("user#" + userManager, outgoingMsg, uWS::OpCode::TEXT, false);
+                                if (userManager != userCompanion) {
+                                    json jsonOut = {
+                                        {"Icreater", false},
+                                        {"dialog_id", jsonData["dialog_id"]},
+                                        {"userManager", jsonData["userManager"]},
+                                        {"enteredTime",jsonData["enteredTime"]},
+                                        {"userCompanion", jsonData["userCompanion"]},
+                                        {"countMsg", 0},
+                                        {"lastTimeMsg", jsonData["lastTimeMsg"]},
+                                        {"typeOfDlg", jsonData["typeOfDlg"]},
+                                        {"rang", 1},
+                                        {"nameOfChat", jsonData["nameOfChat"]}
+                                    };
+                                    string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
+                                    ws->publish("user#" + userCompanion, outgoingMsg, uWS::OpCode::TEXT, false);
+                                }
+                            }
+                            if (jsonData["typeOfDlg"] == 1) {
+                                json jsonOut = {
+                                    {"Icreater", true},
+                                    {"dialog_id", jsonData["dialog_id"]},
+                                    {"userManager", jsonData["userManager"]},
+                                    {"enteredTime",jsonData["enteredTime"]},
+                                    {"userCompanion", jsonData["userCompanion"]},
+                                    {"countMsg", 0},
+                                    {"lastTimeMsg", jsonData["lastTimeMsg"]},
+                                    {"typeOfDlg", jsonData["typeOfDlg"]},
+                                    {"rang", 3},
+                                    {"nameOfChat", jsonData["nameOfChat"]}
+                                };
+                                string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut.dump();
+                                string userManager = jsonData["userManager"];
+                                ws->publish("user#" + userManager, outgoingMsg, uWS::OpCode::TEXT, false);
+                                json jsonOut2 = {
+                                        {"Icreater", false},
+                                        {"dialog_id", jsonData["dialog_id"]},
+                                        {"userManager", jsonData["userManager"]},
+                                        {"enteredTime",jsonData["enteredTime"]},
+                                        {"userCompanion", jsonData["userCompanion"]},
+                                        {"countMsg", 0},
+                                        {"lastTimeMsg", jsonData["lastTimeMsg"]},
+                                        {"typeOfDlg", jsonData["typeOfDlg"]},
+                                        {"rang", 1},
+                                        {"nameOfChat", jsonData["nameOfChat"]}
+                                };
+                                string outgoingMsg2 = RESULTDB + INSERT + SUCCESS + NEWUSERDLG + (string)jsonOut2.dump();
+                                for (string tagUser : jsonData["userCompanion"]) {
+                                    if (userManager != tagUser) {
+                                        ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                                    }
+                                }
                             }
                         }
                         else {
@@ -677,8 +722,7 @@ int main() {
                             {"typeMsg", jsonData["typeMsg"]},
                             {"textMsg",jsonData["textMsg"]},
                             {"timeCreated", jsonData["timeCreated"]},
-                            {"receiverId", jsonData["receiverId"]},
-                            {"nameSender", jsonData["nameSender"]}
+                            {"receiverId", jsonData["receiverId"]}
                             };
                             string outgoingMsg = RESULTDB + INSERT + SUCCESS + NEWMSGDLG + (string)jsonOut.dump();
                             string sender = jsonData["sender"];
@@ -688,6 +732,11 @@ int main() {
                             string receiverId = jsonData["receiverId"];
                             if (receiverId == "0") {
                                 ws->publish(BROADCAST_CHANNEL, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                            else if (receiverId[0] == 'G') {
+                                for (string tagUser : jsonData["listReceiverId"]) {
+                                    ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                                }
                             }
                             else {
                                 ws->publish("user#" + receiverId, outgoingMsg, uWS::OpCode::TEXT, false);

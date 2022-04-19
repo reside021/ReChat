@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/listViewCreateDlg"
+        android:backgroundTint="@color/backgroundColor"
+        android:choiceMode="multipleChoice"
+        android:layout_above="@+id/fieldDataDlg"/>
+    <LinearLayout
+        android:id="@+id/fieldDataDlg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:background="@color/bg_dark_white">
+        <EditText
+            android:id="@+id/nameNewChat"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="15dp"
+            android:background="@drawable/round"
+            android:backgroundTint="@color/white"
+            android:hint="@string/nameOfChat"
+            android:maxLength="24"
+            android:textAlignment="center"
+            android:textColor="@color/black"
+            android:textSize="22sp"
+            android:layout_marginTop="15dp"
+            android:enabled="false"
+            android:digits="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_!@#$%^*(-)+"/>
+        <Button
+            android:id="@+id/createDlg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="50dp"
+            android:layout_marginVertical="15dp"
+            android:background="@drawable/round"
+            android:text="@string/create_a_dialog" />
+    </LinearLayout>
+</RelativeLayout>

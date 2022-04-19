@@ -51,7 +51,7 @@ class MyAdapterForFriends(_ourTag : String, queryImg : String) : BaseAdapter() {
                 }
                 sqliteHelper.addUserInChat(list[position])
                 if(!sqliteHelper.checkExistChatWithUser(ourTag, tagUser)){
-                    val newUser = NewUserDLGTable("NEWUSERDLG::", tagUser)
+                    val newUser = NewUserDLGTable("NEWUSERDLG::", mutableListOf(tagUser), "")
                     val msg = Json.encodeToString(newUser)
                     webSocketClient.send(msg)
                 }

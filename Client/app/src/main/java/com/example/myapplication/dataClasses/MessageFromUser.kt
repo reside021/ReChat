@@ -9,7 +9,6 @@ data class MessageFromUser(
     val typeMsg: String,
     val textMsg: String,
     val timeCreated: Int,
-    val receiverId: String,
-    val nameSender: String
+    val receiverId: String
 )
 

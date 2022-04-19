@@ -15,6 +15,6 @@ namespace WSClientDB.dataClasses
         public string textMsg { get; set; }
         public string timeCreated { get; set; }
         public string receiverId { get; set; }
-        public string nameSender { get; set; }
+        public List<string> listReceiverId { get; set; }
     }
 }

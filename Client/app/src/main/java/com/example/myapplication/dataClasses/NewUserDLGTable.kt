@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class NewUserDLGTable(
     val type : String,
-    val tagUser : String
+    val tagUsers : MutableList<String>,
+    val nameOfChat : String
 )

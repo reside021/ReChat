@@ -65,7 +65,7 @@ class ActivityMain :
     companion object {
         const val WEB_SOCKET_URL = "ws://servchat.ddns.net:9001"
         const val IMAGE_REQUEST = 1
-        const val VERSION_APP = "0.3"
+        const val VERSION_APP = "0.5"
         lateinit var webSocketClient : WebSocketClient
         lateinit var sqliteHelper: SqliteHelper
     }
@@ -197,6 +197,12 @@ class ActivityMain :
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as ChatFragment
         fragment.setUserData(myAdapterForChat)
     }
+
+    override fun onCreateNewDialog() {
+        val intent = Intent(this, DialogCreating::class.java);
+        startActivity(intent)
+    }
+
     override fun onFriendsLoadView() {}
     override fun onFirstDisplayLoadView() {}
     override fun onAuthLoadView() {}
@@ -373,7 +379,7 @@ class ActivityMain :
     }
 
     private fun initWebSocket(){
-        sqliteHelper.clearTable()
+
 //        val socketFactory: SSLSocketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
         val chatservUri = URI(WEB_SOCKET_URL)
         createWebSocketClient(chatservUri)
@@ -386,6 +392,7 @@ class ActivityMain :
             override fun onOpen(handshakedata: ServerHandshake?) {
                 Log.i("__CHAT__", "onOpen")
 
+                sqliteHelper.clearTable()
                 val tokenAuth = sp.getString("token", "")
                 if (tokenAuth != null) {
                     if (tokenAuth.isEmpty()) {
@@ -551,37 +558,81 @@ class ActivityMain :
                         if (msg.substringBefore("::") == "NEWUSERDLG") {
                             val jsonData = msg.substringAfter("::")
                             val msg = Json.decodeFromString<ConfirmInsertNewUserDlg>(jsonData)
-                            if (msg.Icreater) {
-                                sqliteHelper.addUserInDLG(
-                                    msg.dialog_id,
-                                    msg.userCompanion,
-                                    msg.enteredTime,
-                                    msg.countMsg,
-                                    0
-                                )
-                                Toast.makeText(
-                                    this, "С пользователем создан чат",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                sqliteHelper.addUserInDLG(
-                                    msg.dialog_id,
-                                    msg.userManager,
-                                    msg.enteredTime,
-                                    msg.countMsg,
-                                    0
-                                )
-                                val dialog_ids : MutableList<String> = mutableListOf(msg.dialog_id)
-                                val queryAllTagName = QueryAllTagName(
-                                    "DOWNLOAD::",
-                                    "ALLTAGNAME::",
-                                    dialog_ids,
-                                    sp.getString("token","")!!
-                                )
-                                if (!webSocketClient.connection.isClosed) {
-                                    val dataServerName = Json.encodeToString(queryAllTagName)
-                                    webSocketClient.send(dataServerName)
+                            if (msg.typeOfDlg == 0) // direct message
+                            {
+                                if (msg.Icreater) {
+                                    sqliteHelper.addUserInDLG(
+                                        msg.dialog_id,
+                                        msg.userCompanion[0],
+                                        msg.enteredTime,
+                                        msg.countMsg,
+                                        msg.lastTimeMsg,
+                                        msg.typeOfDlg,
+                                        msg.rang
+                                    )
+                                    Toast.makeText(
+                                        this, "С пользователем создан чат",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
+                                else {
+                                    sqliteHelper.addUserInDLG(
+                                        msg.dialog_id,
+                                        msg.userManager,
+                                        msg.enteredTime,
+                                        msg.countMsg,
+                                        msg.lastTimeMsg,
+                                        msg.typeOfDlg,
+                                        msg.rang
+                                    )
+                                }
+                            }
+                            if (msg.typeOfDlg == 1) // group chat
+                            {
+                                val tagChat = msg.dialog_id.substringAfter("#")
+                                if (msg.Icreater) {
+                                    sqliteHelper.addUserInDLG(
+                                        msg.dialog_id,
+                                        tagChat,
+                                        msg.enteredTime,
+                                        msg.countMsg,
+                                        msg.lastTimeMsg,
+                                        msg.typeOfDlg,
+                                        msg.rang
+                                    )
+                                    Toast.makeText(
+                                        this, "Групповой чат создан",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                else {
+                                    sqliteHelper.addUserInDLG(
+                                        msg.dialog_id,
+                                        tagChat,
+                                        msg.enteredTime,
+                                        msg.countMsg,
+                                        msg.lastTimeMsg,
+                                        msg.typeOfDlg,
+                                        msg.rang
+                                    )
+                                }
+                                if (sqliteHelper.checkUserInChat(tagChat)) return
+                                sqliteHelper.addUserInChat(tagChat to msg.nameOfChat)
+
+                                val ed = sp.edit()
+                                ed.putString("changeUserDlg", LocalDateTime.now().toString())
+                                ed.apply()
+                            }
+                            val dialog_ids : MutableList<String> = mutableListOf(msg.dialog_id)
+                            val queryAllTagName = QueryAllTagName(
+                                "DOWNLOAD::",
+                                "ALLTAGNAME::",
+                                dialog_ids,
+                                sp.getString("tokenQuery","")!!
+                            )
+                            if (!webSocketClient.connection.isClosed) {
+                                val dataServerName = Json.encodeToString(queryAllTagName)
+                                webSocketClient.send(dataServerName)
                             }
                         }
                         if (msg.substringBefore("::") == "NEWMSGDLG") {
@@ -627,9 +678,19 @@ class ActivityMain :
                                     el.tagUser,
                                     el.enteredTime,
                                     el.countMsg,
-                                    el.lastTimeMsg
+                                    el.lastTimeMsg,
+                                    el.typeOfDlg,
+                                    el.rang
                                 )
+                                if (el.typeOfDlg == 1) // 1 == group chat
+                                {
+                                    val tagChat = el.dialog_id.substringAfter("#")
+                                    if (sqliteHelper.checkUserInChat(tagChat)) return
+                                    sqliteHelper.addUserInChat(tagChat to el.nameOfChat)
+                                }
                             }
+
+
                             val dialog_ids = sqliteHelper.getAllDlgFromDLG()
                             val queryAllTagName = QueryAllTagName(
                                 "DOWNLOAD::",
@@ -797,35 +858,9 @@ class ActivityMain :
                 )
             if(!sp.getBoolean("active", false)) return
             if(sp.getString("idActive", "NONE") != msg.receiverId) return
-            val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            var newView = inflater.inflate(R.layout.message_to, null)
-            when (msg.typeMsg) {
-                "TEXT" -> {
-                    val textInMessage = newView.findViewById<TextView>(R.id.msgTO)
-                    textInMessage.text = msg.textMsg
-                }
-                "IMAGE" -> {
-                    newView = inflater.inflate(R.layout.message_to_image, null)
-                    val imageInMessage = newView.findViewById<ImageView>(R.id.msgToImage)
-                    val nameImg = msg.textMsg
-                    var chatName = msg.dialog_id.replace("#", "%23")
-                    chatName = chatName.replace("::", "--")
-                    val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
-                    Picasso.get()
-                        .load(urlImg)
-                        .placeholder(R.drawable.error_image)
-                        .into(imageInMessage)
-                }
-            }
-
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            mainWindowOuter.addView(newView, lp)
-            scrollView.post(Runnable() {
-                scrollView.fullScroll(View.FOCUS_DOWN)
-            })
+            val ed = sp.edit()
+            ed.putString("newMsgForDisplay", msg.timeCreated.toString())
+            ed.apply()
         } catch (ex: Exception){ }
     }
     private fun messagePrint(jsonData: String){
@@ -851,39 +886,10 @@ class ActivityMain :
                 if(msg.sender != sp.getString("idActive", "NONE")) return // скип отрисовки, если мы не в чате
             }
             if(!sp.getBoolean("active", false)) return
-            var nameOfSender = sqliteHelper.getNameInUserChat(msg.sender)
-            if (nameOfSender.isEmpty())
-            {
-                nameOfSender = resources.getString(R.string.user_name)
-            }
-            val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            var newView = inflater.inflate(R.layout.message_from, null)
-            when (msg.typeMsg) {
-                "IMAGE" -> {
-                    newView = inflater.inflate(R.layout.message_from_image, null)
-                    val nameImg = msg.textMsg
-                    var chatName = msg.dialog_id.replace("#", "%23")
-                    chatName = chatName.replace("::", "--")
-                    val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
-                    val imageInMessage = newView.findViewById<ImageView>(R.id.msgFromImage)
-                    Picasso.get()
-                        .load(urlImg)
-                        .placeholder(R.drawable.error_image)
-                        .into(imageInMessage)
-                }
-                "TEXT" -> {
-                    newView.findViewById<TextView>(R.id.msgFrom).text = msg.textMsg
-                }
-            }
-            newView.findViewById<TextView>(R.id.senderName).text = nameOfSender
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            mainWindowOuter.addView(newView, lp)
-            scrollView.post(Runnable() {
-                scrollView.fullScroll(View.FOCUS_DOWN)
-            })
+
+            val spEdit = sp.edit()
+            spEdit.putString("newMsgForDisplay", msg.timeCreated.toString())
+            spEdit.apply()
             if(webSocketClient.connection.isClosed){
                 Toast.makeText(
                     this@ActivityMain, "Отсутствует подключение к серверу",
@@ -895,7 +901,9 @@ class ActivityMain :
                 val dataServerName = Json.encodeToString(updateCountMsg)
                 webSocketClient.send(dataServerName)
             }
-        } catch (ex: Exception){ }
+        } catch (ex: Exception){
+            Log.d("____QQQQ____", "${ex.message}")
+        }
     }
 
     private fun deviceAuth(data: String){

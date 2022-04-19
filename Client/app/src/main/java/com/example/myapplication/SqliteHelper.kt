@@ -41,9 +41,11 @@ class SqliteHelper(context: Context) :
                 "($ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                 "$DIALOG_ID TEXT, " +
                 "$TAG_USER TEXT, " +
-                "$ENTEREDTIME TEXT," +
+                "$ENTEREDTIME INTEGER," +
                 "$COUNTMSG INTEGER," +
-                "$LASTTIMEMSG INTEGER)"
+                "$LASTTIMEMSG INTEGER," +
+                "$TYPEOFDLG INTEGER," +
+                "$RANG INTEGER)"
         db?.execSQL(tableUserDlg)
 
 
@@ -89,6 +91,7 @@ class SqliteHelper(context: Context) :
                 do {
                     val idTag = cursor.getString(cursor.getColumnIndexOrThrow(TAG_USER))
                     val nameuser = cursor.getString(cursor.getColumnIndexOrThrow(NAME_USER))
+                    Log.d("__WWWWWW__", "$nameuser")
                     allUser.add(idTag to nameuser)
                 } while (cursor.moveToNext())
             }
@@ -265,8 +268,8 @@ class SqliteHelper(context: Context) :
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    val text = cursor.getString(cursor.getColumnIndexOrThrow(TEXTMSG))
                     val sender = cursor.getString(cursor.getColumnIndexOrThrow(SENDER))
+                    val text = cursor.getString(cursor.getColumnIndexOrThrow(TEXTMSG))
                     val timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(TIMECREATED))
                     val typeMsg = cursor.getString(cursor.getColumnIndexOrThrow(TYPEMSG))
                     allMsg.add(arrayOf(sender, text, timeCreated, typeMsg))
@@ -278,6 +281,27 @@ class SqliteHelper(context: Context) :
         cursor.close()
         db.close()
         return allMsg
+    }
+    fun getLastMsgWithUser(dialogID : String, timecreated: Int) : Array<String>{
+        var oneMsg : Array<String> = arrayOf("","","","")
+        val db = readableDatabase
+        val selectALLQuery = "SELECT * FROM $MSGDLGTABLE WHERE $DIALOG_ID = '$dialogID' AND $TIMECREATED = $timecreated"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    val sender = cursor.getString(cursor.getColumnIndexOrThrow(SENDER))
+                    val text = cursor.getString(cursor.getColumnIndexOrThrow(TEXTMSG))
+                    val timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(TIMECREATED))
+                    val typeMsg = cursor.getString(cursor.getColumnIndexOrThrow(TYPEMSG))
+                    oneMsg = arrayOf(sender, text, timeCreated, typeMsg)
+                    Log.d("____DB____", "$text + $typeMsg + $sender + $timeCreated")
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return oneMsg
     }
     fun getCountNewMsg(ourTag : String, tagUser: String) : Int{
         var countNewMsg = 0
@@ -296,7 +320,13 @@ class SqliteHelper(context: Context) :
         return countNewMsg
     }
 
-    fun addUserInDLG(dialogID : String, tagUser : String,  enteredTime : String, countMsg : Int, lastTimeMsg : Int) : Boolean{
+    fun addUserInDLG(dialogID : String,
+                     tagUser : String,
+                     enteredTime : Int,
+                     countMsg : Int,
+                     lastTimeMsg : Int,
+                     typeOfDlg : Int,
+                     rang : Int) : Boolean{
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(DIALOG_ID, dialogID)
@@ -304,6 +334,8 @@ class SqliteHelper(context: Context) :
         values.put(ENTEREDTIME, enteredTime)
         values.put(COUNTMSG, countMsg)
         values.put(LASTTIMEMSG, lastTimeMsg)
+        values.put(TYPEOFDLG, typeOfDlg)
+        values.put(RANG, rang)
         val success = db.insert(USERDLGTABLE, null, values)
         db.close()
         Log.d("________InsertedInTblDlg_________", "$success")
@@ -448,7 +480,7 @@ class SqliteHelper(context: Context) :
 
     companion object {
         private val DB_NAME = "UserChat"
-        private val DB_VERSION = 4;
+        private val DB_VERSION = 5;
 
         private val ONLINE_USERS = "OnlineUsers" // tablename
         private val TAG_USER = "Tag_Of_User" // field in table
@@ -468,6 +500,9 @@ class SqliteHelper(context: Context) :
         private val ENTEREDTIME = "EnteredTime"
         private val COUNTMSG = "countMsg"
         private val LASTTIMEMSG = "lastTimeMsg"
+        private val NAMEOFCHAT = "nameOfChat"
+        private val TYPEOFDLG = "typeOfDialog"
+        private val RANG = "rang"
 
         private val FRIENDSTABLE = "FriendsTable" // tablename
         private val TAGSENDERFRND = "tagSenderFrnd" // field in table

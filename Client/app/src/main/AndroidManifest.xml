@@ -30,6 +30,12 @@
             android:name=".ChatPeople"
             android:theme="@style/CustomTheme"
             android:configChanges="uiMode"
-            android:label=""/>
+            android:label=""
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".DialogCreating"
+            android:screenOrientation="portrait"
+            android:configChanges="uiMode"
+            android:windowSoftInputMode="adjustResize"/>
     </application>
 </manifest>

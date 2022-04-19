@@ -51,9 +51,8 @@ class MyAdapterForUsers(queryImg : String) : BaseAdapter() {
                         Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                sqliteHelper.addUserInChat(list[position])
                 if(!sqliteHelper.checkExistChatWithUser(ourTag, tagUser)){
-                    val newUser = NewUserDLGTable("NEWUSERDLG::", tagUser)
+                    val newUser = NewUserDLGTable("NEWUSERDLG::", mutableListOf(tagUser), "")
                     val msg = Json.encodeToString(newUser)
                     webSocketClient.send(msg)
                 }

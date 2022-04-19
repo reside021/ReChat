@@ -123,7 +123,6 @@ namespace WSClientDB
         }
         private static void InsertDataNewMsgDLG(string dialog_id, string sender, string typeMsg, string text, string receiverId)
         {
-            var nameSender = SlctAllTagNameHelper(sender);
             int timeCreated = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
@@ -142,8 +141,22 @@ namespace WSClientDB
             try
             {
                 sqlCommand.ExecuteNonQuery();
-                sqlCommand.CommandText = "Update UserDlgTable set lastTimeMsg = @timeCreated where dialog_id = @dialog_id";
+                sqlCommand.CommandText = "Update DlgInfo set lastTimeMsg = @timeCreated where dialog_id = @dialog_id";
                 sqlCommand.ExecuteNonQuery();
+                if (receiverId.StartsWith("G"))
+                {
+                    sqlCommand.CommandText = "select tagUser from UserDlgData where dialog_id =  @dialog_id";
+                    List<string> listReceiverId = new List<string>();
+                    SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                    if (sqlDataReader.HasRows)
+                    {
+                        while (sqlDataReader.Read())
+                        {
+                            listReceiverId.Add(sqlDataReader.GetString(0));
+                        }
+                    }
+                    successInsertMsgDlg.listReceiverId = listReceiverId;
+                }
                 successInsertMsgDlg.type = RESULTDB;
                 successInsertMsgDlg.oper = NEWMSGDLG;
                 successInsertMsgDlg.success = true;
@@ -153,7 +166,6 @@ namespace WSClientDB
                 successInsertMsgDlg.textMsg = text;
                 successInsertMsgDlg.timeCreated = timeCreated.ToString();
                 successInsertMsgDlg.receiverId = receiverId;
-                successInsertMsgDlg.nameSender = nameSender;
             }
             catch
             {
@@ -167,47 +179,100 @@ namespace WSClientDB
             sqlConnection.Close();
             Console.WriteLine($"[MSG] -> InsertDLG^Insert into MsgDlgTable");
         }
-        private static void InsertDataNewUserDLG(string userCompanion, string userManager)
+        private static void InsertDataNewUserDLG(List<string> userCompanion, string userManager, string nameOfChat)
         {
-            string dialog_id = CHAT + userCompanion + "::" + userManager;
-            DateTime enteredTime = DateTime.UtcNow;
-            sqlConnection.Open();
-            sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText =
-                @"Insert into UserDlgTable values
-                    (@dialog_id, @userCompanion, @enteredTime, 0, @enteredTime),
-                    (@dialog_id, @userManager, @enteredTime, 0, @enteredTime)";
-            SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
-            sqlCommand.Parameters.Add(sqlParameter);
-            SqlParameter sqlParameter1 = new SqlParameter("@userCompanion", userCompanion);
-            sqlCommand.Parameters.Add(sqlParameter1);
-            SqlParameter sqlParameter2 = new SqlParameter("@enteredTime", enteredTime);
-            sqlCommand.Parameters.Add(sqlParameter2);
-            SqlParameter sqlParameter3 = new SqlParameter("@userManager", userManager);
-            sqlCommand.Parameters.Add(sqlParameter3);
+            int enteredTime = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             SuccessCreateUserDlg successCreateUserDlg = new SuccessCreateUserDlg();
+            successCreateUserDlg.type = RESULTDB;
+            successCreateUserDlg.oper = NEWUSERDLG;
+            successCreateUserDlg.userManager = userManager;
+            successCreateUserDlg.enteredTime = enteredTime;
+            successCreateUserDlg.lastTimeMsg = enteredTime;
             try
             {
-                sqlCommand.ExecuteNonQuery();
-                successCreateUserDlg.type = RESULTDB;
-                successCreateUserDlg.oper = NEWUSERDLG;
-                successCreateUserDlg.success = true;
-                successCreateUserDlg.dialog_id = dialog_id;
-                successCreateUserDlg.userManager = userManager;
-                successCreateUserDlg.userCompanion = userCompanion;
-                successCreateUserDlg.enteredTime = enteredTime.ToString();
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                if (userCompanion.Count == 1)
+                {
+                    string dialog_id = CHAT + userCompanion[0] + "::" + userManager;
+                    sqlCommand.CommandText =
+                            @"Insert into DlgInfo values
+                                (@dialog_id, @lastTimeMsg, @nameOfChat, 0)";
+                    SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+                    sqlCommand.Parameters.Add(sqlParameter);
+                    SqlParameter sqlParameter1 = new SqlParameter("@lastTimeMsg", enteredTime);
+                    sqlCommand.Parameters.Add(sqlParameter1);
+                    SqlParameter sqlParameter2 = new SqlParameter("@nameOfChat", dialog_id);
+                    sqlCommand.Parameters.Add(sqlParameter2);
+                    sqlCommand.ExecuteNonQuery();
+                    sqlCommand.CommandText =
+                            @"Insert into UserDlgData values
+                                (@dialog_id, @userCompanion, @enteredTime, 0, 1),
+                                (@dialog_id, @userManager, @enteredTime, 0, 1)";
+                    SqlParameter sqlParameter3 = new SqlParameter("@userCompanion", userCompanion[0]);
+                    sqlCommand.Parameters.Add(sqlParameter3);
+                    SqlParameter sqlParameter4 = new SqlParameter("@userManager", userManager);
+                    sqlCommand.Parameters.Add(sqlParameter4);
+                    SqlParameter sqlParameter5 = new SqlParameter("@enteredTime", enteredTime);
+                    sqlCommand.Parameters.Add(sqlParameter5);
+                    sqlCommand.ExecuteNonQuery();
+
+                    sqlCommand.Parameters.Clear();
+                    sqlConnection.Close();
+                    successCreateUserDlg.success = true;
+                    successCreateUserDlg.dialog_id = dialog_id;
+                    successCreateUserDlg.userCompanion = userCompanion;
+                    successCreateUserDlg.countMsg = 0;
+                    successCreateUserDlg.rang = 1;
+                    successCreateUserDlg.typeOfDlg = 0;
+                    successCreateUserDlg.nameOfChat = dialog_id;
+                }
+                else if (userCompanion.Count > 1)
+                {
+                    string dialog_id = GROUP + "G" + enteredTime;
+                    sqlCommand.CommandText =
+                            @"Insert into DlgInfo values
+                                (@dialog_id, @lastTimeMsg, @nameOfChat, 1)";
+                    SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+                    sqlCommand.Parameters.Add(sqlParameter);
+                    SqlParameter sqlParameter1 = new SqlParameter("@lastTimeMsg", enteredTime);
+                    sqlCommand.Parameters.Add(sqlParameter1);
+                    SqlParameter sqlParameter2 = new SqlParameter("@nameOfChat", nameOfChat);
+                    sqlCommand.Parameters.Add(sqlParameter2);
+                    sqlCommand.ExecuteNonQuery();
+                    sqlCommand.CommandText =
+                        @"Insert into UserDlgData values (@dialog_id, @userManager, @enteredTime, 0, 3)";
+                    foreach (var el in userCompanion)
+                    {
+                        sqlCommand.CommandText += $",(@dialog_id, '{el}', @enteredTime, 0, 1)";
+                    }
+                    SqlParameter sqlParameter4 = new SqlParameter("@userManager", userManager);
+                    sqlCommand.Parameters.Add(sqlParameter4);
+                    SqlParameter sqlParameter5 = new SqlParameter("@enteredTime", enteredTime);
+                    sqlCommand.Parameters.Add(sqlParameter5);
+                    sqlCommand.ExecuteNonQuery();
+
+                    sqlCommand.Parameters.Clear();
+                    sqlConnection.Close();
+                    successCreateUserDlg.success = true;
+                    successCreateUserDlg.dialog_id = dialog_id;
+                    successCreateUserDlg.userCompanion = userCompanion;
+                    successCreateUserDlg.typeOfDlg = 1;
+                    successCreateUserDlg.countMsg = 0;
+                    successCreateUserDlg.rang = 1;
+                    successCreateUserDlg.nameOfChat = nameOfChat;
+                }
             }
-            catch
+            catch(Exception ex)
             {
-                successCreateUserDlg.type = RESULTDB;
-                successCreateUserDlg.oper = NEWUSERDLG;
                 successCreateUserDlg.success = false;
+
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
             }
             string jsonResult = JsonConvert.SerializeObject(successCreateUserDlg);
             webSocket.Send(jsonResult);
-            sqlCommand.Parameters.Clear();
-            sqlConnection.Close();
-            Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable");
+            Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgData");
         }
         private static string getToken(string tagUser)
         {
@@ -302,7 +367,7 @@ namespace WSClientDB
             List<string> listDlg = new List<string>();
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "select dialog_id from UserDlgTable where tagUser = @tagUser";
+            sqlCommand.CommandText = "select dialog_id from UserDlgData where tagUser = @tagUser";
             SqlParameter sqlParameter = new SqlParameter("@tagUser", tagUser);
             sqlCommand.Parameters.Add(sqlParameter);
             SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
@@ -319,71 +384,113 @@ namespace WSClientDB
         }
         private static void SelectDataForAllDlg(string tagUser, string token)
         {
-            var listDlg = GetInfoAboutDialogs(tagUser);
+
             ListDataOfDialog listDataOfDialog = new ListDataOfDialog();
-            List<DataOfDialog> dataOfDialogs = new List<DataOfDialog>();
-            foreach (var dlg in listDlg)
-            {
-                if(dlg.Substring(0, dlg.IndexOf("#") + 1) == GROUP)
-                {
-                    sqlConnection.Open();
-                    sqlCommand.Connection = sqlConnection;
-                    sqlCommand.CommandText = " select * from UserDlgTable where dialog_id = @dlgId and tagUser = @tagUser";
-                    SqlParameter sqlParameter = new SqlParameter("@tagUser", tagUser);
-                    sqlCommand.Parameters.Add(sqlParameter);
-                    SqlParameter sqlParameter1 = new SqlParameter("@dlgId", dlg);
-                    sqlCommand.Parameters.Add(sqlParameter1);
-                    SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
-                    if (sqlDataReader.HasRows)
-                    {
-                        while (sqlDataReader.Read())
-                        {
-                            string _dialogId = sqlDataReader.GetString(1);
-                            string _tagUser = dlg.Substring(dlg.IndexOf("#") + 1);
-                            string _enteredTime = sqlDataReader.GetDateTime(3).ToString();
-                            int _countMsg = sqlDataReader.GetInt32(4);
-                            int _lastTimeMsg = sqlDataReader.GetInt32(5);
-                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg, lastTimeMsg = _lastTimeMsg});
-                        }
-                    }
-                    sqlCommand.Parameters.Clear();
-                    sqlConnection.Close();
-                }
-                else
-                {
-                    sqlConnection.Open();
-                    sqlCommand.Connection = sqlConnection;
-                    sqlCommand.CommandText = " select * from UserDlgTable where dialog_id = @dlgId and tagUser <> @tagUser";
-                    SqlParameter sqlParameter = new SqlParameter("@tagUser", tagUser);
-                    sqlCommand.Parameters.Add(sqlParameter);
-                    SqlParameter sqlParameter1 = new SqlParameter("@dlgId", dlg);
-                    sqlCommand.Parameters.Add(sqlParameter1);
-                    SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
-                    if (sqlDataReader.HasRows)
-                    {
-                        while (sqlDataReader.Read())
-                        {
-                            string _dialogId = sqlDataReader.GetString(1);
-                            string _tagUser = sqlDataReader.GetString(2);
-                            string _enteredTime = sqlDataReader.GetDateTime(3).ToString();
-                            int _countMsg = sqlDataReader.GetInt32(4);
-                            int _lastTimeMsg = sqlDataReader.GetInt32(5);
-                            dataOfDialogs.Add(new DataOfDialog() { dialog_id = _dialogId, tagUser = _tagUser, enteredTime = _enteredTime, countMsg = _countMsg, lastTimeMsg = _lastTimeMsg});
-                        }
-                    }
-                    sqlCommand.Parameters.Clear();
-                    sqlConnection.Close();
-                }
-            }
             listDataOfDialog.type = RESULTDB;
             listDataOfDialog.oper = DOWNLOAD;
             listDataOfDialog.table = ALLDLG;
-            listDataOfDialog.success = true;
-            listDataOfDialog.listOfData = dataOfDialogs;
             listDataOfDialog.tagUser = tagUser;
             listDataOfDialog.token = token;
+            try
+            {
+                var listDlg = GetInfoAboutDialogs(tagUser);
+                List<DataOfDialog> dataOfDialogs = new List<DataOfDialog>();
+                foreach (var dlg in listDlg)
+                {
+                    if (dlg.Substring(0, dlg.IndexOf("#") + 1) == GROUP)
+                    {
+                        sqlConnection.Open();
+                        sqlCommand.Connection = sqlConnection;
+                        sqlCommand.CommandText =
+                            @"select * from UserDlgData as U inner join DlgInfo as D on U.dialog_id = D.dialog_id 
+                            where D.dialog_id = @dlgId and U.tagUser = @tagUser";
+                        SqlParameter sqlParameter = new SqlParameter("@tagUser", tagUser);
+                        sqlCommand.Parameters.Add(sqlParameter);
+                        SqlParameter sqlParameter1 = new SqlParameter("@dlgId", dlg);
+                        sqlCommand.Parameters.Add(sqlParameter1);
+                        SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                        if (sqlDataReader.HasRows)
+                        {
+                            while (sqlDataReader.Read())
+                            {
+                                string _dialogId = sqlDataReader.GetString(1);
+                                string _tagUser = dlg.Substring(dlg.IndexOf("#") + 1);
+                                int _enteredTime = sqlDataReader.GetInt32(3);
+                                int _countMsg = sqlDataReader.GetInt32(4);
+                                int _rang = sqlDataReader.GetInt32(5);
+                                int _lastTimeMsg = sqlDataReader.GetInt32(7);
+                                string _nameOfChat = sqlDataReader.GetString(8);
+                                int _typeOfDlg = sqlDataReader.GetInt32(9);
+                                dataOfDialogs.Add(
+                                    new DataOfDialog()
+                                    {
+                                        dialog_id = _dialogId,
+                                        tagUser = _tagUser,
+                                        enteredTime = _enteredTime,
+                                        countMsg = _countMsg,
+                                        lastTimeMsg = _lastTimeMsg,
+                                        typeOfDlg = _typeOfDlg,
+                                        nameOfChat = _nameOfChat,
+                                        rang = _rang
+                                    }
+                                );
+                            }
+                        }
+                        sqlCommand.Parameters.Clear();
+                        sqlConnection.Close();
+                    }
+                    else
+                    {
+                        sqlConnection.Open();
+                        sqlCommand.Connection = sqlConnection;
+                        sqlCommand.CommandText =
+                            @"select * from UserDlgData as U inner join DlgInfo as D on U.dialog_id = D.dialog_id 
+                            where D.dialog_id = @dlgId and U.tagUser <> @tagUser";
+                        SqlParameter sqlParameter = new SqlParameter("@tagUser", tagUser);
+                        sqlCommand.Parameters.Add(sqlParameter);
+                        SqlParameter sqlParameter1 = new SqlParameter("@dlgId", dlg);
+                        sqlCommand.Parameters.Add(sqlParameter1);
+                        SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                        if (sqlDataReader.HasRows)
+                        {
+                            while (sqlDataReader.Read())
+                            {
+                                string _dialogId = sqlDataReader.GetString(1);
+                                string _tagUser = sqlDataReader.GetString(2);
+                                int _enteredTime = sqlDataReader.GetInt32(3);
+                                int _countMsg = sqlDataReader.GetInt32(4);
+                                int _rang = sqlDataReader.GetInt32(5);
+                                int _lastTimeMsg = sqlDataReader.GetInt32(7);
+                                string _nameOfChat = sqlDataReader.GetString(8);
+                                int _typeOfDlg = sqlDataReader.GetInt32(9);
+                                dataOfDialogs.Add(
+                                    new DataOfDialog()
+                                    {
+                                        dialog_id = _dialogId,
+                                        tagUser = _tagUser,
+                                        enteredTime = _enteredTime,
+                                        countMsg = _countMsg,
+                                        lastTimeMsg = _lastTimeMsg,
+                                        typeOfDlg = _typeOfDlg,
+                                        nameOfChat = _nameOfChat,
+                                        rang = _rang
+                                    }
+                                );
+                            }
+                        }
+                        sqlCommand.Parameters.Clear();
+                        sqlConnection.Close();
+                    }
+                }
+                listDataOfDialog.success = true;
+                listDataOfDialog.listOfData = dataOfDialogs;
+            }
+            catch(Exception ex)
+            {
+                listDataOfDialog.success = false;
+                Console.WriteLine(ex.Message + "\n" + ex.StackTrace);
+            }
             string jsonResult = JsonConvert.SerializeObject(listDataOfDialog);
-            Console.WriteLine(jsonResult);
             webSocket.Send(jsonResult);
             Console.WriteLine($"[MSG] -> DownLoadDialog^{tagUser}");
         }
@@ -441,95 +548,53 @@ namespace WSClientDB
             }
             Console.WriteLine($"[MSG] -> DownLoadMsg^{authorId}");
         }
-        private static string SearchNeedTag(string dialog_id, string notNeededTag)
-        {
-            string name = "";
-            sqlConnection.Open();
-            sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "select tagUser from UserDlgTable where dialog_id = @dialog_id and tagUser <> @notNeededTag";
-            SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
-            sqlCommand.Parameters.Add(sqlParameter);
-            SqlParameter sqlParameter2 = new SqlParameter("@notNeededTag", notNeededTag);
-            sqlCommand.Parameters.Add(sqlParameter2);
-            var objectName = sqlCommand.ExecuteScalar();
-            sqlCommand.Parameters.Clear();
-            sqlConnection.Close();
-            if (objectName != null) name = objectName.ToString();
-            return name;
-        }
+
         private static void SelectDataForAllTagName(List<string> dialog_ids, string authorId, string token)
         {
-            List<DataOfNickName> listTagName = new List<DataOfNickName>();
-            foreach (var el in dialog_ids)
-            {
-                if (el.Substring(0, el.IndexOf("#") + 1) == GROUP)
-                {
-                    listTagName.Add(new DataOfNickName() { nickUser = "Global Chat", tagUser = el.Substring(el.IndexOf("#") + 1) });
-                }
-                if (el.Substring(0, el.IndexOf("#") + 1) == CHAT)
-                {
-                    var tag_tag = el.Substring(CHAT.Length);
-                    var tag1 = tag_tag.Substring(0, tag_tag.IndexOf("::"));
-                    var tag2 = tag_tag.Substring(tag_tag.IndexOf("::") + 2);
-                    string tag = "";
-                    if (tag1 == tag2)
-                    {
-                        tag = SearchNeedTag(el, tag1);
-                    }
-                    else
-                    {
-                        if (tag1 == authorId)
-                        {
-                            tag = SearchNeedTag(el, tag1);
-                        }
-                        if (tag2 == authorId)
-                        {
-                            tag = SearchNeedTag(el, tag2);
-                        }
-                    }
-                    string name = SlctAllTagNameHelper(tag);
-                    if (!string.IsNullOrEmpty(name))
-                    {
-                        listTagName.Add(new DataOfNickName() { nickUser = name, tagUser = tag });
-                    }
-                }
-            }
             DataOfTagName dataOfTagName = new DataOfTagName();
             dataOfTagName.token = token;
-            if (listTagName.Count != 0)
+            dataOfTagName.type = RESULTDB;
+            dataOfTagName.oper = DOWNLOAD;
+            dataOfTagName.table = ALLTAGNAME;
+            dataOfTagName.tagUser = authorId;
+            try
             {
-                dataOfTagName.type = RESULTDB;
-                dataOfTagName.oper = DOWNLOAD;
-                dataOfTagName.table = ALLTAGNAME;
+                List<DataOfNickName> listTagName = new List<DataOfNickName>();
+                foreach (var el in dialog_ids)
+                {
+                    if (el == GROUP + "0") continue;
+                    sqlConnection.Open();
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText =
+                        @"select I.tagUser, nickUser from InfoUsers as I inner join UserDlgData as U on I.tagUser = U.tagUser 
+                        where U.dialog_id = @dlgId and U.tagUser <> @tagUser";
+                    SqlParameter sqlParameter = new SqlParameter("@tagUser", authorId);
+                    sqlCommand.Parameters.Add(sqlParameter);
+                    SqlParameter sqlParameter1 = new SqlParameter("@dlgId", el);
+                    sqlCommand.Parameters.Add(sqlParameter1);
+                    SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                    if (sqlDataReader.HasRows)
+                    {
+                        while (sqlDataReader.Read())
+                        {
+                            string _tagUser = sqlDataReader.GetString(0);
+                            string _nickUser = sqlDataReader.GetString(1);
+                            listTagName.Add(new DataOfNickName() { nickUser = _nickUser, tagUser = _tagUser });
+                        }
+                    }
+                    sqlCommand.Parameters.Clear();
+                    sqlConnection.Close();
+                }
                 dataOfTagName.success = true;
                 dataOfTagName.listOfData = listTagName;
-                dataOfTagName.tagUser = authorId;
             }
-            else
+            catch
             {
-                dataOfTagName.type = RESULTDB;
-                dataOfTagName.oper = DOWNLOAD;
-                dataOfTagName.table = ALLTAGNAME;
                 dataOfTagName.success = false;
-                dataOfTagName.tagUser = authorId;
             }
             string jsonResult = JsonConvert.SerializeObject(dataOfTagName);
             webSocket.Send(jsonResult);
             Console.WriteLine($"[MSG] -> DownLoadNickUser^{authorId} ({dataOfTagName.success})");
-        }
-        private static string SlctAllTagNameHelper(string tag)
-        {
-            string name = "";
-            sqlConnection.Open();
-            sqlCommand.Connection = sqlConnection;
-            sqlCommand.CommandText = "select nickUser from InfoUsers where tagUser = @tagUser";
-            SqlParameter sqlParameter = new SqlParameter("@tagUser", tag);
-            sqlCommand.Parameters.Add(sqlParameter);
-            var objectName = sqlCommand.ExecuteScalar();
-            sqlCommand.Parameters.Clear();
-            sqlConnection.Close();
-            if (objectName != null) name = objectName.ToString();
-            return name;
         }
         private static void UpdateNameOfUser(string tagId, string newName)
         {
@@ -657,10 +722,10 @@ namespace WSClientDB
             try
             {
                 string dialog_id = GROUP + "0";
-                DateTime enteredTime = DateTime.UtcNow;
+                int enteredTime = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
                 sqlConnection.Open();
                 sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = "Insert into UserDlgTable values(@dialog_id, @tagUser, @enteredTime)";
+                sqlCommand.CommandText = "Insert into UserDlgData values(@dialog_id, @tagUser, @enteredTime, 0, 1)";
                 SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
                 sqlCommand.Parameters.Add(sqlParameter);
                 SqlParameter sqlParameter1 = new SqlParameter("@tagUser", userTag);
@@ -676,7 +741,7 @@ namespace WSClientDB
                 success = false;
             }
             sqlConnection.Close();
-            Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgTable ({success})");
+            Console.WriteLine($"[MSG] -> CreateDLG^Insert into UserDlgData ({success})");
         }
         private static void SelectDeviceForAuth(string userTag, string token)
         {
@@ -957,7 +1022,7 @@ namespace WSClientDB
                 sqlConnection.Open();
                 sqlCommand.Connection = sqlConnection;
                 sqlCommand.CommandText =
-                    @"update UserDlgTable set countMsg = countMsg + @countMessage where dialog_id = @dialog AND tagUser = @needTagUser";
+                    @"update UserDlgData set countMsg = countMsg + @countMessage where dialog_id = @dialog AND tagUser = @needTagUser";
                 SqlParameter sqlParameter = new SqlParameter("@countMessage", countMessge);
                 sqlCommand.Parameters.Add(sqlParameter);
                 SqlParameter sqlParameter2 = new SqlParameter("@dialog", dialog);
@@ -968,7 +1033,7 @@ namespace WSClientDB
                 if (dialog.Substring(0, dialog.IndexOf("#") + 1) == GROUP)
                 {
                     sqlCommand.CommandText =
-                    @"update UserDlgTable set countMsg = countMsg + @countMessage where dialog_id = @dialog AND tagUser = @ourTag;";
+                    @"update UserDlgData set countMsg = countMsg + @countMessage where dialog_id = @dialog AND tagUser = @ourTag;";
                     SqlParameter sqlParameter4 = new SqlParameter("@ourTag", updateCountMsg.tagUser);
                     sqlCommand.Parameters.Add(sqlParameter4);
                     sqlCommand.ExecuteNonQuery();
@@ -1012,7 +1077,7 @@ namespace WSClientDB
                     {
                         message = message.Substring(NEWUSERDLG.Length);
                         NewUserDLG newUserDLG = JsonConvert.DeserializeObject<NewUserDLG>(message);
-                        InsertDataNewUserDLG(newUserDLG.userCompanion, newUserDLG.userManager);
+                        InsertDataNewUserDLG(newUserDLG.userCompanion, newUserDLG.userManager, newUserDLG.nameOfChat);
                     }
                     if(message.IndexOf(NEWMSGDLG) != -1)
                     {

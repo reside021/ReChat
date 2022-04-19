@@ -20,4 +20,5 @@
     <color name="textMessColor">#6E6E6E</color>
     <color name="default_inactive">#78909c</color>
     <color name="orange">#FF5722</color>
+    <color name="bg_dark_white">#F5F5F5</color>
 </resources>

@@ -6,7 +6,8 @@ namespace WSClientDB.dataClasses
 {
     class NewUserDLG
     {
-        public string userCompanion { get; set; }
+        public List<string> userCompanion { get; set; }
         public string userManager { get; set; }
+        public string nameOfChat { get; set; }
     }
 }

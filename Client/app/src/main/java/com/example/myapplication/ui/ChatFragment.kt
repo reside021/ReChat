@@ -9,14 +9,12 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.Button
-import android.widget.ListView
-import android.widget.TextView
+import android.widget.*
 import com.example.myapplication.ChatPeople
 import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 import com.example.myapplication.adapters.MyAdapterForChat
 import com.example.myapplication.R
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 
 class ChatFragment : Fragment(),
@@ -24,6 +22,7 @@ class ChatFragment : Fragment(),
 
     internal interface OnFragmentSendDataListener {
         fun onChatLoadView()
+        fun onCreateNewDialog()
     }
 
     companion object{
@@ -62,20 +61,23 @@ class ChatFragment : Fragment(),
             startActivity(intent)
         }
         listViewChat.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, view, position, id ->
-            val builder = AlertDialog.Builder(activity)
-            val dialogInflater = this.layoutInflater
-            val dialogView  = dialogInflater.inflate(R.layout.dialog_actions_with_chatchannel, null)
-            val idUser = view.findViewById<TextView>(R.id.idUser)
-            builder.setView(dialogView)
-            val alertDialog = builder.create();
-            alertDialog.show()
-            dialogView.findViewById<Button>(R.id.delThisChat).setOnClickListener(){
-                sqliteHelper.deleteUserChat(idUser.text.toString())
-                alertDialog.dismiss()
-            }
+//            val builder = AlertDialog.Builder(activity)
+//            val dialogInflater = this.layoutInflater
+//            val dialogView  = dialogInflater.inflate(R.layout.dialog_actions_with_chatchannel, null)
+//            val idUser = view.findViewById<TextView>(R.id.idUser)
+//            builder.setView(dialogView)
+//            val alertDialog = builder.create();
+//            alertDialog.show()
+//            dialogView.findViewById<Button>(R.id.delThisChat).setOnClickListener(){
+//                sqliteHelper.deleteUserChat(idUser.text.toString())
+//                alertDialog.dismiss()
+//            }
             return@OnItemLongClickListener true
         }
-
+        val fab = requireView().findViewById<FloatingActionButton>(R.id.fab)
+        fab.setOnClickListener {
+            fragmentSendDataListener?.onCreateNewDialog()
+        }
     }
     fun setUserData(myAdapterForChat: MyAdapterForChat){
         val listViewChat = requireView().findViewById<ListView>(R.id.listViewChat)

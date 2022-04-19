@@ -7,7 +7,11 @@ data class ConfirmInsertNewUserDlg(
     val Icreater: Boolean,
     val dialog_id: String,
     val userManager: String,
-    val enteredTime: String,
-    val userCompanion: String,
-    val countMsg : Int
+    val enteredTime: Int,
+    val userCompanion: List<String>,
+    val countMsg : Int,
+    val lastTimeMsg: Int,
+    val typeOfDlg: Int,
+    val rang: Int,
+    val nameOfChat: String
 )

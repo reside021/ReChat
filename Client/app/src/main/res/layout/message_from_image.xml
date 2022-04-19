@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingRight="60dp">
+    android:paddingEnd="60dp"
+    android:paddingVertical="5dp">
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -12,7 +13,6 @@
             android:id="@+id/msgFromImage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:layout_marginStart="10dp"
             android:paddingHorizontal="5dp"
             android:paddingVertical="5dp"
@@ -29,7 +29,6 @@
         android:id="@+id/senderName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
         android:textColor="@color/purple_500"
         android:layout_marginStart="10dp"
         android:shadowColor ="@color/black"

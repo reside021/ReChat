@@ -277,3 +277,8 @@ textarea{
     justify-content: space-between;
     align-items: center;
 }
+.senderName{
+    font-size: 0.95rem;
+    font-style: italic;
+    font-family: monospace;
+}

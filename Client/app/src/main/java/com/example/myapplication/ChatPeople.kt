@@ -6,26 +6,23 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewTreeObserver
-import android.view.WindowManager
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.*
-import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import com.example.myapplication.dataClasses.Msg
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.ActivityMain.Companion.sqliteHelper
-import com.example.myapplication.dataClasses.SuccessSetAvatar
+import com.example.myapplication.ActivityMain.Companion.webSocketClient
+import com.example.myapplication.adapters.MyAdapterForMsg
+import com.example.myapplication.dataClasses.Msg
 import com.example.myapplication.dataClasses.UpdateCountMsg
 import com.example.myapplication.interfaces.UploadImgMsg
+import com.example.myapplication.ui.UserFragment
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.squareup.picasso.Picasso
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -39,7 +36,9 @@ import java.time.LocalDateTime
 import java.util.*
 
 
-class ChatPeople : AppCompatActivity() {
+class ChatPeople :
+    AppCompatActivity(),
+    SharedPreferences.OnSharedPreferenceChangeListener{
     companion object{
         lateinit var mainWindowOuter: LinearLayout
         lateinit var scrollView: ScrollView
@@ -47,7 +46,7 @@ class ChatPeople : AppCompatActivity() {
     }
     private lateinit var animAlpha: Animation
     private lateinit var editTextMessage : EditText
-    private lateinit var mainWindowInclude : LinearLayout
+    private lateinit var listViewChat : ListView
     private lateinit var idUser : String
     private lateinit var nameOfUser : String
     private lateinit var dialog_id: String
@@ -55,44 +54,30 @@ class ChatPeople : AppCompatActivity() {
     private var hasImg : Boolean = false
     private lateinit var uriImg : Uri
     private lateinit var countNewMsg : String
+    private lateinit var dataOfMsg : MutableList<Array<String>>
+    private lateinit var adapterForChat : MyAdapterForMsg
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.chat_window)
         sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
+        sp.registerOnSharedPreferenceChangeListener(this)
         animAlpha = AnimationUtils.loadAnimation(this, R.anim.alpha)
         editTextMessage = findViewById(R.id.editTextMessage)
-        mainWindowInclude = findViewById(R.id.mainChatWindow)
+        listViewChat = findViewById(R.id.scrollChat)
         findViewById<ImageView>(R.id.choose_img_msg).setOnClickListener(chooseImgMsg)
         findViewById<ImageButton>(R.id.dltImgMsg).setOnClickListener(dltImgMsg)
         idUser = intent.extras?.getString("idTag").toString()
         nameOfUser = intent.extras?.getString("nameOfUser").toString()
         countNewMsg = intent.extras?.getString("countNewMsg").toString()
 
-        val queryImg = sp.getString("queryImg","0")
-        val toolBar : Toolbar = findViewById(R.id.toolbar)
-        val nameOfUserView = toolBar.findViewById<TextView>(R.id.nameOfUserThisChat)
-        nameOfUserView.setOnClickListener(openUserProfile)
-        val avatarUserView = toolBar.findViewById<ImageView>(R.id.avatarUserDialog)
-        avatarUserView.setOnClickListener(openUserProfile)
-        val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$idUser.jpg?time=$queryImg"
-        Picasso.get()
-            .load(urlAvatar)
-            .placeholder(R.drawable.user_photo_white)
-            .into(avatarUserView)
-        nameOfUserView.text = nameOfUser
-        setSupportActionBar(toolBar)
-        supportActionBar?.apply {
-            setDisplayHomeAsUpEnabled(true)
-            setDisplayShowHomeEnabled(true)
-        }
-        scrollView = findViewById(R.id.scrollChat)
-        mainWindowOuter = mainWindowInclude
+        workWithActionBar()
+
         dialog_id = sqliteHelper.getDialogIdWithUser(idUser)
         recoveryAllMsg(dialog_id)
     }
 
     private val openUserProfile = View.OnClickListener {
-        if(idUser == "0") return@OnClickListener
+        if(idUser == "0" || idUser.startsWith("G")) return@OnClickListener
         val intent = Intent(this, FriendsProfile::class.java);
         intent.putExtra("idTag", idUser)
         intent.putExtra("nameOfUser", nameOfUser)
@@ -149,60 +134,10 @@ class ChatPeople : AppCompatActivity() {
     }
 
     private fun recoveryAllMsg(dialog_id: String){
-        val ourTag = sp.getString("tagUser", null)
-        val dataOfMsg = sqliteHelper.getMsgWithUser(dialog_id)
-        for(el in dataOfMsg){
-            val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT)
-            var newView = inflater.inflate(R.layout.clearlayout, null)
-            when {
-                el[3] == "IMAGE" -> {
-                    val nameImg = el[1]
-                    var chatName = dialog_id.replace("#", "%23")
-                    chatName = chatName.replace("::", "--")
-                    val urlImg = "http://imagerc.ddns.net:80/userImgMsg/$chatName/$nameImg.jpg"
-                    var imageInMessage: ImageView
-                    if(el[0] != ourTag){
-                        var nameOfUser = sqliteHelper.getNameInUserChat(el[0])
-                        if (nameOfUser.isEmpty()){
-                            nameOfUser = resources.getString(R.string.user_name)
-                        }
-                        newView = inflater.inflate(R.layout.message_from_image, null)
-                        newView.findViewById<TextView>(R.id.senderName).text = nameOfUser
-                        imageInMessage = newView.findViewById(R.id.msgFromImage)
-                    } else{
-                        newView = inflater.inflate(R.layout.message_to_image, null)
-                        imageInMessage = newView.findViewById(R.id.msgToImage)
-                    }
-                    Picasso.get()
-                        .load(urlImg)
-                        .placeholder(R.drawable.error_image)
-                        .into(imageInMessage)
-                }
-                el[3] == "TEXT" -> {
-                    if(el[0] != ourTag){
-                        var nameOfUser = sqliteHelper.getNameInUserChat(el[0])
-                        if (nameOfUser.isEmpty()){
-                            nameOfUser = resources.getString(R.string.user_name)
-                        }
-                        newView = inflater.inflate(R.layout.message_from, null)
-                        newView.findViewById<TextView>(R.id.msgFrom).text = el[1]
-                        newView.findViewById<TextView>(R.id.senderName).text = nameOfUser
-                    } else{
-                        newView = inflater.inflate(R.layout.message_to, null)
-                        newView.findViewById<TextView>(R.id.msgTO).text = el[1]
-                    }
-                }
-            }
-            mainWindowInclude.addView(newView, lp)
-        }
-        scrollView.post {
-            Thread.sleep(250);
-            scrollView.fullScroll(View.FOCUS_DOWN)
-        }
-        if (countNewMsg.toInt() < 1) return
+        val ourTag = sp.getString("tagUser", null)!!
+        dataOfMsg = sqliteHelper.getMsgWithUser(dialog_id)
+        adapterForChat = MyAdapterForMsg(this,dataOfMsg, dialog_id, ourTag)
+        listViewChat.adapter = adapterForChat
         if(webSocketClient.connection.isClosed){
             Toast.makeText(
                 this@ChatPeople, "Отсутствует подключение к серверу",
@@ -216,7 +151,25 @@ class ChatPeople : AppCompatActivity() {
         }
     }
 
-
+    private fun workWithActionBar(){
+        val queryImg = sp.getString("queryImg","0")
+        val toolBar : Toolbar = findViewById(R.id.toolbar)
+        val nameOfUserView = toolBar.findViewById<TextView>(R.id.nameOfUserThisChat)
+        nameOfUserView.setOnClickListener(openUserProfile)
+        val avatarUserView = toolBar.findViewById<ImageView>(R.id.avatarUserDialog)
+        avatarUserView.setOnClickListener(openUserProfile)
+        val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$idUser.jpg?time=$queryImg"
+        Picasso.get()
+            .load(urlAvatar)
+            .placeholder(R.drawable.user_photo_white)
+            .into(avatarUserView)
+        nameOfUserView.text = nameOfUser
+        setSupportActionBar(toolBar)
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setDisplayShowHomeEnabled(true)
+        }
+    }
 
     fun onSendMsgClick(view: View) {
         view.startAnimation(animAlpha)
@@ -280,13 +233,13 @@ class ChatPeople : AppCompatActivity() {
                     }
                 })
             }else{
-                textMSG = editTextMessage.text.toString()
+                textMSG = editTextMessage.text.trim().toString()
                 val dataUser = Msg("MESSAGE_TO::",dialog_id,"TEXT", idUser, textMSG)
                 msg = Json.encodeToString(dataUser)
             }
 
-            if(textMSG.isEmpty()) return
-            if(msg.isEmpty()) return
+            if(textMSG.isBlank()) return
+            if(msg.isBlank()) return
 
             webSocketClient.send(msg)
         } catch (ex : Exception){ }
@@ -303,9 +256,6 @@ class ChatPeople : AppCompatActivity() {
                             .visibility = View.VISIBLE
                         val placeForImg = findViewById<ImageView>(R.id.addingImgMsg)
                         placeForImg.setImageURI(uriImg)
-                        scrollView.post(Runnable(){
-                            scrollView.fullScroll(View.FOCUS_DOWN)
-                        })
                         hasImg = true
                         editTextMessage.text.clear()
                         editTextMessage.isEnabled = false
@@ -318,5 +268,13 @@ class ChatPeople : AppCompatActivity() {
                 super.onActivityResult(requestCode, resultCode, data)
             }
         } catch (ex: Exception){ }
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        if(key.equals("newMsgForDisplay")){
+            val timeCreated = sp.getString(key,"")!!.toInt()
+            dataOfMsg.add(sqliteHelper.getLastMsgWithUser(dialog_id, timeCreated))
+            adapterForChat.notifyDataSetChanged()
+        }
     }
 }
