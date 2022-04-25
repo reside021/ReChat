@@ -89,6 +89,13 @@ const string CNFRMADD = "CNFRMADD::";
 const string ALLFRND = "ALLFRND::";
 const string FIND = "FIND::";
 const string COUNTMSG = "COUNTMSG::";
+const string VISIONDATA = "VISIONDATA::";
+const string GENDER = "GENDER::";
+const string BIRTHDAY = "BIRTHDAY::";
+const string SOCSTATUS = "SOCSTATUS::";
+const string COUNTRY = "COUNTRY::";
+const string ABOUTME = "ABOUTME::";
+const string ALLINFOUSERS = "ALLINFOUSERS::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -402,7 +409,54 @@ int main() {
                             {"countMsg", jsonData["countMsg"]}
                         };
                         string outgoingMessage = FORDB + SQL + UPDATE + COUNTMSG + (string)jsonOut.dump();
-                        cout << endl << outgoingMessage << endl;
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == VISIONDATA) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dataUpdated", jsonData["dataUpdated"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + VISIONDATA + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == GENDER) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dataUpdated", jsonData["dataUpdated"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + GENDER + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == BIRTHDAY) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dataUpdatedString", jsonData["dataUpdated"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + BIRTHDAY + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == SOCSTATUS) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dataUpdatedString", jsonData["dataUpdated"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + SOCSTATUS + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == COUNTRY) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dataUpdatedString", jsonData["dataUpdated"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + COUNTRY + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == ABOUTME) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dataUpdatedString", jsonData["dataUpdated"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + ABOUTME + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                 }
@@ -519,6 +573,15 @@ int main() {
                         string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLFRND + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
+                    if (jsonData["table"] == ALLINFOUSERS) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"needTagUser", jsonData["tagUser"]},
+                            {"isFriend", jsonData["isFriend"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLINFOUSERS + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
                 }
                 if (isResultFromDB(jsonData["type"])) {
                     if (jsonData["oper"] == SIGNUP) {
@@ -537,16 +600,9 @@ int main() {
                     if (jsonData["oper"] == AUTH) {
                         if (jsonData["success"]) {
                             string authorId = jsonData["authorId"];
-                            string name = jsonData["nickName"];
-                            string uId = jsonData["tag"];
-                            bool isVisible = jsonData["isVisible"];
-                            bool isAvatar = jsonData["isAvatar"];
                             string token = jsonData["token"];
                             json jsonOut = {
-                                {"nickname", name},
-                                {"tagUser", uId},
-                                {"isVisible", isVisible},
-                                {"isAvatar", isAvatar},
+                                {"dataUser", jsonData["dataUser"]},
                                 {"token", token}
                             };
                             string outgoingMsg = RESULTDB + AUTH + SUCCESS + (string)jsonOut.dump();
@@ -561,15 +617,8 @@ int main() {
                     if (jsonData["oper"] == AUTHTOKEN) {
                         if (jsonData["success"]) {
                             string authorId = jsonData["authorId"];
-                            string name = jsonData["nickName"];
-                            string uId = jsonData["tag"];
-                            bool isVisible = jsonData["isVisible"];
-                            bool isAvatar = jsonData["isAvatar"];
                             json jsonOut = {
-                                {"nickname", name},
-                                {"tagUser", uId},
-                                {"isVisible", isVisible},
-                                {"isAvatar", isAvatar}
+                                {"dataUser", jsonData["dataUser"]}
                             };
                             string outgoingMsg = AUTHTOKEN + SUCCESS + (string)jsonOut.dump();
                             ws->publish("user#" + authorId, RESULTDB + outgoingMsg, uWS::OpCode::TEXT, false);
@@ -632,6 +681,66 @@ int main() {
                                    {"countMsg", jsonData["countMsg"]}
                                 };
                                 string outgoingMsg = RESULTDB + UPDATE + SUCCESS + COUNTMSG + (string)jsonOut.dump();
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == VISIONDATA) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                json jsonOut = {
+                                   {"dataVisionOrGender", jsonData["dataVisionOrGender"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + VISIONDATA + (string)jsonOut.dump();
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == GENDER) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                json jsonOut = {
+                                   {"dataVisionOrGender", jsonData["dataVisionOrGender"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + GENDER + (string)jsonOut.dump();
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == BIRTHDAY) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                json jsonOut = {
+                                   {"dataUpdatedString", jsonData["dataUpdatedString"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + BIRTHDAY + (string)jsonOut.dump();
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == SOCSTATUS) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                json jsonOut = {
+                                   {"dataUpdatedString", jsonData["dataUpdatedString"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + SOCSTATUS + (string)jsonOut.dump();
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == COUNTRY) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                json jsonOut = {
+                                   {"dataUpdatedString", jsonData["dataUpdatedString"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + COUNTRY + (string)jsonOut.dump();
+                                ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == ABOUTME) {
+                            if (jsonData["success"]) {
+                                string authorId = jsonData["tagId"];
+                                json jsonOut = {
+                                   {"dataUpdatedString", jsonData["dataUpdatedString"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + ABOUTME + (string)jsonOut.dump();
                                 ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }
@@ -810,6 +919,21 @@ int main() {
                             }
                             else {
                                 string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + ALLFRND;
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["table"] == ALLINFOUSERS) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"dataUser", jsonData["dataUsers"]}
+                                };
+                                string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + ALLINFOUSERS + (string)jsonOut.dump();
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + ALLINFOUSERS;
                                 string tagUser = jsonData["tagUser"];
                                 ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
                             }

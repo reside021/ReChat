@@ -16,5 +16,7 @@ namespace WSClientDB.dataClasses
         public int countMsg { get; set; }
         public string dialog { get; set; }
         public string needTagUser { get; set; }
+        public int dataVisionOrGender { get; set; }
+        public string dataUpdatedString { get; set; }
     }
 }

@@ -5,7 +5,10 @@
     android:layout_height="match_parent"
     android:id="@+id/userFragment"
     tools:context="ui.UserFragment">
-
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -34,6 +37,7 @@
             android:textSize="35sp"
             android:layout_marginHorizontal="10dp"
             android:layout_marginBottom="10dp"
+            android:layout_gravity="center"
             android:paddingStart="15dp"
             android:paddingEnd="5dp"
             android:paddingBottom="5dp"
@@ -51,7 +55,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/tag"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:layout_marginHorizontal="10dp"
                 android:padding="5dp"
                 android:textColor="@color/colorPrimary"/>
@@ -79,11 +83,215 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/beOnline"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:layout_marginBottom="10dp"
             android:layout_marginHorizontal="10dp"
             android:paddingHorizontal="15dp"/>
+        <RelativeLayout
+            android:background="@drawable/round"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/data_visibility"
+                android:textSize="20sp"
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"
+                android:layout_alignParentStart="true"/>
+            <Spinner
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerVisible"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:gravity="end"
+                />
+        </RelativeLayout>
+        <RelativeLayout
+            android:background="@drawable/round"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/gender"
+                android:textSize="20sp"
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"
+                android:layout_alignParentStart="true"/>
+            <Spinner
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerGender"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:gravity="end"
+                />
+        </RelativeLayout>
+        <RelativeLayout
+            android:id="@+id/birthdayBlock"
+            android:background="@drawable/round"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
 
+            <TextView
+                android:id="@+id/birthdayClick"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:text="@string/birthday"
+                android:textColor="@color/colorPrimary"
+                android:textSize="20sp" />
+            <TextView
+                android:id="@+id/birthday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:textSize="22sp"
+                android:layout_marginHorizontal="15dp"
+                android:longClickable="true"/>
+        </RelativeLayout>
+        <RelativeLayout
+            android:background="@drawable/round"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
+            <TextView
+                android:id="@+id/socStatusClick"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/social_status"
+                android:textSize="20sp"
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"
+                android:layout_alignParentStart="true"/>
+            <TextView
+                android:id="@+id/socStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:textSize="22sp"
+                android:layout_marginHorizontal="15dp"
+                android:maxLength="15"
+                android:maxLines="1"/>
+        </RelativeLayout>
+        <RelativeLayout
+            android:background="@drawable/round"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
+            <TextView
+                android:id="@+id/countryClick"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/country"
+                android:textSize="20sp"
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"
+                android:layout_alignParentStart="true"/>
+            <TextView
+                android:id="@+id/country"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:textSize="22sp"
+                android:layout_marginHorizontal="15dp"
+                android:maxLines="1"
+                android:maxLength="18"/>
+        </RelativeLayout>
+        <RelativeLayout
+            android:background="@drawable/round"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/registration_date"
+                android:textSize="20sp"
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"
+                android:layout_alignParentStart="true"/>
+            <TextView
+                android:id="@+id/dateReg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:textSize="22sp"
+                android:layout_marginHorizontal="15dp"/>
+        </RelativeLayout>
+        <RelativeLayout
+            android:id="@+id/aboutmeBlock"
+            android:background="@drawable/round"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:backgroundTint="@color/white"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
+            <TextView
+                android:id="@+id/aboutMeClick"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/about_me"
+                android:textSize="20sp"
+                android:layout_marginHorizontal="10dp"
+                android:padding="5dp"
+                android:textColor="@color/colorPrimary"
+                android:layout_alignParentStart="true"/>
+
+            <TextView
+                android:id="@+id/aboutme"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/aboutMeClick"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginHorizontal="15dp"
+                android:textSize="22sp" />
+        </RelativeLayout>
     </LinearLayout>
+</ScrollView>
+
 
 </FrameLayout>

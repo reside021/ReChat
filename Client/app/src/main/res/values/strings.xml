@@ -5,7 +5,7 @@
     <string name="profile">Profile</string>
     <string name="chat">Chat</string>
     <string name="friends">Friends</string>
-    <string name="beOnline">Visible for everyone</string>
+    <string name="beOnline">Online for everyone</string>
     <string name="checkboxSignup">I agree to the terms of use and privacy policy</string>
     <string name="serverAccessOK">✅</string>
     <string name="serverAccessNot">❌</string>
@@ -44,4 +44,23 @@
     <string name="nameOfChat">Dialog name</string>
     <string name="create_a_dialog">Create a dialog</string>
     <string name="searchDlg">Enter a name or tag</string>
+    <string name="data_visibility">Data visibility</string>
+    <string name="gender">Gender</string>
+    <string name="birthday">Birthday</string>
+    <string name="social_status">Social status</string>
+    <string name="country">Country</string>
+    <string name="registration_date">Registration Date</string>
+    <string name="about_me">About me</string>
+    <string-array name="isVisibleData">
+        <item>All</item>
+        <item>Friends</item>
+        <item>Nobody</item>
+    </string-array>
+    <string-array name="gender">
+        <item>Unknown</item>
+        <item>Male</item>
+        <item>Female</item>
+        <item>Other</item>
+    </string-array>
+    <string name="editor">Editor</string>
 </resources>

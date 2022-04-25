@@ -1,11 +1,15 @@
 package com.example.myapplication.ui
 
 import android.app.AlertDialog
+import android.app.DatePickerDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
+import android.text.format.DateFormat
+import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,13 +18,13 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.R
-import com.example.myapplication.dataClasses.NewName
-import com.example.myapplication.dataClasses.UpdateVisible
-import com.squareup.picasso.MemoryPolicy
-import com.squareup.picasso.NetworkPolicy
+import com.example.myapplication.dataClasses.*
 import com.squareup.picasso.Picasso
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 
 class UserFragment : Fragment(){
@@ -35,7 +39,15 @@ class UserFragment : Fragment(){
     }
 
     private var fragmentSendDataListener: OnFragmentSendDataListener? = null
-
+    private lateinit var birthDay : TextView
+    private lateinit var socStatus : TextView
+    private lateinit var country : TextView
+    private lateinit var dateReg : TextView
+    private lateinit var aboutMe : TextView
+    private lateinit var spinnerVision : Spinner
+    private lateinit var spinnerGender : Spinner
+    private var spinnerVisionValue = 0
+    private var spinnerGenderValue = 0
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -51,7 +63,6 @@ class UserFragment : Fragment(){
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentSendDataListener?.onUserLoadView()
 
         val userName = requireView().findViewById<TextView>(R.id.nameOfUser)
         userName.setOnClickListener {
@@ -107,16 +118,215 @@ class UserFragment : Fragment(){
                 ).show()
             } catch (ex: Exception){}
         }
+        birthDay = requireView().findViewById(R.id.birthday)
+        requireView().findViewById<TextView>(R.id.birthdayClick).setOnClickListener {
+            val dateAndTime = Calendar.getInstance()
+            DatePickerDialog(
+                requireContext(), dateListner,
+                dateAndTime.get(Calendar.YEAR),
+                dateAndTime.get(Calendar.MONTH),
+                dateAndTime.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
+        socStatus = requireView().findViewById(R.id.socStatus)
+        requireView().findViewById<TextView>(R.id.socStatusClick).setOnClickListener {
+            val builder = AlertDialog.Builder(activity)
+            val newView = this.layoutInflater.inflate(R.layout.edit_text_helper, null)
+            val editTextHelper = newView.findViewById<EditText>(R.id.editTextHelper)
+            editTextHelper.hint = resources.getString(R.string.social_status)
+            editTextHelper.setText(socStatus.text)
+            builder.setView(newView)
+                .setPositiveButton("OK") { dialog, id ->
+                    if (editTextHelper.text == socStatus.text) return@setPositiveButton
+                    if(webSocketClient.connection.isClosed){
+                        Toast.makeText(
+                            activity, "Отсутствует подключение к серверу",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else{
+                        val updateSocStatus =
+                            UpdateDataString(
+                                "UPDATE::",
+                                "SOCSTATUS::",
+                                editTextHelper.text.toString())
+                        val dataServerName = Json.encodeToString(updateSocStatus)
+                        webSocketClient.send(dataServerName)
+                    }
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss()
+                }
+            builder.show()
+        }
+        country = requireView().findViewById(R.id.country)
+        requireView().findViewById<TextView>(R.id.countryClick).setOnClickListener {
+            val builder = AlertDialog.Builder(activity)
+            val newView = this.layoutInflater.inflate(R.layout.edit_text_helper, null)
+            val editTextHelper = newView.findViewById<EditText>(R.id.editTextHelper)
+            editTextHelper.inputType = InputType.TYPE_TEXT_VARIATION_PERSON_NAME
+            editTextHelper.hint = resources.getString(R.string.country)
+            editTextHelper.setText(country.text)
+            builder.setView(newView)
+                .setPositiveButton("OK") { dialog, id ->
+                    if (editTextHelper.text == country.text) return@setPositiveButton
+                    if(webSocketClient.connection.isClosed){
+                        Toast.makeText(
+                            activity, "Отсутствует подключение к серверу",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else{
+                        val updateCountry =
+                            UpdateDataString(
+                                "UPDATE::",
+                                "COUNTRY::",
+                                editTextHelper.text.toString())
+                        val dataServerName = Json.encodeToString(updateCountry)
+                        webSocketClient.send(dataServerName)
+                    }
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss()
+                }
+            builder.show()
+            true
+        }
+        aboutMe = requireView().findViewById(R.id.aboutme)
+        requireView().findViewById<TextView>(R.id.aboutMeClick).setOnClickListener {
+            val builder = AlertDialog.Builder(activity)
+            val newView = this.layoutInflater.inflate(R.layout.edit_text_helper_about, null)
+            val editTextHelper = newView.findViewById<EditText>(R.id.editTextHelper_about)
+            editTextHelper.hint = resources.getString(R.string.about_me)
+            editTextHelper.setText(aboutMe.text)
+            builder.setView(newView)
+                .setPositiveButton("OK") { dialog, id ->
+                    if (editTextHelper.text == aboutMe.text) return@setPositiveButton
+                    if(webSocketClient.connection.isClosed){
+                        Toast.makeText(
+                            activity, "Отсутствует подключение к серверу",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else{
+                        val updateAboutMe =
+                            UpdateDataString(
+                                "UPDATE::",
+                                "ABOUTME::",
+                                editTextHelper.text.toString())
+                        val dataServerName = Json.encodeToString(updateAboutMe)
+                        webSocketClient.send(dataServerName)
+                    }
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss()
+                }
+            builder.show()
+            true
+        }
+        spinnerVision = requireView().findViewById(R.id.spinnerVisible)
+        val adapterVision = ArrayAdapter.createFromResource(requireActivity(), R.array.isVisibleData,R.layout.spinner_element)
+        adapterVision.setDropDownViewResource(R.layout.spinner_dropdown_item)
+        spinnerVision.adapter = adapterVision
+        spinnerVision.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                if (spinnerVisionValue == position) return
+                if(webSocketClient.connection.isClosed){
+                    Toast.makeText(
+                        activity, "Отсутствует подключение к серверу",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else{
+                    val updateSpinner =
+                        UpdateSpinner("UPDATE::", "VISIONDATA::", position)
+                    val dataServerName = Json.encodeToString(updateSpinner)
+                    webSocketClient.send(dataServerName)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+
+        }
+        spinnerGender = requireView().findViewById(R.id.spinnerGender)
+        val adapterGender = ArrayAdapter.createFromResource(requireActivity(), R.array.gender,R.layout.spinner_element)
+        adapterGender.setDropDownViewResource(R.layout.spinner_dropdown_item)
+        spinnerGender.adapter = adapterGender
+        spinnerGender.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                if(spinnerGenderValue == position) return
+                if(webSocketClient.connection.isClosed){
+                    Toast.makeText(
+                        activity, "Отсутствует подключение к серверу",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else{
+                    val updateSpinner =
+                        UpdateSpinner("UPDATE::", "GENDER::", position)
+                    val dataServerName = Json.encodeToString(updateSpinner)
+                    webSocketClient.send(dataServerName)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+
+        }
+        dateReg = requireView().findViewById(R.id.dateReg)
+        fragmentSendDataListener?.onUserLoadView()
     }
 
+    private val dateListner = DatePickerDialog.OnDateSetListener { view, year, month, dayOfMonth ->
+        val date = if(month < 9){
+            "${dayOfMonth}.0${month + 1}.${year}"
+        }else{
+            "${dayOfMonth}.${month + 1}.${year}"
+        }
+        val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+        val dateCurrent = LocalDate.now()
+        val dateSet = LocalDate.parse(date, formatter)
+        if (dateCurrent > dateSet){
+            if(webSocketClient.connection.isClosed){
+                Toast.makeText(
+                    activity, "Отсутствует подключение к серверу",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else{
+                val updateBirthday =
+                    UpdateDataString("UPDATE::", "BIRTHDAY::", date)
+                val dataServerName = Json.encodeToString(updateBirthday)
+                webSocketClient.send(dataServerName)
+            }
+        }else{
+            Toast.makeText(
+                activity, "Невозможно установить эту дату",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
-    fun setUserData(tag : String, userName : String, isAvatar : Boolean,
-                    urlAvatar : String, isVisible : Boolean){
-        requireView().findViewById<TextView>(R.id.nameOfUser).text = userName
-        requireView().findViewById<TextView>(R.id.tagOfUser).text = tag
+    fun setUserData(data: Data, urlAvatar : String){
+        requireView().findViewById<TextView>(R.id.nameOfUser).text = data.nickname
+        requireView().findViewById<TextView>(R.id.tagOfUser).text = data.tagUser
+        birthDay.text = data.birthday
+        socStatus.text = data.socStatus
+        country.text = data.country
+        dateReg.text = data.dateReg
+        aboutMe.text = data.aboutMe
+        spinnerVisionValue = data.isVisionData
+        spinnerGenderValue = data.gender
+        spinnerVision.setSelection(spinnerVisionValue)
+        spinnerGender.setSelection(spinnerGenderValue)
         val switchBeOnline = requireView().findViewById<SwitchCompat>(R.id.switchBeOnline)
-        switchBeOnline.isChecked = isVisible
-        if(isAvatar){
+        switchBeOnline.isChecked = data.isVisible
+        if(data.isAvatar){
             val imageOfUser = requireView().findViewById<ImageView>(R.id.imageOfUser)
             Picasso.get()
                     .load(urlAvatar)
@@ -168,5 +378,25 @@ class UserFragment : Fragment(){
 
     fun setNewVisible(newVisible : Boolean){
         requireView().findViewById<SwitchCompat>(R.id.switchBeOnline).isChecked = newVisible
+    }
+    fun setNewVisionData(newData : Int){
+        spinnerVisionValue = newData
+        spinnerVision.setSelection(spinnerVisionValue)
+    }
+    fun setNewGender(newData : Int){
+        spinnerGenderValue = newData
+        spinnerGender.setSelection(spinnerGenderValue)
+    }
+    fun setBirthday(newData : String){
+        birthDay.text = newData
+    }
+    fun setSocStatus(newData : String){
+        socStatus.text = newData
+    }
+    fun setCountry(newData : String){
+        country.text = newData
+    }
+    fun setAboutMe(newData : String){
+        aboutMe.text = newData
     }
 }

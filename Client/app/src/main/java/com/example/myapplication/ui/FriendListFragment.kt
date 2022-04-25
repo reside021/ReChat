@@ -56,8 +56,9 @@ class FriendListFragment : Fragment() {
         listViewFriends.adapter = myAdapterForFriends
     }
 
-    override fun onStart() {
-        super.onStart()
+
+    override fun onResume() {
+        super.onResume()
         fragmentSendDataListener?.onFriendsListLoadView()
     }
 }

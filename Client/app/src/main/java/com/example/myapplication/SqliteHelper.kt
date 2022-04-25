@@ -48,7 +48,15 @@ class SqliteHelper(context: Context) :
                 "$RANG INTEGER)"
         db?.execSQL(tableUserDlg)
 
-
+        val tableAllUserInfo = "CREATE TABLE IF NOT EXISTS $ALLUSERINFOTABLE " +
+                "($TAG_USER TEXT PRIMARY KEY," +
+                "$GENDERUSER INTEGER, " +
+                "$BIRTHDAYUSER TEXT, " +
+                "$SOCSTATUSUSER INTEGER," +
+                "$COUNTRYUSER TEXT," +
+                "$DATEREGUSER TEXT," +
+                "$ABOUTMEUSER TEXT)"
+        db?.execSQL(tableAllUserInfo)
     }
 
 
@@ -58,6 +66,7 @@ class SqliteHelper(context: Context) :
         db?.execSQL("DROP TABLE IF EXISTS $MSGDLGTABLE")
         db?.execSQL("DROP TABLE IF EXISTS $USERDLGTABLE")
         db?.execSQL("DROP TABLE IF EXISTS $FRIENDSTABLE")
+        db?.execSQL("DROP TABLE IF EXISTS $ALLUSERINFOTABLE")
         onCreate(db)
     }
 
@@ -69,8 +78,53 @@ class SqliteHelper(context: Context) :
         db.delete(USERDLGTABLE, null,null)
         db.delete(LIST_USERS_CHAT, null,null)
         db.delete(FRIENDSTABLE, null,null)
+        db.delete(ALLUSERINFOTABLE, null,null)
     }
 
+    fun addAllUserInfo(dataUser: Data){
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(GENDERUSER, dataUser.gender)
+        values.put(BIRTHDAYUSER, dataUser.birthday)
+        values.put(SOCSTATUSUSER, dataUser.socStatus)
+        values.put(COUNTRYUSER, dataUser.country)
+        values.put(DATEREGUSER, dataUser.dateReg)
+        values.put(ABOUTMEUSER, dataUser.aboutMe)
+        values.put(TAG_USER, dataUser.tagUser)
+        db.insert(ALLUSERINFOTABLE, null, values)
+        db.close()
+    }
+    fun clearAllUserInfo(){
+        val db = this.writableDatabase
+        db.delete(ALLUSERINFOTABLE, null,null)
+    }
+    fun getAllUserInfo(tagUser: String): MutableMap<String, String>{
+        val allUser = mutableMapOf<String, String>()
+        val db = readableDatabase
+        val selectALLQuery = "SELECT * FROM $ALLUSERINFOTABLE WHERE $TAG_USER = '$tagUser'"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    allUser[GENDERUSER] = cursor.getString(cursor.getColumnIndexOrThrow(
+                        GENDERUSER))
+                    allUser[BIRTHDAYUSER] = cursor.getString(cursor.getColumnIndexOrThrow(
+                        BIRTHDAYUSER))
+                    allUser[SOCSTATUSUSER] = cursor.getString(cursor.getColumnIndexOrThrow(
+                        SOCSTATUSUSER))
+                    allUser[COUNTRYUSER] = cursor.getString(cursor.getColumnIndexOrThrow(
+                        COUNTRYUSER))
+                    allUser[DATEREGUSER] = cursor.getString(cursor.getColumnIndexOrThrow(
+                        DATEREGUSER))
+                    allUser[ABOUTMEUSER] = cursor.getString(cursor.getColumnIndexOrThrow(
+                        ABOUTMEUSER))
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return allUser
+    }
     fun addUserInOnline(tagId : String, username : String) : Boolean{
         val db = this.writableDatabase
         val values = ContentValues()
@@ -91,7 +145,6 @@ class SqliteHelper(context: Context) :
                 do {
                     val idTag = cursor.getString(cursor.getColumnIndexOrThrow(TAG_USER))
                     val nameuser = cursor.getString(cursor.getColumnIndexOrThrow(NAME_USER))
-                    Log.d("__WWWWWW__", "$nameuser")
                     allUser.add(idTag to nameuser)
                 } while (cursor.moveToNext())
             }
@@ -480,7 +533,7 @@ class SqliteHelper(context: Context) :
 
     companion object {
         private val DB_NAME = "UserChat"
-        private val DB_VERSION = 5;
+        private val DB_VERSION = 7
 
         private val ONLINE_USERS = "OnlineUsers" // tablename
         private val TAG_USER = "Tag_Of_User" // field in table
@@ -511,6 +564,14 @@ class SqliteHelper(context: Context) :
         private val FRNDNAME = "friendName" // field in table
 
         private val CHAT = "CHAT#"
+
+        private val ALLUSERINFOTABLE = "allUserInfoTable"
+        private val GENDERUSER = "genderUser"
+        private val BIRTHDAYUSER = "birthdayUser"
+        private val SOCSTATUSUSER = "socStatusUser"
+        private val COUNTRYUSER = "countryUser"
+        private val DATEREGUSER = "dateRegUser"
+        private val ABOUTMEUSER = "aboutMeUser"
 
     }
 }

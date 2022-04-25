@@ -30,12 +30,17 @@
                 android:layout_height="wrap_content"
                 android:text="@string/request" />
         </com.google.android.material.tabs.TabLayout>
-
-        <FrameLayout
-            android:id="@+id/host_fragmentListFriends"
+        <androidx.viewpager2.widget.ViewPager2
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@id/tabsFriends" />
+            android:id="@+id/viewPager2"
+            android:layout_below="@id/tabsFriends"/>
+
+<!--        <FrameLayout-->
+<!--            android:id="@+id/host_fragmentListFriends"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:layout_below="@id/tabsFriends" />-->
 
     </RelativeLayout>
 </FrameLayout>

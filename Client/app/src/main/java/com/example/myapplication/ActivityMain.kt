@@ -65,7 +65,7 @@ class ActivityMain :
     companion object {
         const val WEB_SOCKET_URL = "ws://servchat.ddns.net:9001"
         const val IMAGE_REQUEST = 1
-        const val VERSION_APP = "0.5"
+        const val VERSION_APP = "0.6"
         lateinit var webSocketClient : WebSocketClient
         lateinit var sqliteHelper: SqliteHelper
     }
@@ -179,7 +179,6 @@ class ActivityMain :
 
 
     override fun onUserLoadView() {
-        val userName = sp.getString("nickname", resources.getString(R.string.user_name))!!
         val isAvatar = sp.getBoolean("isAvatar", false)
         val queryImg = sp.getString("queryImg","0")
         val urlAvatar = if(isAvatar){
@@ -187,10 +186,25 @@ class ActivityMain :
         } else{
             ""
         }
-        val isVisible = sp.getBoolean("isVisible", false)
+        val data = Data(
+            sp.getString("nickname", resources.getString(R.string.user_name))!!,
+            tagUser,
+            sp.getBoolean("isVisible", false),
+            isAvatar,
+            sp.getInt("isVisionData",0),
+            sp.getInt("gender",0),
+            sp.getString("birthday", "")!!,
+            sp.getString("socStatus", "")!!,
+            sp.getString("country", "")!!,
+            sp.getString("dateReg", "")!!,
+            sp.getString("aboutMe", "")!!,
+        )
         val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
-        fragment.setUserData(tagUser, userName, isAvatar, urlAvatar, isVisible)
+        fragment.setUserData(data, urlAvatar)
     }
+
+
+
     override fun onChatLoadView() {
         val queryImg  = sp.getString("queryImg","0")!!
         val myAdapterForChat = MyAdapterForChat(tagUser, queryImg)
@@ -209,19 +223,22 @@ class ActivityMain :
     override fun onFriendsListLoadView() {
         val queryImg  = sp.getString("queryImg","0")!!
         val myAdapterForFriends = MyAdapterForFriends(tagUser, queryImg)
-        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as FriendListFragment
+        val fragmentParent = supportFragmentManager.findFragmentById(R.id.host_fragment) as FriendsFragment
+        val fragment = fragmentParent.getElement(0) as FriendListFragment
         fragment.setUserData(myAdapterForFriends)
     }
     override fun onUserListLoadView() {
         val queryImg  = sp.getString("queryImg","0")!!
         val myAdapterForUsers = MyAdapterForUsers(queryImg)
-        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as UserListFragment
+        val fragmentParent = supportFragmentManager.findFragmentById(R.id.host_fragment) as FriendsFragment
+        val fragment = fragmentParent.getElement(1) as UserListFragment
         fragment.setUserData(myAdapterForUsers)
     }
     override fun onFrndListRequestLoadView() {
         val queryImg  = sp.getString("queryImg","0")!!
         val myAdapterForRequest = MyAdapterForRequest(tagUser, queryImg)
-        val fragment = supportFragmentManager.findFragmentById(R.id.host_fragmentListFriends) as FrndListRequestFragment
+        val fragmentParent = supportFragmentManager.findFragmentById(R.id.host_fragment) as FriendsFragment
+        val fragment = fragmentParent.getElement(2) as FrndListRequestFragment
         fragment.setUserData(myAdapterForRequest)
     }
 
@@ -374,6 +391,48 @@ class ActivityMain :
             val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as ChatFragment
             if(fragment.isVisible){
                 fragment.onStart()
+            }
+        }
+        if(key.equals("changeVisionData")){
+            val newData = sp.getInt("isVisionData", 0)
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            if(fragment.isVisible){
+                fragment.setNewVisionData(newData)
+            }
+        }
+        if(key.equals("changeGender")){
+            val newData = sp.getInt("gender", 0)
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            if(fragment.isVisible){
+                fragment.setNewGender(newData)
+            }
+        }
+        if(key.equals("changeBirthday")){
+            val newData = sp.getString("birthday", "")!!
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            if(fragment.isVisible){
+                fragment.setBirthday(newData)
+            }
+        }
+        if(key.equals("changeSocStatus")){
+            val newData = sp.getString("socStatus", "")!!
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            if(fragment.isVisible){
+                fragment.setSocStatus(newData)
+            }
+        }
+        if(key.equals("changeCountry")){
+            val newData = sp.getString("country", "")!!
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            if(fragment.isVisible){
+                fragment.setCountry(newData)
+            }
+        }
+        if(key.equals("changeAboutMe")){
+            val newData = sp.getString("aboutMe", "")!!
+            val fragment = supportFragmentManager.findFragmentById(R.id.host_fragment) as UserFragment
+            if(fragment.isVisible){
+                fragment.setAboutMe(newData)
             }
         }
     }
@@ -535,6 +594,66 @@ class ActivityMain :
                             val jsonData = msg.substringAfter("::")
                             val newData = Json.decodeFromString<ConfirmUpdateCountMsg>(jsonData)
                             sqliteHelper.UpdateCountMsg(newData)
+                        }
+                        if (msg.substringBefore("::") == "VISIONDATA") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json
+                                .decodeFromString<ConfirmVisionOrGenderUpdated>(jsonData)
+                                .dataVisionOrGender
+                            val ed = sp.edit()
+                            ed.putInt("isVisionData", newData)
+                            ed.putString("changeVisionData", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
+                        if (msg.substringBefore("::") == "GENDER") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json
+                                .decodeFromString<ConfirmVisionOrGenderUpdated>(jsonData)
+                                .dataVisionOrGender
+                            val ed = sp.edit()
+                            ed.putInt("gender", newData)
+                            ed.putString("changeGender", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
+                        if (msg.substringBefore("::") == "BIRTHDAY") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json
+                                .decodeFromString<ConfirmDataUpdated>(jsonData)
+                                .dataUpdatedString
+                            val ed = sp.edit()
+                            ed.putString("birthday", newData)
+                            ed.putString("changeBirthday", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
+                        if (msg.substringBefore("::") == "SOCSTATUS") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json
+                                .decodeFromString<ConfirmDataUpdated>(jsonData)
+                                .dataUpdatedString
+                            val ed = sp.edit()
+                            ed.putString("socStatus", newData)
+                            ed.putString("changeSocStatus", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
+                        if (msg.substringBefore("::") == "COUNTRY") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json
+                                .decodeFromString<ConfirmDataUpdated>(jsonData)
+                                .dataUpdatedString
+                            val ed = sp.edit()
+                            ed.putString("country", newData)
+                            ed.putString("changeCountry", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
+                        if (msg.substringBefore("::") == "ABOUTME") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json
+                                .decodeFromString<ConfirmDataUpdated>(jsonData)
+                                .dataUpdatedString
+                            val ed = sp.edit()
+                            ed.putString("aboutMe", newData)
+                            ed.putString("changeAboutMe", LocalDateTime.now().toString())
+                            ed.apply()
                         }
                     }
                     if (status == "ERROR") {
@@ -747,8 +866,23 @@ class ActivityMain :
                                 sqliteHelper.addUserInFriendDW(el)
                             }
                         }
+                        if (msg.substringBefore("::") == "ALLINFOUSERS") {
+                            val jsonData = msg.substringAfter("::")
+                            val obj = Json.decodeFromString<DataUserDeviceAuth>(jsonData)
+                            val dataUser = obj.dataUser
+                            sqliteHelper.addAllUserInfo(dataUser)
+                            val ed = sp.edit()
+                            ed.putString("changeDataOfUser", LocalDateTime.now().toString())
+                            Log.d("__WWW__", "changeDataOfUser")
+                            ed.apply()
+                        }
                     }
                     if (status == "ERROR") {
+                        if (msg.substringBefore("::") == "ALLINFOUSERS") {
+                            val ed = sp.edit()
+                            ed.putString("changeDataOfUser", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
                     }
                 }
                 if (typeOper == "FRND"){
@@ -902,27 +1036,34 @@ class ActivityMain :
                 webSocketClient.send(dataServerName)
             }
         } catch (ex: Exception){
-            Log.d("____QQQQ____", "${ex.message}")
         }
     }
 
     private fun deviceAuth(data: String){
         try {
             val obj = Json.decodeFromString<DataUserDeviceAuth>(data)
+            val dataUser = obj.dataUser
             val ed = sp.edit()
-            ed.putString("nickname", obj.nickname)
-            ed.putString("tagUser", obj.tagUser)
-            ed.putBoolean("isVisible", obj.isVisible)
-            ed.putBoolean("isAvatar", obj.isAvatar)
+            ed.putString("nickname", dataUser.nickname)
+            ed.putString("tagUser", dataUser.tagUser)
+            ed.putBoolean("isVisible", dataUser.isVisible)
+            ed.putBoolean("isAvatar", dataUser.isAvatar)
+            ed.putInt("isVisionData", dataUser.isVisionData)
+            ed.putInt("gender", dataUser.gender)
+            ed.putString("birthday", dataUser.birthday)
+            ed.putString("socStatus", dataUser.socStatus)
+            ed.putString("country", dataUser.country)
+            ed.putString("dateReg", dataUser.dateReg)
+            ed.putString("aboutMe", dataUser.aboutMe)
             ed.putBoolean("isAuth", true)
             ed.apply()
             val confirmAuth = ConfirmAuth(
                 "AUTH::",
                 true,
-                obj.nickname,
-                obj.tagUser,
-                obj.isVisible,
-                getJwt(obj.tagUser))
+                dataUser.nickname,
+                dataUser.tagUser,
+                dataUser.isVisible,
+                getJwt(dataUser.tagUser))
             var msg = Json.encodeToString(confirmAuth)
             tagUser = sp.getString("tagUser", null)!!
 
@@ -934,7 +1075,7 @@ class ActivityMain :
 
             if(!webSocketClient.connection.isClosed){
                 webSocketClient.send(msg)
-                val queryAllDlg = QueryAllDlg("DOWNLOAD::", "ALLDLG::", obj.tagUser, sp.getString("tokenQuery","")!!)
+                val queryAllDlg = QueryAllDlg("DOWNLOAD::", "ALLDLG::", dataUser.tagUser, sp.getString("tokenQuery","")!!)
                 msg = Json.encodeToString(queryAllDlg)
                 webSocketClient.send(msg)
             }
@@ -947,23 +1088,32 @@ class ActivityMain :
         }
     }
     private fun authorization(data: String){
-        try {
+        try
+        {
             val obj = Json.decodeFromString<DataOfUser>(data)
+            val dataUser = obj.dataUser
             val ed = sp.edit()
-            ed.putString("nickname", obj.nickname)
-            ed.putString("tagUser", obj.tagUser)
-            ed.putBoolean("isVisible", obj.isVisible)
-            ed.putBoolean("isAvatar", obj.isAvatar)
+            ed.putString("nickname", dataUser.nickname)
+            ed.putString("tagUser", dataUser.tagUser)
+            ed.putBoolean("isVisible", dataUser.isVisible)
+            ed.putBoolean("isAvatar", dataUser.isAvatar)
+            ed.putInt("isVisionData", dataUser.isVisionData)
+            ed.putInt("gender", dataUser.gender)
+            ed.putString("birthday", dataUser.birthday)
+            ed.putString("socStatus", dataUser.socStatus)
+            ed.putString("country", dataUser.country)
+            ed.putString("dateReg", dataUser.dateReg)
+            ed.putString("aboutMe", dataUser.aboutMe)
             ed.putString("token", obj.token)
             ed.putBoolean("isAuth", true)
             ed.apply()
             val confirmAuth = ConfirmAuth(
                 "AUTH::",
                 true,
-                obj.nickname,
-                obj.tagUser,
-                obj.isVisible,
-                getJwt(obj.tagUser))
+                dataUser.nickname,
+                dataUser.tagUser,
+                dataUser.isVisible,
+                getJwt(dataUser.tagUser))
             var msg = Json.encodeToString(confirmAuth)
 
             tagUser = sp.getString("tagUser", null)!!
@@ -979,18 +1129,16 @@ class ActivityMain :
                 val queryAllDlg = QueryAllDlg(
                     "DOWNLOAD::",
                     "ALLDLG::",
-                    obj.tagUser,
+                    dataUser.tagUser,
                     sp.getString("tokenQuery","")!!
                 )
                 msg = Json.encodeToString(queryAllDlg)
                 webSocketClient.send(msg)
             }
-        } catch (ex: Exception){
-            Toast.makeText(
-                this@ActivityMain,
-                ex.message,
-                Toast.LENGTH_SHORT
-            ).show()
+        }
+        catch (ex: Exception)
+        {
+
         }
     }
     private fun getJwt(tagUser : String) : String{

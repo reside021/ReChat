@@ -40,6 +40,13 @@ namespace WSClientDB
         const string ALLFRND = "ALLFRND::";
         const string FIND = "FIND::";
         const string COUNTMSG = "COUNTMSG::";
+        const string VISIONDATA = "VISIONDATA::";
+        const string GENDER = "GENDER::";
+        const string BIRTHDAY = "BIRTHDAY::";
+        const string SOCSTATUS = "SOCSTATUS::";
+        const string COUNTRY = "COUNTRY::";
+        const string ABOUTME = "ABOUTME::";
+        const string ALLINFOUSERS = "ALLINFOUSERS::";
 
         static WebSocket webSocket;
         static SqlConnection sqlConnection;
@@ -47,7 +54,6 @@ namespace WSClientDB
 
         static void Main(string[] args)
         {
-
             webSocket = new WebSocket("ws://servchat.ddns.net:9001/");
             webSocket.Opened += WebSocket_Opened;
             webSocket.Error += WebSocket_Error;
@@ -70,7 +76,7 @@ namespace WSClientDB
             {
                 sqlConnection.Open();
                 sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = "Insert into InfoUsers values(@taguser, @nickuser, @isVisible, @isAvatar)";
+                sqlCommand.CommandText = "Insert into InfoUsers values(@taguser, @nickuser, @isVisible, @isAvatar, 0, 0, @birthday, @socStatus, @country, @dateReg, @aboutMe)";
                 SqlParameter sqlParameter = new SqlParameter("@taguser", tagUser);
                 sqlCommand.Parameters.Add(sqlParameter);
                 SqlParameter sqlParameter1 = new SqlParameter("@nickuser", nickUser);
@@ -79,13 +85,26 @@ namespace WSClientDB
                 sqlCommand.Parameters.Add(sqlParameter2);
                 SqlParameter sqlParameter3 = new SqlParameter("@isAvatar", false);
                 sqlCommand.Parameters.Add(sqlParameter3);
+                SqlParameter sqlParameter4 = new SqlParameter("@dateReg", DateTime.UtcNow.ToShortDateString());
+                sqlCommand.Parameters.Add(sqlParameter4);
+                SqlParameter sqlParameter5 = new SqlParameter("@birthday", "");
+                sqlCommand.Parameters.Add(sqlParameter5);
+                SqlParameter sqlParameter6 = new SqlParameter("@socStatus", "");
+                sqlCommand.Parameters.Add(sqlParameter6);
+                SqlParameter sqlParameter7 = new SqlParameter("@country", "");
+                sqlCommand.Parameters.Add(sqlParameter7);
+                SqlParameter sqlParameter8 = new SqlParameter("@aboutMe", "");
+                sqlCommand.Parameters.Add(sqlParameter8);
                 sqlCommand.ExecuteNonQuery();
                 sqlCommand.Parameters.Clear();
                 sqlConnection.Close();
                 check_1 = true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
+
+                sqlCommand.Parameters.Clear();
                 sqlConnection.Close();
                 check_1 = false;
             }
@@ -107,8 +126,11 @@ namespace WSClientDB
                 sqlConnection.Close();
                 check_2 = true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
+
+                sqlCommand.Parameters.Clear();
                 sqlConnection.Close();
                 check_2 = false;
             }
@@ -290,27 +312,32 @@ namespace WSClientDB
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText = 
-                @"Select u.loginUser, u.passUser, i.nickUser, u.tagUser, i.isVisible, i.isAvatar from UsersData as u 
+                @"Select u.loginUser, u.passUser, i.nickUser, u.tagUser, i.isVisible, i.isAvatar, i.isVisionData, i.gender, i.birthday, i.socialStatus, i.country, i.dateRegistration, i.aboutMe from UsersData as u 
                     inner join InfoUsers as i
                     on i.tagUser = u.tagUser
                     where loginUser = @login";
             SqlParameter sqlParameter = new SqlParameter("@login", loginUser);
             sqlCommand.Parameters.Add(sqlParameter);
             SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
-            string loginDB = "", passDB = "", nickDB = "", tagDB = "";
-            bool isVisible = false;
-            bool isAvatar = false;
+            string passDB = "";
+            Data dataUsers = new Data();
             ResultDB result = new ResultDB();
             if (sqlDataReader.HasRows)
             {
                 while (sqlDataReader.Read())
                 {
-                    loginDB = sqlDataReader.GetString(0);
                     passDB = sqlDataReader.GetString(1);
-                    nickDB = sqlDataReader.GetString(2);
-                    tagDB = sqlDataReader.GetString(3);
-                    isVisible = sqlDataReader.GetBoolean(4);
-                    isAvatar = sqlDataReader.GetBoolean(5);
+                    dataUsers.nickname = sqlDataReader.GetString(2);
+                    dataUsers.tagUser = sqlDataReader.GetString(3);
+                    dataUsers.isVisible = sqlDataReader.GetBoolean(4);
+                    dataUsers.isAvatar = sqlDataReader.GetBoolean(5);
+                    dataUsers.isVisionData = sqlDataReader.GetInt32(6);
+                    dataUsers.gender = sqlDataReader.GetInt32(7);
+                    dataUsers.birthday = sqlDataReader.GetString(8);
+                    dataUsers.socStatus = sqlDataReader.GetString(9);
+                    dataUsers.country = sqlDataReader.GetString(10);
+                    dataUsers.dateReg = sqlDataReader.GetDateTime(11).ToShortDateString();
+                    dataUsers.aboutMe = sqlDataReader.GetString(12);
                 }
                 if(passDB == passUser)
                 {
@@ -318,11 +345,8 @@ namespace WSClientDB
                     result.oper = AUTH;
                     result.success = true;
                     result.authorId = authorUser;
-                    result.tag = tagDB;
-                    result.isVisible = isVisible;
-                    result.isAvatar = isAvatar;
-                    result.nickName = nickDB;
-                    result.token = getToken(tagDB);
+                    result.token = getToken(dataUsers.tagUser);
+                    result.dataUser = dataUsers;
                     string jsonResult = JsonConvert.SerializeObject(result);
                     webSocket.Send(jsonResult);
                 }
@@ -354,13 +378,13 @@ namespace WSClientDB
                 sqlCommand.CommandText = "Update UsersData set deviceToken = @token where tagUser = @tagUser";
                 sqlParameter = new SqlParameter("@token", result.token);
                 sqlCommand.Parameters.Add(sqlParameter);
-                SqlParameter sqlParameter1 = new SqlParameter("@tagUser", tagDB);
+                SqlParameter sqlParameter1 = new SqlParameter("@tagUser", dataUsers.tagUser);
                 sqlCommand.Parameters.Add(sqlParameter1);
                 sqlCommand.ExecuteNonQuery();
                 sqlCommand.Parameters.Clear();
                 sqlConnection.Close();
             }
-            Console.WriteLine($"[MSG] -> AUTH^{nickDB}_{tagDB} -> {result.success}");
+            Console.WriteLine($"[MSG] -> AUTH^{dataUsers.nickname}_{dataUsers.tagUser} -> {result.success}");
         }
         private static List<string> GetInfoAboutDialogs(string tagUser)
         {
@@ -748,34 +772,36 @@ namespace WSClientDB
             sqlConnection.Open();
             sqlCommand.Connection = sqlConnection;
             sqlCommand.CommandText =
-                @"Select i.nickUser, u.tagUser, i.isVisible, i.isAvatar from UsersData as u 
+                @"Select i.nickUser, u.tagUser, i.isVisible, i.isAvatar, i.isVisionData, i.gender, i.birthday, i.socialStatus, i.country, i.dateRegistration, i.aboutMe from UsersData as u 
                     inner join InfoUsers as i
                     on i.tagUser = u.tagUser
                     where u.deviceToken = @deviceToken";
             SqlParameter sqlParameter1 = new SqlParameter("@deviceToken", token);
             sqlCommand.Parameters.Add(sqlParameter1);
             SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
-            string nickDB = "", tagDB = "";
-            bool isVisible = false;
-            bool isAvatar = false;
+            Data dataUsers = new Data();
             ResultDB result = new ResultDB();
             if (sqlDataReader.HasRows)
             {
                 while (sqlDataReader.Read())
                 {
-                    nickDB = sqlDataReader.GetString(0);
-                    tagDB = sqlDataReader.GetString(1);
-                    isVisible = sqlDataReader.GetBoolean(2);
-                    isAvatar = sqlDataReader.GetBoolean(3);
+                    dataUsers.nickname = sqlDataReader.GetString(0);
+                    dataUsers.tagUser = sqlDataReader.GetString(1);
+                    dataUsers.isVisible = sqlDataReader.GetBoolean(2);
+                    dataUsers.isAvatar = sqlDataReader.GetBoolean(3);
+                    dataUsers.isVisionData = sqlDataReader.GetInt32(4);
+                    dataUsers.gender = sqlDataReader.GetInt32(5);
+                    dataUsers.birthday = sqlDataReader.GetString(6);
+                    dataUsers.socStatus = sqlDataReader.GetString(7);
+                    dataUsers.country = sqlDataReader.GetString(8);
+                    dataUsers.dateReg = sqlDataReader.GetDateTime(9).ToShortDateString();
+                    dataUsers.aboutMe = sqlDataReader.GetString(10);
                 }
                 result.type = RESULTDB;
                 result.oper = AUTHTOKEN;
                 result.success = true;
                 result.authorId = userTag;
-                result.tag = tagDB;
-                result.isVisible = isVisible;
-                result.isAvatar = isAvatar;
-                result.nickName = nickDB;
+                result.dataUser = dataUsers;
                 string jsonResult = JsonConvert.SerializeObject(result);
                 webSocket.Send(jsonResult);
             }
@@ -791,7 +817,7 @@ namespace WSClientDB
 
             sqlCommand.Parameters.Clear();
             sqlConnection.Close();
-            Console.WriteLine($"[MSG] -> DeviceAuth^{tagDB}");
+            Console.WriteLine($"[MSG] -> DeviceAuth^{dataUsers.tagUser}");
         }
         private static void WorkWithFrnd(ActionsWithFrnd actionsWithFrnd)
         {
@@ -965,6 +991,59 @@ namespace WSClientDB
             webSocket.Send(jsonResult);
             Console.WriteLine($"[MSG] -> DownLoadFriends^{tagUser} ({dataOfFriends.success})");
         }
+        private static void SelectDataForAllInfoUsers(string tagUser, string needTagUser,  bool isFriend)
+        {
+            DataOfAllinfoUsers dataOfAllinfoUsers = new DataOfAllinfoUsers();
+            dataOfAllinfoUsers.type = RESULTDB;
+            dataOfAllinfoUsers.oper = DOWNLOAD;
+            dataOfAllinfoUsers.table = ALLINFOUSERS;
+            dataOfAllinfoUsers.tagUser = tagUser;
+            dataOfAllinfoUsers.success = false;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"select * from InfoUsers where tagUser = @tagUser";
+                SqlParameter sqlParameter = new SqlParameter("@tagUser", needTagUser);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                Data dataUsers = new Data();
+                if (sqlDataReader.HasRows)
+                {
+                    while (sqlDataReader.Read())
+                    {
+                        int isVisionData = sqlDataReader.GetInt32(4);
+                        if (isVisionData == 0 || isFriend)
+                        {
+                            if (isVisionData == 2) break;
+                            dataUsers.tagUser = sqlDataReader.GetString(0);
+                            dataUsers.nickname = sqlDataReader.GetString(1);
+                            dataUsers.isVisible = false;
+                            dataUsers.isAvatar = sqlDataReader.GetBoolean(3);
+                            dataUsers.isVisionData = isVisionData;
+                            dataUsers.gender = sqlDataReader.GetInt32(5);
+                            dataUsers.birthday = sqlDataReader.GetString(6);
+                            dataUsers.socStatus = sqlDataReader.GetString(7);
+                            dataUsers.country = sqlDataReader.GetString(8);
+                            dataUsers.dateReg = sqlDataReader.GetDateTime(9).ToShortDateString();
+                            dataUsers.aboutMe = sqlDataReader.GetString(10);
+                            dataOfAllinfoUsers.success = true;
+                            dataOfAllinfoUsers.dataUsers = dataUsers;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                dataOfAllinfoUsers.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(dataOfAllinfoUsers);    
+            webSocket.Send(jsonResult);
+        }
         private static void FindFriend(UpdateFriend updateFriend)
         {
             ResultActionFrnd resultActionFrnd = new ResultActionFrnd();
@@ -1038,6 +1117,198 @@ namespace WSClientDB
                     sqlCommand.Parameters.Add(sqlParameter4);
                     sqlCommand.ExecuteNonQuery();
                 }
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void UpdateVisionData(UpdateVandG updateVandG)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = VISIONDATA;
+            successUpdate.tagId = updateVandG.tagUser;
+            successUpdate.dataVisionOrGender = updateVandG.dataUpdated;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update InfoUsers set isVisionData = @dataUpdated where tagUser = @needTagUser";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateVandG.dataUpdated);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter3 = new SqlParameter("@needTagUser", updateVandG.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void UpdateGenderData(UpdateVandG updateVandG)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = GENDER;
+            successUpdate.tagId = updateVandG.tagUser;
+            successUpdate.dataVisionOrGender = updateVandG.dataUpdated;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update InfoUsers set gender = @dataUpdated where tagUser = @needTagUser";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateVandG.dataUpdated);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter3 = new SqlParameter("@needTagUser", updateVandG.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void UpdateBirthday(UpdateDataString updateDataString)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = BIRTHDAY;
+            successUpdate.tagId = updateDataString.tagUser;
+            successUpdate.dataUpdatedString = updateDataString.dataUpdatedString;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update InfoUsers set birthday = @dataUpdated where tagUser = @needTagUser";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateDataString.dataUpdatedString);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter3 = new SqlParameter("@needTagUser", updateDataString.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void UpdateSocStatus(UpdateDataString updateDataString)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = SOCSTATUS;
+            successUpdate.tagId = updateDataString.tagUser;
+            successUpdate.dataUpdatedString = updateDataString.dataUpdatedString;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update InfoUsers set socialStatus = @dataUpdated where tagUser = @needTagUser";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateDataString.dataUpdatedString);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter3 = new SqlParameter("@needTagUser", updateDataString.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void UpdateCountry(UpdateDataString updateDataString)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = COUNTRY;
+            successUpdate.tagId = updateDataString.tagUser;
+            successUpdate.dataUpdatedString = updateDataString.dataUpdatedString;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update InfoUsers set country = @dataUpdated where tagUser = @needTagUser";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateDataString.dataUpdatedString);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter3 = new SqlParameter("@needTagUser", updateDataString.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void UpdateAboutMe(UpdateDataString updateDataString)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = ABOUTME;
+            successUpdate.tagId = updateDataString.tagUser;
+            successUpdate.dataUpdatedString = updateDataString.dataUpdatedString;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update InfoUsers set aboutMe = @dataUpdated where tagUser = @needTagUser";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateDataString.dataUpdatedString);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter3 = new SqlParameter("@needTagUser", updateDataString.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
                 sqlCommand.Parameters.Clear();
                 successUpdate.success = true;
             }
@@ -1135,6 +1406,12 @@ namespace WSClientDB
                             DownLoadAllDlg downLoadAllDlg = JsonConvert.DeserializeObject<DownLoadAllDlg>(message);
                             SelectDataForAllFriends(downLoadAllDlg.tagUser, downLoadAllDlg.token);
                         }
+                        if (message.IndexOf(ALLINFOUSERS) != -1)
+                        {
+                            message = message.Substring(ALLINFOUSERS.Length);
+                            DownloadInfoUsers downloadInfoUsers = JsonConvert.DeserializeObject<DownloadInfoUsers>(message);
+                            SelectDataForAllInfoUsers(downloadInfoUsers.tagUser, downloadInfoUsers.needTagUser, downloadInfoUsers.isFriend);
+                        }
                     }
                     if (message.IndexOf(FRND) != -1)
                     {
@@ -1183,6 +1460,42 @@ namespace WSClientDB
                         message = message.Substring(COUNTMSG.Length);
                         UpdateCountMsg updateCountMsg = JsonConvert.DeserializeObject<UpdateCountMsg>(message);
                         UpdateCountMessage(updateCountMsg);
+                    }
+                    if (message.IndexOf(VISIONDATA) != -1)
+                    {
+                        message = message.Substring(VISIONDATA.Length);
+                        UpdateVandG updateVandG = JsonConvert.DeserializeObject<UpdateVandG>(message);
+                        UpdateVisionData(updateVandG);
+                    }
+                    if (message.IndexOf(GENDER) != -1)
+                    {
+                        message = message.Substring(GENDER.Length);
+                        UpdateVandG updateVandG = JsonConvert.DeserializeObject<UpdateVandG>(message);
+                        UpdateGenderData(updateVandG);
+                    }
+                    if (message.IndexOf(BIRTHDAY) != -1)
+                    {
+                        message = message.Substring(BIRTHDAY.Length);
+                        UpdateDataString updateDataString = JsonConvert.DeserializeObject<UpdateDataString>(message);
+                        UpdateBirthday(updateDataString);
+                    }
+                    if (message.IndexOf(SOCSTATUS) != -1)
+                    {
+                        message = message.Substring(SOCSTATUS.Length);
+                        UpdateDataString updateDataString = JsonConvert.DeserializeObject<UpdateDataString>(message);
+                        UpdateSocStatus(updateDataString);
+                    }
+                    if (message.IndexOf(COUNTRY) != -1)
+                    {
+                        message = message.Substring(COUNTRY.Length);
+                        UpdateDataString updateDataString = JsonConvert.DeserializeObject<UpdateDataString>(message);
+                        UpdateCountry(updateDataString);
+                    }
+                    if (message.IndexOf(ABOUTME) != -1)
+                    {
+                        message = message.Substring(ABOUTME.Length);
+                        UpdateDataString updateDataString = JsonConvert.DeserializeObject<UpdateDataString>(message);
+                        UpdateAboutMe(updateDataString);
                     }
                 }
                 if (message.IndexOf(DELETE) != -1)

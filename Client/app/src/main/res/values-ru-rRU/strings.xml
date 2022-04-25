@@ -5,7 +5,7 @@
     <string name="profile">Профиль</string>
     <string name="chat">Чат</string>
     <string name="friends">Друзья</string>
-    <string name="beOnline">Видимость для всех</string>
+    <string name="beOnline">Онлайн для всех</string>
     <string name="deletethischat">Удалить этот чат</string>
     <string name="serverAccessOK">✅</string>
     <string name="serverAccessNot">❌</string>
@@ -40,4 +40,23 @@
     <string name="nameOfChat">Название чата</string>
     <string name="create_a_dialog">Создать диалог</string>
     <string name="searchDlg">Введите имя или тег</string>
+    <string name="data_visibility">Видимость данных</string>
+    <string name="gender">Пол</string>
+    <string name="birthday">День рождения</string>
+    <string name="social_status">Соцстатус</string>
+    <string name="country">Страна</string>
+    <string name="registration_date">Дата регистрации</string>
+    <string name="about_me">О себе</string>
+    <string name="editor">Редактор</string>
+    <string-array name="isVisibleData">
+        <item>Все</item>
+        <item>Друзья</item>
+        <item>Никто</item>
+    </string-array>
+    <string-array name="gender">
+        <item>Неизвестно</item>
+        <item>Мужской</item>
+        <item>Женский</item>
+        <item>Другой</item>
+    </string-array>
 </resources>

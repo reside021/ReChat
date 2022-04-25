@@ -21,6 +21,7 @@
             android:layout_height="match_parent"
             android:layout_below="@id/searchField"
             android:background="@color/backgroundColor"
-            android:paddingTop="5dp"/>
+            android:paddingTop="5dp"
+            android:divider="@color/white"/>
     </RelativeLayout>
 </FrameLayout>

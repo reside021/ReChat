@@ -19,5 +19,5 @@
         android:backgroundTint="@color/white"
         android:id="@+id/newnameuser"
         android:hint="@string/UserName"
-        style="@style/editTextSignLogin"/>
+        style="@style/editText"/>
 </LinearLayout>
