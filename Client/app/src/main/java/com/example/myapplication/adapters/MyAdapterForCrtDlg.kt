@@ -10,14 +10,11 @@ import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 import com.example.myapplication.R
 import com.squareup.picasso.Picasso
 
-class MyAdapterForCrtDlg(_ourTag : String) : BaseAdapter(), Filterable {
-    private val ourTag = _ourTag
-    private val data = sqliteHelper.getAllFriends(ourTag).toList()
+class MyAdapterForCrtDlg(data: List<Pair<String, String>>) : BaseAdapter(), Filterable {
     private var listFiltered : List<Pair<String, String>> = data
     private var list : List<Pair<String, String>> = data
     private var listChecked : MutableList<String> = mutableListOf()
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        Log.d("__qwe__", "myadapterforchat")
         val context = parent?.context!!
         val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val newView : View = layoutInflater.inflate(R.layout.crt_dlg_element, parent, false)

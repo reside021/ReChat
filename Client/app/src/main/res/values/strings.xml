@@ -43,7 +43,7 @@
     <string name="icon_cross" translatable="false">❌</string>
     <string name="nameOfChat">Dialog name</string>
     <string name="create_a_dialog">Create a dialog</string>
-    <string name="searchDlg">Enter a name or tag</string>
+    <string name="searchDlg">Enter a name</string>
     <string name="data_visibility">Data visibility</string>
     <string name="gender">Gender</string>
     <string name="birthday">Birthday</string>
@@ -63,4 +63,17 @@
         <item>Other</item>
     </string-array>
     <string name="editor">Editor</string>
+    <string name="title">Title</string>
+    <string name="log_out_chat">log out of the chat</string>
+    <string name="delete_chat">Delete chat</string>
+    <string name="add_a_user">Add a users</string>
+    <string name="select_the_users_to_add">Select the users to add</string>
+    <string name="loading_please_wait">Loading, please wait</string>
+    <string name="log_out">Log Out</string>
+    <string-array name="rangAccess">
+        <item>Reader</item>
+        <item>User</item>
+        <item>Moderator</item>
+        <item>Admin</item>
+    </string-array>
 </resources>

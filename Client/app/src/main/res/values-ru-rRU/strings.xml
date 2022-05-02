@@ -39,7 +39,7 @@
     <string name="status_connect">Подключение к серверу:</string>
     <string name="nameOfChat">Название чата</string>
     <string name="create_a_dialog">Создать диалог</string>
-    <string name="searchDlg">Введите имя или тег</string>
+    <string name="searchDlg">Введите имя</string>
     <string name="data_visibility">Видимость данных</string>
     <string name="gender">Пол</string>
     <string name="birthday">День рождения</string>
@@ -59,4 +59,17 @@
         <item>Женский</item>
         <item>Другой</item>
     </string-array>
+    <string name="title">Название</string>
+    <string name="log_out_chat">Выйти из чата</string>
+    <string name="delete_chat">Удалить чат</string>
+    <string name="add_a_user">Добавить пользователей</string>
+    <string name="select_the_users_to_add">Выберите пользователей для добавления</string>
+    <string-array name="rangAccess">
+        <item>Читатель</item>
+        <item>Пользователь</item>
+        <item>Модератор</item>
+        <item>Админ</item>
+    </string-array>
+    <string name="loading_please_wait">Загрузка, пожалуйста, подождите</string>
+    <string name="log_out">Выход</string>
 </resources>

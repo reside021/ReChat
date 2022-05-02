@@ -96,6 +96,12 @@ const string SOCSTATUS = "SOCSTATUS::";
 const string COUNTRY = "COUNTRY::";
 const string ABOUTME = "ABOUTME::";
 const string ALLINFOUSERS = "ALLINFOUSERS::";
+const string TITLEDIALOG = "TITLEDIALOG::";
+const string TAGUSERSGROUP = "TAGUSERSGROUP::";
+const string ADDUSERDLG = "ADDUSERDLG::";
+const string DLTUSERDLG = "DLTUSERDLG::";
+const string DLTCHAT = "DLTCHAT::";
+const string RANGUSER = "RANGUSER::";
 
 // Какую информацию о пользователе мы храним
 struct PerSocketData {
@@ -201,6 +207,9 @@ bool isResultFromDB(string message) {
 }
 bool isUpdate(string message) {
     return message.find(UPDATE) == 0;
+}
+bool isAddUserDlg(string message) {
+    return message.find(ADDUSERDLG) == 0;
 }
 
 string parseIsVisible(bool isVisible) {
@@ -459,6 +468,41 @@ int main() {
                         string outgoingMessage = FORDB + SQL + UPDATE + ABOUTME + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
+                    if (jsonData["objectUpdate"] == TITLEDIALOG) {
+                        json jsonOut = {
+                            {"dataUpdatedString", jsonData["dataUpdated"]},
+                            {"dialog_id", jsonData["dialog_id"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + TITLEDIALOG + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == DLTUSERDLG) {
+                        json jsonOut = {
+                            {"dialog_id", jsonData["dialog_id"]},
+                            {"tagUser", jsonData["tagUser"]},
+                            {"authorId", authorId}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + DLTUSERDLG + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == DLTCHAT) {
+                        json jsonOut = {
+                            {"dialog_id", jsonData["dialog_id"]},
+                            {"authorId", authorId}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + DLTCHAT + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["objectUpdate"] == RANGUSER) {
+                        json jsonOut = {
+                            {"dialog_id", jsonData["dialog_id"]},
+                            {"authorId", authorId},
+                            {"tagUser", jsonData["tagUser"]},
+                            {"dataUpdated", jsonData["dataUpdated"]}
+                        };
+                        string outgoingMessage = FORDB + SQL + UPDATE + RANGUSER + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
                 }
                 if (isConnectionServerDB(jsonData["type"])) {
                     if (isTrustServer(jsonData["key"])) {
@@ -534,6 +578,20 @@ int main() {
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                 }
+                if (isAddUserDlg(jsonData["type"])) {
+                    if (IsServerDBNotActive()) {
+                        ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
+                        return;
+                    }
+                    string tagUser = authorId;
+                    json jsonOut = {
+                            {"tagUsers", jsonData["tagUsers"]},
+                            {"tagUser", tagUser},
+                            {"dialog_id", jsonData["dialog_id"]}
+                    };
+                    string outgoingMessage = FORDB + SQL + INSERT + ADDUSERDLG + (string)jsonOut.dump();
+                    ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                }
                 if (isDownLoadData(jsonData["type"])) {
                     if (IsServerDBNotActive()) {
                         ws->publish("user#" + authorId, DBNOTACTIVE, uWS::OpCode::TEXT, false);
@@ -580,6 +638,14 @@ int main() {
                             {"isFriend", jsonData["isFriend"]}
                         };
                         string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + ALLINFOUSERS + (string)jsonOut.dump();
+                        ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
+                    }
+                    if (jsonData["table"] == TAGUSERSGROUP) {
+                        json jsonOut = {
+                            {"tagUser", authorId},
+                            {"dialog", jsonData["dialog"]},
+                        };
+                        string outgoingMessage = FORDB + SQL + SELECT + DOWNLOAD + TAGUSERSGROUP + (string)jsonOut.dump();
                         ws->publish("user#999", outgoingMessage, uWS::OpCode::TEXT, false);
                     }
                 }
@@ -742,6 +808,51 @@ int main() {
                                 };
                                 string outgoingMsg = RESULTDB + UPDATE + SUCCESS + ABOUTME + (string)jsonOut.dump();
                                 ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == TITLEDIALOG) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                   {"dataUpdatedString", jsonData["dataUpdatedString"]},
+                                   {"dialog_id", jsonData["dialog"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + TITLEDIALOG + (string)jsonOut.dump();
+                                for (string tagUser : jsonData["needTagUsers"]) {
+                                    ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                                }
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == DLTUSERDLG) {
+                            string tagUser = jsonData["tagId"];
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"dialog_id", jsonData["dialog"]},
+                                    {"tagUser", jsonData["needTagUser"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + DLTUSERDLG + (string)jsonOut.dump();
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == DLTCHAT) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"dialog_id", jsonData["dialog"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + DLTCHAT + (string)jsonOut.dump();
+                                for (string tagUser : jsonData["needTagUsers"]) {
+                                    ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                                }
+                            }
+                        }
+                        if (jsonData["typeUpdate"] == RANGUSER) {
+                            if (jsonData["success"]) {
+                                string tagUser = jsonData["needTagUser"];
+                                json jsonOut = {
+                                   {"dataUpdated", jsonData["dataUpdatedString"]},
+                                   {"dialog_id", jsonData["dialog"]}
+                                };
+                                string outgoingMsg = RESULTDB + UPDATE + SUCCESS + RANGUSER + (string)jsonOut.dump();
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }
                     }
@@ -938,6 +1049,21 @@ int main() {
                                 ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
                         }
+                        if (jsonData["table"] == TAGUSERSGROUP) {
+                            if (jsonData["success"]) {
+                                json jsonOut = {
+                                    {"data", jsonData["data"]}
+                                };
+                                string outgoingMsg = RESULTDB + DOWNLOAD + SUCCESS + TAGUSERSGROUP + (string)jsonOut.dump();
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                            else {
+                                string outgoingMsg = RESULTDB + DOWNLOAD + _ERROR + TAGUSERSGROUP;
+                                string tagUser = jsonData["tagUser"];
+                                ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                            }
+                        }
                     }
                     if (jsonData["oper"] == FRND) {
                         if (jsonData["typeAction"] == ADD) {
@@ -1022,6 +1148,48 @@ int main() {
                                 string tagUserSender = jsonData["tagUserSender"];
                                 ws->publish("user#" + tagUserSender, outgoingMsg, uWS::OpCode::TEXT, false);
                             }
+                        }
+                    }
+                    if (jsonData["oper"] == ADDUSERDLG) {
+                        if (jsonData["success"]) {
+                            json jsonOut = {
+                                    {"Icreater", true},
+                                    {"dialog_id", jsonData["dialog_id"]},
+                                    {"userManager", jsonData["userManager"]},
+                                    {"enteredTime",jsonData["enteredTime"]},
+                                    {"userCompanion", jsonData["userCompanion"]},
+                                    {"countMsg", 0},
+                                    {"lastTimeMsg", jsonData["lastTimeMsg"]},
+                                    {"typeOfDlg", jsonData["typeOfDlg"]},
+                                    {"rang", 1},
+                                    {"nameOfChat", jsonData["nameOfChat"]}
+                            };
+                            string outgoingMsg = RESULTDB + INSERT + SUCCESS + ADDUSERDLG + (string)jsonOut.dump();
+                            string userManager = jsonData["userManager"];
+                            ws->publish("user#" + userManager, outgoingMsg, uWS::OpCode::TEXT, false);
+                            json jsonOut2 = {
+                                    {"Icreater", false},
+                                    {"dialog_id", jsonData["dialog_id"]},
+                                    {"userManager", jsonData["userManager"]},
+                                    {"enteredTime",jsonData["enteredTime"]},
+                                    {"userCompanion", jsonData["userCompanion"]},
+                                    {"countMsg", 0},
+                                    {"lastTimeMsg", jsonData["lastTimeMsg"]},
+                                    {"typeOfDlg", jsonData["typeOfDlg"]},
+                                    {"rang", 1},
+                                    {"nameOfChat", jsonData["nameOfChat"]}
+                            };
+                            string outgoingMsg2 = RESULTDB + INSERT + SUCCESS + ADDUSERDLG + (string)jsonOut2.dump();
+                            for (string tagUser : jsonData["userCompanion"]) {
+                                if (userManager != tagUser) {
+                                    ws->publish("user#" + tagUser, outgoingMsg, uWS::OpCode::TEXT, false);
+                                }
+                            }
+                        }
+                        else {
+                            string outgoingMsg = RESULTDB + INSERT + _ERROR + ADDUSERDLG;
+                            string authorId = jsonData["userManager"];
+                            ws->publish("user#" + authorId, outgoingMsg, uWS::OpCode::TEXT, false);
                         }
                     }
                 }

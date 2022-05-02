@@ -59,8 +59,9 @@ class FrndListRequestFragment() : Fragment(),
         listViewFrndRequest.adapter = myAdapterForRequest
     }
 
-    override fun onStart() {
-        super.onStart()
+
+    override fun onResume() {
+        super.onResume()
         fragmentSendDataListener?.onFrndListRequestLoadView()
     }
 

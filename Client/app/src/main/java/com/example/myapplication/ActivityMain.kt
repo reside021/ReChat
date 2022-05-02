@@ -7,16 +7,11 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import com.example.myapplication.ChatPeople.Companion.mainWindowOuter
-import com.example.myapplication.ChatPeople.Companion.scrollView
 import com.example.myapplication.adapters.MyAdapterForChat
 import com.example.myapplication.adapters.MyAdapterForFriends
 import com.example.myapplication.adapters.MyAdapterForRequest
@@ -26,7 +21,6 @@ import com.example.myapplication.interfaces.*
 import com.example.myapplication.ui.*
 import com.gauravk.bubblenavigation.BubbleNavigationLinearView
 import com.github.dhaval2404.imagepicker.ImagePicker
-import com.squareup.picasso.Picasso
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
@@ -65,7 +59,7 @@ class ActivityMain :
     companion object {
         const val WEB_SOCKET_URL = "ws://servchat.ddns.net:9001"
         const val IMAGE_REQUEST = 1
-        const val VERSION_APP = "0.6"
+        const val VERSION_APP = "0.7"
         lateinit var webSocketClient : WebSocketClient
         lateinit var sqliteHelper: SqliteHelper
     }
@@ -203,6 +197,12 @@ class ActivityMain :
         fragment.setUserData(data, urlAvatar)
     }
 
+    override fun exitFromAccount() {
+        sqliteHelper.clearTable()
+        sp.edit().clear().apply()
+        loadFragment(3)
+        webSocketClient.reconnect()
+    }
 
 
     override fun onChatLoadView() {
@@ -655,6 +655,50 @@ class ActivityMain :
                             ed.putString("changeAboutMe", LocalDateTime.now().toString())
                             ed.apply()
                         }
+                        if (msg.substringBefore("::") == "TITLEDIALOG") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json.decodeFromString<ConfirmUpdateTitleDialog>(jsonData)
+                            sqliteHelper.updateNameInUserChat(newData.dialog_id, newData.dataUpdatedString)
+                            val ed = sp.edit()
+                            ed.putString("newTitleDialog", newData.dataUpdatedString)
+                            ed.putString("changeTitleDialog", LocalDateTime.now().toString())
+                            ed.apply()
+                        }
+                        if (msg.substringBefore("::") == "DLTUSERDLG") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json.decodeFromString<ConfirmDltUserDlg>(jsonData)
+                            if (tagUser == newData.tagUser)
+                            {
+                                sqliteHelper.deleteUserChat(newData.dialog_id.substringAfter("#"))
+                                val ed = sp.edit()
+                                ed.putString("changeUserDlg", LocalDateTime.now().toString())
+                                ed.apply()
+                                sqliteHelper.deleteFromDlgTable(newData.dialog_id)
+                                sqliteHelper.deleteFromMsgTable(newData.dialog_id)
+                            }
+                            else
+                            {
+                                sqliteHelper.deleteDataGroupInfo(newData.tagUser)
+                                val ed = sp.edit()
+                                ed.putString("changeDataGroupInfo", LocalDateTime.now().toString())
+                                ed.apply()
+                            }
+                        }
+                        if (msg.substringBefore("::") == "DLTCHAT") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json.decodeFromString<ConfirmDeleteDlg>(jsonData)
+                            sqliteHelper.deleteUserChat(newData.dialog_id.substringAfter("#"))
+                            val ed = sp.edit()
+                            ed.putString("changeUserDlg", LocalDateTime.now().toString())
+                            ed.apply()
+                            sqliteHelper.deleteFromDlgTable(newData.dialog_id)
+                            sqliteHelper.deleteFromMsgTable(newData.dialog_id)
+                        }
+                        if (msg.substringBefore("::") == "RANGUSER") {
+                            val jsonData = msg.substringAfter("::")
+                            val newData = Json.decodeFromString<ConfirmUpdateRangUser>(jsonData)
+                            sqliteHelper.updateRangUser(newData.dataUpdated.toInt(),newData.dialog_id)
+                        }
                     }
                     if (status == "ERROR") {
                         if (msg == "NEWNAME::") {
@@ -765,6 +809,48 @@ class ActivityMain :
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
+                        if (msg.substringBefore("::") == "ADDUSERDLG") {
+                            val jsonData = msg.substringAfter("::")
+                            val msg = Json.decodeFromString<ConfirmInsertNewUserDlg>(jsonData)
+                            val tagChat = msg.dialog_id.substringAfter("#")
+                            if (msg.Icreater) {
+                                for(tagUser in msg.userCompanion){
+                                    sqliteHelper.addDataGroupInfo(DataAboutUsersInGroup(tagUser, msg.rang))
+                                }
+                                val ed = sp.edit()
+                                ed.putString("changeDataGroupInfo", LocalDateTime.now().toString())
+                                ed.apply()
+                            }
+                            else{
+                                sqliteHelper.addUserInDLG(
+                                    msg.dialog_id,
+                                    tagChat,
+                                    msg.enteredTime,
+                                    msg.countMsg,
+                                    msg.lastTimeMsg,
+                                    msg.typeOfDlg,
+                                    msg.rang
+                                )
+                                if (sqliteHelper.checkUserInChat(tagChat)) return
+                                sqliteHelper.addUserInChat(tagChat to msg.nameOfChat)
+
+                                val ed = sp.edit()
+                                ed.putString("changeUserDlg", LocalDateTime.now().toString())
+                                ed.apply()
+                            }
+
+                            val dialog_ids : MutableList<String> = mutableListOf(msg.dialog_id)
+                            val queryAllTagName = QueryAllTagName(
+                                "DOWNLOAD::",
+                                "ALLTAGNAME::",
+                                dialog_ids,
+                                sp.getString("tokenQuery","")!!
+                            )
+                            if (!webSocketClient.connection.isClosed) {
+                                val dataServerName = Json.encodeToString(queryAllTagName)
+                                webSocketClient.send(dataServerName)
+                            }
+                        }
                     }
                     if (status == "ERROR") {
                         if (msg.substringBefore("::") == "NEWUSERDLG") {
@@ -843,6 +929,11 @@ class ActivityMain :
                                     el.timeCreated
                                 )
                             }
+                            if(bubbleNav.currentActiveItemPosition in 0..2){
+                                loadFragment(bubbleNav.currentActiveItemPosition)
+                            } else{
+                                loadFragment(0)
+                            }
                         }
                         if (msg.substringBefore("::") == "ALLTAGNAME") {
                             val jsonData = msg.substringAfter("::")
@@ -850,7 +941,7 @@ class ActivityMain :
                             if (!checkVerifyJWT(msg.token)) return;
                             val dataOfNickname: List<DataOfNickName> = msg.listOfData
                             for (el in dataOfNickname) {
-                                if (sqliteHelper.checkUserInChat(el.tagUser)) break
+                                if (sqliteHelper.checkUserInChat(el.tagUser)) continue
                                 sqliteHelper.addUserInChat(el.tagUser to el.nickUser)
                             }
                             val ed = sp.edit()
@@ -873,7 +964,18 @@ class ActivityMain :
                             sqliteHelper.addAllUserInfo(dataUser)
                             val ed = sp.edit()
                             ed.putString("changeDataOfUser", LocalDateTime.now().toString())
-                            Log.d("__WWW__", "changeDataOfUser")
+                            ed.apply()
+                        }
+                        if (msg.substringBefore("::") == "TAGUSERSGROUP") {
+                            val jsonData = msg.substringAfter("::")
+                            val obj = Json.decodeFromString<DownloadDataAboutGroup>(jsonData)
+                            val data = obj.data
+                            sqliteHelper.clearDataGroupInfo()
+                            for (el in data){
+                                sqliteHelper.addDataGroupInfo(el)
+                            }
+                            val ed = sp.edit()
+                            ed.putString("changeDataGroupInfo", LocalDateTime.now().toString())
                             ed.apply()
                         }
                     }
@@ -1067,11 +1169,6 @@ class ActivityMain :
             var msg = Json.encodeToString(confirmAuth)
             tagUser = sp.getString("tagUser", null)!!
 
-            if(bubbleNav.currentActiveItemPosition in 0..2){
-                loadFragment(bubbleNav.currentActiveItemPosition)
-            } else{
-             loadFragment(0)
-            }
 
             if(!webSocketClient.connection.isClosed){
                 webSocketClient.send(msg)
@@ -1118,11 +1215,6 @@ class ActivityMain :
 
             tagUser = sp.getString("tagUser", null)!!
 
-            if(bubbleNav.currentActiveItemPosition in 0..2){
-                loadFragment(bubbleNav.currentActiveItemPosition)
-            } else{
-                loadFragment(0)
-            }
 
             if(!webSocketClient.connection.isClosed){
                 webSocketClient.send(msg)

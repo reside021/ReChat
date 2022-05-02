@@ -57,6 +57,11 @@ class SqliteHelper(context: Context) :
                 "$DATEREGUSER TEXT," +
                 "$ABOUTMEUSER TEXT)"
         db?.execSQL(tableAllUserInfo)
+
+        val tableDataGroupInfo = "CREATE TABLE IF NOT EXISTS $DATAGROUPINFO " +
+                "($TAG_USER TEXT PRIMARY KEY," +
+                "$RANG INTEGER)"
+        db?.execSQL(tableDataGroupInfo)
     }
 
 
@@ -67,6 +72,7 @@ class SqliteHelper(context: Context) :
         db?.execSQL("DROP TABLE IF EXISTS $USERDLGTABLE")
         db?.execSQL("DROP TABLE IF EXISTS $FRIENDSTABLE")
         db?.execSQL("DROP TABLE IF EXISTS $ALLUSERINFOTABLE")
+        db?.execSQL("DROP TABLE IF EXISTS $DATAGROUPINFO")
         onCreate(db)
     }
 
@@ -79,8 +85,55 @@ class SqliteHelper(context: Context) :
         db.delete(LIST_USERS_CHAT, null,null)
         db.delete(FRIENDSTABLE, null,null)
         db.delete(ALLUSERINFOTABLE, null,null)
+        db.delete(DATAGROUPINFO, null,null)
     }
 
+    fun addDataGroupInfo(data: DataAboutUsersInGroup){
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(TAG_USER, data.tagUser)
+        values.put(RANG, data.rang)
+        db.insert(DATAGROUPINFO, null, values)
+        db.close()
+    }
+    fun clearDataGroupInfo(){
+        val db = this.writableDatabase
+        db.delete(DATAGROUPINFO, null,null)
+    }
+    fun getDataGroupInfo(): MutableList<DataGroupDB>{
+        val allInfo = mutableListOf<DataGroupDB>()
+        val db = readableDatabase
+        val selectALLQuery = "SELECT D.$TAG_USER, L.$NAME_USER, D.$RANG FROM $DATAGROUPINFO AS D INNER JOIN $LIST_USERS_CHAT AS L ON D.$TAG_USER = L.$TAG_USER"
+        val cursor = db.rawQuery(selectALLQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    val _tagUser = cursor.getString(cursor.getColumnIndexOrThrow(TAG_USER))
+                    val _nameUser = cursor.getString(cursor.getColumnIndexOrThrow(NAME_USER))
+                    val _rang = cursor.getInt(cursor.getColumnIndexOrThrow(RANG))
+                    allInfo.add(DataGroupDB(_tagUser, _nameUser, _rang))
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return allInfo
+    }
+    fun deleteDataGroupInfo(tagUser: String){
+        val db = this.writableDatabase
+        db.delete(DATAGROUPINFO, "$TAG_USER = ?", arrayOf(tagUser))
+        db.close()
+    }
+    fun deleteFromDlgTable(dialogID: String){
+        val db = this.writableDatabase
+        db.delete(USERDLGTABLE, "$DIALOG_ID = ?", arrayOf(dialogID))
+        db.close()
+    }
+    fun deleteFromMsgTable(dialogID: String){
+        val db = this.writableDatabase
+        db.delete(MSGDLGTABLE, "$DIALOG_ID = ?", arrayOf(dialogID))
+        db.close()
+    }
     fun addAllUserInfo(dataUser: Data){
         val db = this.writableDatabase
         val values = ContentValues()
@@ -531,9 +584,57 @@ class SqliteHelper(context: Context) :
         db.close()
     }
 
+    fun checkAccess(dialogID: String) : Int{
+        val dialog_id : String = "$GROUP$dialogID"
+        var rang = 1
+        val db = this.readableDatabase
+        val selectQuery = "SELECT $RANG FROM $USERDLGTABLE WHERE $DIALOG_ID = '$dialog_id'"
+        val cursor = db.rawQuery(selectQuery, null)
+        if(cursor != null){
+            if (cursor.moveToFirst()) {
+                rang = cursor.getInt(cursor.getColumnIndexOrThrow(RANG))
+            }
+        }
+        cursor.close()
+        db.close()
+        return rang
+    }
+
+    fun getAllRemainFriends(ourTag: String) : MutableList<Pair<String, String>>{
+        val allUser = mutableListOf<Pair<String, String>>()
+        val db = readableDatabase
+        val selectQuery =
+            "SELECT F.$TAGRECEIVERFRND, F.$FRNDNAME FROM $FRIENDSTABLE AS F " +
+                    "LEFT JOIN $DATAGROUPINFO AS D " +
+                    "ON F.$TAGRECEIVERFRND = D.$TAG_USER " +
+                    "WHERE F.$TAGRECEIVERFRND <> '$ourTag' " +
+                    "AND F.$STATUS = 2 " +
+                    "AND D.$TAG_USER IS NULL"
+        val cursor = db.rawQuery(selectQuery, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    val tagUser = cursor.getString(cursor.getColumnIndexOrThrow(TAGRECEIVERFRND))
+                    val nameOfUser = cursor.getString(cursor.getColumnIndexOrThrow(FRNDNAME))
+                    allUser.add(tagUser to nameOfUser)
+                } while (cursor.moveToNext())
+            }
+        }
+        cursor.close()
+        db.close()
+        return allUser
+    }
+    fun updateRangUser(rang: Int, dialogID: String){
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(RANG, rang)
+        db.update(USERDLGTABLE, values, "$DIALOG_ID = ?", arrayOf(dialogID))
+        db.close()
+    }
+
     companion object {
         private val DB_NAME = "UserChat"
-        private val DB_VERSION = 7
+        private val DB_VERSION = 8
 
         private val ONLINE_USERS = "OnlineUsers" // tablename
         private val TAG_USER = "Tag_Of_User" // field in table
@@ -564,6 +665,7 @@ class SqliteHelper(context: Context) :
         private val FRNDNAME = "friendName" // field in table
 
         private val CHAT = "CHAT#"
+        private val GROUP = "GROUP#"
 
         private val ALLUSERINFOTABLE = "allUserInfoTable"
         private val GENDERUSER = "genderUser"
@@ -573,5 +675,6 @@ class SqliteHelper(context: Context) :
         private val DATEREGUSER = "dateRegUser"
         private val ABOUTMEUSER = "aboutMeUser"
 
+        private val DATAGROUPINFO = "DataGroupInfo"
     }
 }

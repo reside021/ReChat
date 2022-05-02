@@ -10,16 +10,22 @@ import android.view.View
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.adapters.MyAdapterForMsg
+import com.example.myapplication.dataClasses.DeleteDlg
+import com.example.myapplication.dataClasses.DeleteUserFromDlg
 import com.example.myapplication.dataClasses.Msg
 import com.example.myapplication.dataClasses.UpdateCountMsg
+import com.example.myapplication.interfaces.DeleteAvatar
 import com.example.myapplication.interfaces.UploadImgMsg
 import com.example.myapplication.ui.UserFragment
 import com.github.dhaval2404.imagepicker.ImagePicker
+import com.squareup.picasso.MemoryPolicy
+import com.squareup.picasso.NetworkPolicy
 import com.squareup.picasso.Picasso
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -40,8 +46,8 @@ class ChatPeople :
     AppCompatActivity(),
     SharedPreferences.OnSharedPreferenceChangeListener{
     companion object{
-        lateinit var mainWindowOuter: LinearLayout
-        lateinit var scrollView: ScrollView
+        const val OUTCHAT = 1
+        const val DELETECHAT = 2
         const val CHOOSE_IMG = 1
     }
     private lateinit var animAlpha: Animation
@@ -56,6 +62,10 @@ class ChatPeople :
     private lateinit var countNewMsg : String
     private lateinit var dataOfMsg : MutableList<Array<String>>
     private lateinit var adapterForChat : MyAdapterForMsg
+    private lateinit var avatarUserView: ImageView
+    private lateinit var urlAvatar: String
+    private lateinit var nameOfUserView: TextView
+    private var rangAccess: Int = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.chat_window)
@@ -71,7 +81,7 @@ class ChatPeople :
         countNewMsg = intent.extras?.getString("countNewMsg").toString()
 
         workWithActionBar()
-
+        rangAccess = sqliteHelper.checkAccess(idUser)
         dialog_id = sqliteHelper.getDialogIdWithUser(idUser)
         recoveryAllMsg(dialog_id)
     }
@@ -101,12 +111,22 @@ class ChatPeople :
     }
     override fun onStart() {
         super.onStart()
+        sp.edit().putString("queryImg", LocalDateTime.now().toString()).apply()
         // Store our shared preference
         val sp = getSharedPreferences("OURINFO", Context.MODE_PRIVATE)
         val ed = sp.edit()
         ed.putBoolean("active", true)
         ed.putString("idActive", idUser)
         ed.apply()
+        Picasso.get()
+            .load(urlAvatar)
+            .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+            .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
+            .placeholder(R.drawable.user_photo_white)
+            .into(avatarUserView)
+        if (rangAccess == 0){
+            findViewById<LinearLayout>(R.id.fieldEdit).visibility = View.GONE
+        }
     }
     override fun onStop() {
         super.onStop()
@@ -138,6 +158,7 @@ class ChatPeople :
         dataOfMsg = sqliteHelper.getMsgWithUser(dialog_id)
         adapterForChat = MyAdapterForMsg(this,dataOfMsg, dialog_id, ourTag)
         listViewChat.adapter = adapterForChat
+        if(countNewMsg == "0") return
         if(webSocketClient.connection.isClosed){
             Toast.makeText(
                 this@ChatPeople, "Отсутствует подключение к серверу",
@@ -154,13 +175,15 @@ class ChatPeople :
     private fun workWithActionBar(){
         val queryImg = sp.getString("queryImg","0")
         val toolBar : Toolbar = findViewById(R.id.toolbar)
-        val nameOfUserView = toolBar.findViewById<TextView>(R.id.nameOfUserThisChat)
+        nameOfUserView = toolBar.findViewById(R.id.nameOfUserThisChat)
         nameOfUserView.setOnClickListener(openUserProfile)
-        val avatarUserView = toolBar.findViewById<ImageView>(R.id.avatarUserDialog)
+        avatarUserView = toolBar.findViewById(R.id.avatarUserDialog)
         avatarUserView.setOnClickListener(openUserProfile)
-        val urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$idUser.jpg?time=$queryImg"
+        urlAvatar = "http://imagerc.ddns.net:80/avatar/avatarImg/$idUser.jpg?time=$queryImg"
         Picasso.get()
             .load(urlAvatar)
+            .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+            .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
             .placeholder(R.drawable.user_photo_white)
             .into(avatarUserView)
         nameOfUserView.text = nameOfUser
@@ -169,7 +192,90 @@ class ChatPeople :
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowHomeEnabled(true)
         }
+        val infoChat = toolBar.findViewById<ImageButton>(R.id.infoAboutChat)
+        if (idUser.startsWith("G")) infoChat.visibility = View.VISIBLE
+        infoChat.setOnClickListener {
+            val intent = Intent(this, GroupMsgInfo::class.java)
+            intent.putExtra("idTag", idUser)
+            intent.putExtra("nameOfUser", nameOfUser)
+            intent.putExtra("rangAccess", rangAccess)
+            startForGroupInfoDialogResult.launch(intent)
+        }
     }
+
+    private val startForGroupInfoDialogResult =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult())
+        {
+            try{
+                when (it.resultCode){
+                    OUTCHAT -> {
+                        onBackPressed()
+                        if (webSocketClient.connection.isClosed){
+                            Toast.makeText(this, "Отсутствует подключение к серверу",
+                                Toast.LENGTH_SHORT).show()
+                        }
+                        else
+                        {
+                            val deleteUserFromDlg = DeleteUserFromDlg(
+                                "UPDATE::",
+                                "DLTUSERDLG::",
+                                dialog_id.substringAfter("#"),
+                                sp.getString("tagUser", "")!!
+                            )
+                            val msg = Json.encodeToString(deleteUserFromDlg)
+                            webSocketClient.send(msg)
+                        }
+                    }
+                    DELETECHAT -> {
+                        onBackPressed()
+                        val retrofit = Retrofit.Builder()
+                            .baseUrl("http://imagerc.ddns.net:80/avatar/")
+                            .addConverterFactory(ScalarsConverterFactory.create())
+                            .build()
+                        val service = retrofit.create(DeleteAvatar::class.java)
+                        val response: Call<String> = service.deleteProfile(idUser)
+                        response.enqueue(object : Callback<String> {
+                            override fun onResponse(call: Call<String>, response: Response<String>) {
+                                if (!response.isSuccessful) {
+                                    Toast.makeText(this@ChatPeople,
+                                        "Ошибка удаления",
+                                        Toast.LENGTH_SHORT).show()
+                                    return
+                                }
+                                if (response.code() != 200) {
+                                    Toast.makeText(this@ChatPeople,
+                                        "Ошибка удаления",
+                                        Toast.LENGTH_SHORT).show()
+                                    return
+                                }
+                                if (webSocketClient.connection.isClosed){
+                                    Toast.makeText(this@ChatPeople,
+                                        "Отсутствует подключение к серверу",
+                                        Toast.LENGTH_SHORT).show()
+                                }
+                                else
+                                {
+                                    val deleteDlg = DeleteDlg(
+                                        "UPDATE::",
+                                        "DLTCHAT::",
+                                        dialog_id
+                                    )
+                                    val msg = Json.encodeToString(deleteDlg)
+                                    webSocketClient.send(msg)
+                                }
+                            }
+                            override fun onFailure(call: Call<String>, t: Throwable) {
+                                Toast.makeText(this@ChatPeople,
+                                    "Ошибка удаления",
+                                    Toast.LENGTH_SHORT).show()
+                            }
+                        })
+                    }
+                }
+            }catch (ex: Exception){
+
+            }
+        }
 
     fun onSendMsgClick(view: View) {
         view.startAnimation(animAlpha)
@@ -275,6 +381,10 @@ class ChatPeople :
             val timeCreated = sp.getString(key,"")!!.toInt()
             dataOfMsg.add(sqliteHelper.getLastMsgWithUser(dialog_id, timeCreated))
             adapterForChat.notifyDataSetChanged()
+        }
+        if(key.equals("changeTitleDialog")){
+            nameOfUser = sp.getString("newTitleDialog","")!!
+            nameOfUserView.text = nameOfUser
         }
     }
 }

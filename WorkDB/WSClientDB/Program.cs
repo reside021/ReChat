@@ -47,6 +47,12 @@ namespace WSClientDB
         const string COUNTRY = "COUNTRY::";
         const string ABOUTME = "ABOUTME::";
         const string ALLINFOUSERS = "ALLINFOUSERS::";
+        const string TITLEDIALOG = "TITLEDIALOG::";
+        const string TAGUSERSGROUP = "TAGUSERSGROUP::";
+        const string ADDUSERDLG = "ADDUSERDLG::";
+        const string DLTUSERDLG = "DLTUSERDLG::";
+        const string DLTCHAT = "DLTCHAT::";
+        const string RANGUSER = "RANGUSER::";
 
         static WebSocket webSocket;
         static SqlConnection sqlConnection;
@@ -1322,6 +1328,262 @@ namespace WSClientDB
             string jsonResult = JsonConvert.SerializeObject(successUpdate);
             webSocket.Send(jsonResult);
         }
+        private static void UpdateTitleDialog(UpdateTitleDialog updateTitleDialog)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = TITLEDIALOG;
+            successUpdate.dialog = updateTitleDialog.dialog_id;
+            successUpdate.dataUpdatedString = updateTitleDialog.dataUpdatedString;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update DlgInfo set nameOfChat = @dataUpdated where dialog_id = @dialog_id";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateTitleDialog.dataUpdatedString);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter3 = new SqlParameter("@dialog_id", GROUP + updateTitleDialog.dialog_id);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.CommandText =
+                    @"select tagUser from UserDlgData as U inner join DlgInfo as D 
+                        on U.dialog_id = D.dialog_id 
+                        where D.dialog_id = @dialog_id";
+                SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                List<string> tagUsers = new List<string>();
+                if (sqlDataReader.HasRows)
+                {
+                    while (sqlDataReader.Read())
+                    {
+                        string _tagUser = sqlDataReader.GetString(0);
+                        tagUsers.Add(_tagUser);
+                    }
+                }
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+                successUpdate.needTagUsers = tagUsers;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void SelectDataAllGroupInfo(DataAllGroupInfo dataAllGroupInfo)
+        {
+            DataOfTagName dataOfTagName = new DataOfTagName();
+            dataOfTagName.type = RESULTDB;
+            dataOfTagName.oper = DOWNLOAD;
+            dataOfTagName.table = TAGUSERSGROUP;
+            dataOfTagName.tagUser = dataAllGroupInfo.tagUser;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"select tagUser, rang from UserDlgData as U inner join DlgInfo as D 
+                          on U.dialog_id = D.dialog_id 
+                          where D.dialog_id = @dialog";
+                SqlParameter sqlParameter = new SqlParameter("dialog", GROUP + dataAllGroupInfo.dialog);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                List<DataUserInGroup> dataUserInGroups = new List<DataUserInGroup>();
+                if (sqlDataReader.HasRows)
+                {
+                    while (sqlDataReader.Read())
+                    {
+                        string _tagUser = sqlDataReader.GetString(0);
+                        int _rang = sqlDataReader.GetInt32(1);
+                        dataUserInGroups.Add(new DataUserInGroup() { tagUser = _tagUser, rang = _rang });
+                    }
+                }
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
+                dataOfTagName.success = true;
+                dataOfTagName.data = dataUserInGroups;
+            }
+            catch
+            {
+                dataOfTagName.success = false;
+            }
+            string jsonResult = JsonConvert.SerializeObject(dataOfTagName);
+            webSocket.Send(jsonResult);
+        }
+
+        private static void AddUserInDlg(AddUserDlg addUserDlg)
+        {
+            int enteredTime = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            SuccessCreateUserDlg successCreateUserDlg = new SuccessCreateUserDlg();
+            successCreateUserDlg.type = RESULTDB;
+            successCreateUserDlg.oper = ADDUSERDLG;
+            successCreateUserDlg.userManager = addUserDlg.tagUser;
+            successCreateUserDlg.enteredTime = enteredTime;
+            successCreateUserDlg.lastTimeMsg = enteredTime;
+            var dialog_id = GROUP + addUserDlg.dialog_id;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = "Insert into UserDlgData values ";
+                SqlParameter sqlParameter = new SqlParameter("@dialog_id", dialog_id);
+                sqlCommand.Parameters.Add(sqlParameter);
+                for (int i = 0; i < addUserDlg.tagUsers.Count; i++)
+                {
+                    sqlCommand.CommandText += $"(@dialog_id, @el{i}, @enteredTime, 0, 1)";
+                    if (i != addUserDlg.tagUsers.Count - 1) sqlCommand.CommandText += ",";
+                    sqlCommand.Parameters.Add(new SqlParameter($"@el{i}", addUserDlg.tagUsers[i]));
+                }
+                SqlParameter sqlParameter5 = new SqlParameter("@enteredTime", enteredTime);
+                sqlCommand.Parameters.Add(sqlParameter5);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.CommandText = "select nameOfChat from DlgInfo where dialog_id = @dialog_id";
+                var nameOfChat = sqlCommand.ExecuteScalar();
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
+                successCreateUserDlg.success = true;
+                successCreateUserDlg.dialog_id = dialog_id;
+                successCreateUserDlg.userCompanion = addUserDlg.tagUsers;
+                successCreateUserDlg.typeOfDlg = 1;
+                successCreateUserDlg.countMsg = 0;
+                successCreateUserDlg.rang = 1;
+                successCreateUserDlg.nameOfChat = nameOfChat.ToString();
+            }
+            catch (Exception ex)
+            {
+                successCreateUserDlg.success = false;
+
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
+            }
+            string jsonResult = JsonConvert.SerializeObject(successCreateUserDlg);
+            webSocket.Send(jsonResult);
+        }
+        private static void DeleteUserFromDialog(DeleteUserFromDlg deleteUserFromDlg)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = DLTUSERDLG;
+            var dialog_id = GROUP + deleteUserFromDlg.dialog_id;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"delete from UserDlgData where dialog_id = @dialog_id AND tagUser = @tagUser";
+                SqlParameter sqlParameter3 = new SqlParameter("@dialog_id", dialog_id);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                SqlParameter sqlParameter = new SqlParameter("@tagUser", deleteUserFromDlg.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+                successUpdate.dialog = dialog_id;
+                successUpdate.tagId = deleteUserFromDlg.authorId;
+                successUpdate.needTagUser = deleteUserFromDlg.tagUser;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void DeleteDialog(DeleteDialog deleteDialog)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = DLTCHAT;
+            successUpdate.tagId = deleteDialog.authorId;
+            successUpdate.dialog = deleteDialog.dialog_id;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"select tagUser from UserDlgData as U inner join DlgInfo as D 
+                        on U.dialog_id = D.dialog_id 
+                        where D.dialog_id = @dialog_id";
+                SqlParameter sqlParameter3 = new SqlParameter("@dialog_id", deleteDialog.dialog_id);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+                List<string> tagUsers = new List<string>();
+                if (sqlDataReader.HasRows)
+                {
+                    while (sqlDataReader.Read())
+                    {
+                        string _tagUser = sqlDataReader.GetString(0);
+                        tagUsers.Add(_tagUser);
+                    }
+                }
+                successUpdate.needTagUsers = tagUsers;
+                sqlCommand.Parameters.Clear();
+                sqlConnection.Close();
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = "delete from DlgInfo where dialog_id = @dialog_id";
+                SqlParameter sqlParameter = new SqlParameter("@dialog_id", deleteDialog.dialog_id);
+                sqlCommand.Parameters.Add(sqlParameter);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+            }
+            catch(Exception ex)
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
+        private static void UpdateRang(UpdateRangUser updateRangUser)
+        {
+            SuccessUpdate successUpdate = new SuccessUpdate();
+            successUpdate.type = RESULTDB;
+            successUpdate.oper = UPDATE;
+            successUpdate.typeUpdate = RANGUSER;
+            successUpdate.dataUpdatedString = updateRangUser.ToString();
+            string dialog_id = GROUP + updateRangUser.dialog_id;
+            successUpdate.dialog = dialog_id;
+            try
+            {
+                sqlConnection.Open();
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText =
+                    @"update UserDlgData set rang = @dataUpdated where dialog_id = @dialog_id and tagUser = @tagUser";
+                SqlParameter sqlParameter = new SqlParameter("@dataUpdated", updateRangUser.dataUpdated);
+                sqlCommand.Parameters.Add(sqlParameter);
+                SqlParameter sqlParameter2 = new SqlParameter("@tagUser", updateRangUser.tagUser);
+                sqlCommand.Parameters.Add(sqlParameter2);
+                SqlParameter sqlParameter3 = new SqlParameter("@dialog_id", dialog_id);
+                sqlCommand.Parameters.Add(sqlParameter3);
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = true;
+                successUpdate.needTagUser = updateRangUser.tagUser;
+            }
+            catch
+            {
+                sqlCommand.Parameters.Clear();
+                successUpdate.success = false;
+            }
+            sqlCommand.Parameters.Clear();
+            sqlConnection.Close();
+            string jsonResult = JsonConvert.SerializeObject(successUpdate);
+            webSocket.Send(jsonResult);
+        }
         private static void WebSocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
             if (e.Message.IndexOf(FORDB) == -1) return;
@@ -1361,6 +1623,12 @@ namespace WSClientDB
                         message = message.Substring(FRND.Length);
                         ActionsWithFrnd actionsWithFrnd = JsonConvert.DeserializeObject<ActionsWithFrnd>(message);
                         WorkWithFrnd(actionsWithFrnd);
+                    }
+                    if (message.IndexOf(ADDUSERDLG) != -1)
+                    {
+                        message = message.Substring(ADDUSERDLG.Length);
+                        AddUserDlg addUserDlg = JsonConvert.DeserializeObject<AddUserDlg>(message);
+                        AddUserInDlg(addUserDlg);
                     }
                 }
                 if (message.IndexOf(SELECT) != -1)
@@ -1411,6 +1679,12 @@ namespace WSClientDB
                             message = message.Substring(ALLINFOUSERS.Length);
                             DownloadInfoUsers downloadInfoUsers = JsonConvert.DeserializeObject<DownloadInfoUsers>(message);
                             SelectDataForAllInfoUsers(downloadInfoUsers.tagUser, downloadInfoUsers.needTagUser, downloadInfoUsers.isFriend);
+                        }
+                        if (message.IndexOf(TAGUSERSGROUP) != -1)
+                        {
+                            message = message.Substring(TAGUSERSGROUP.Length);
+                            DataAllGroupInfo dataAllGroupInfo = JsonConvert.DeserializeObject<DataAllGroupInfo>(message);
+                            SelectDataAllGroupInfo(dataAllGroupInfo);
                         }
                     }
                     if (message.IndexOf(FRND) != -1)
@@ -1496,6 +1770,30 @@ namespace WSClientDB
                         message = message.Substring(ABOUTME.Length);
                         UpdateDataString updateDataString = JsonConvert.DeserializeObject<UpdateDataString>(message);
                         UpdateAboutMe(updateDataString);
+                    }
+                    if (message.IndexOf(TITLEDIALOG) != -1)
+                    {
+                        message = message.Substring(TITLEDIALOG.Length);
+                        UpdateTitleDialog updateTitleDialog = JsonConvert.DeserializeObject<UpdateTitleDialog>(message);
+                        UpdateTitleDialog(updateTitleDialog);
+                    }
+                    if (message.IndexOf(DLTUSERDLG) != -1)
+                    {
+                        message = message.Substring(DLTUSERDLG.Length);
+                        DeleteUserFromDlg deleteUserFromDlg = JsonConvert.DeserializeObject<DeleteUserFromDlg>(message);
+                        DeleteUserFromDialog(deleteUserFromDlg);
+                    }
+                    if (message.IndexOf(DLTCHAT) != -1)
+                    {
+                        message = message.Substring(DLTCHAT.Length);
+                        DeleteDialog deleteDialog = JsonConvert.DeserializeObject<DeleteDialog>(message);
+                        DeleteDialog(deleteDialog);
+                    }
+                    if (message.IndexOf(RANGUSER) != -1)
+                    {
+                        message = message.Substring(RANGUSER.Length);
+                        UpdateRangUser updateRangUser = JsonConvert.DeserializeObject<UpdateRangUser>(message);
+                        UpdateRang(updateRangUser);
                     }
                 }
                 if (message.IndexOf(DELETE) != -1)

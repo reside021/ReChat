@@ -290,8 +290,23 @@
                 android:layout_marginHorizontal="15dp"
                 android:textSize="22sp" />
         </RelativeLayout>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="5dp">
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/exitFromAcc"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="@string/log_out"
+                android:backgroundTint="@color/red"
+                android:background="@drawable/round"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:layout_marginHorizontal="30dp"/>
+        </RelativeLayout>
     </LinearLayout>
 </ScrollView>
-
-
 </FrameLayout>

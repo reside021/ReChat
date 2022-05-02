@@ -13,7 +13,7 @@
         android:layout_height="wrap_content">
         <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="?attr/actionBarSize"
             android:id="@+id/toolbar"
             android:minHeight="?attr/actionBarSize"
             android:theme="@style/CustomTheme">
@@ -24,11 +24,24 @@
                 android:layout_marginHorizontal="10dp"
                 android:src="@drawable/user_photo_white"/>
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:textSize="22sp"
                 android:textColor="@color/white"
-                android:id="@+id/nameOfUserThisChat"/>
+                android:id="@+id/nameOfUserThisChat"
+                android:layout_gravity="start"
+                android:maxLength="20"
+                android:maxLines="1"/>
+            <ImageButton
+                android:visibility="gone"
+                android:id="@+id/infoAboutChat"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:src="@drawable/information_white"
+                android:backgroundTint="@color/purple_500"
+                android:scaleType="centerInside"
+                android:layout_gravity="end"
+                android:layout_marginHorizontal="10dp" />
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
     <ListView

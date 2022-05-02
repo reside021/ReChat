@@ -32,6 +32,7 @@ class UserFragment : Fragment(){
 
     internal interface OnFragmentSendDataListener {
         fun onUserLoadView()
+        fun exitFromAccount()
     }
 
     companion object{
@@ -280,6 +281,9 @@ class UserFragment : Fragment(){
 
         }
         dateReg = requireView().findViewById(R.id.dateReg)
+        requireView().findViewById<Button>(R.id.exitFromAcc).setOnClickListener {
+            fragmentSendDataListener?.exitFromAccount()
+        }
         fragmentSendDataListener?.onUserLoadView()
     }
 

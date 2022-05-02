@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.2/mdb.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="./style/style.css?<?=time()?>">
 </head>
 
@@ -17,7 +18,7 @@
             <div class="startScreen">
                 <div><h1 class="display-1">ReChatWeb</h1></div>
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">Ожидание...</span>
                 </div>
             </div>
             <div style="display: none" class="authUser bg-white shadow-4 rounded">
@@ -168,6 +169,86 @@
                                                 <input class="form-check-input" type="checkbox" role="switch" id="isVisibleUser" />
                                             </div>
                                         </div>
+                                        <div>
+                                            <div>Видимость данных</div>
+                                            <div id="isVisionData">
+                                                <select id="selectVision">
+                                                    <option value="0">Все</option>
+                                                    <option value="1">Друзья</option>
+                                                    <option value="2">Никто</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div>Пол</div>
+                                            <div id="gender">
+                                                <select id="selectGender">
+                                                    <option value="0">Неизвестно</option>
+                                                    <option value="1">Мужской</option>
+                                                    <option value="2">Женский</option>
+                                                    <option value="3">Другой</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div>День рождения</div>
+                                            <input  type="text" id="birthday">
+                                        </div>
+                                        <div>
+                                            <div>Соцстатус <i class="edit fa-solid fa-pen-to-square" onclick="editSocStatus()"></i></div>
+                                            <div class="editBlock">
+                                                <div id="socStatus">dsssd</div>
+                                                <div style="display: none; margin-bottom: 0px !important;" id="editSocStatus" class="input-group mb-3">
+                                                    <input
+                                                            type="text"
+                                                            class="form-control"
+                                                            placeholder="Соцстатус"
+                                                            aria-label="Соцстатус"
+                                                            aria-describedby="button-socStatus"
+                                                    />
+                                                    <button class="btn btn-outline-primary" type="button" id="button-socStatus" onclick="saveSocStatus()" data-mdb-ripple-color="dark">
+                                                        Сохранить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div>Страна <i class="edit fa-solid fa-pen-to-square" onclick="editCountry()"></i></div>
+                                            <div class="editBlock">
+                                                <div id="country">dsssd</div>
+                                                <div style="display: none; margin-bottom: 0px !important;" id="editCountry" class="input-group mb-3">
+                                                    <input
+                                                            type="text"
+                                                            class="form-control"
+                                                            placeholder="Страна"
+                                                            aria-label="Страна"
+                                                            aria-describedby="button-country"
+                                                    />
+                                                    <button class="btn btn-outline-primary" type="button" id="button-country" onclick="saveCountry()" data-mdb-ripple-color="dark">
+                                                        Сохранить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div>Дата регистрации</div>
+                                            <div id="dateReg">dsssd</div>
+                                        </div>
+                                        <div>
+                                            <div>О себе <i class="edit fa-solid fa-pen-to-square" onclick="editAboutMe()"></i></div>
+                                            <div class="editBlock">
+                                                <p id="aboutMe"></p>
+                                                <div style="display: none; margin-bottom: 0px !important; justify-content: end" id="editAboutMe" class="input-group mb-3">
+                                                    <div style="width: 450px" class="form-outline">
+                                                        <textarea class="form-control" id="textAreaAboutMe" rows="4" aria-describedby="button-aboutMe"></textarea>
+                                                        <label class="form-label" for="textAreaAboutMe">О себе</label>
+                                                    </div>
+                                                    <button class="btn btn-outline-primary" type="button" id="button-aboutMe" onclick="saveAboutMe()" data-mdb-ripple-color="dark">
+                                                        Сохранить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -275,6 +356,7 @@
                         </div>
                     </div>
                 </div>
+
             <div style="display: none" class="userProfile bg-light border">
                 <div class="dataOfUser bg-white rounded">
                     <div class="blockInfo">
@@ -306,8 +388,31 @@
                         <button type="button" class="closeWindow btn btn-outline-danger btn-floating" onclick="closeUserClick()"> <i class="fa-solid fa-xmark"></i> </button>
                     </div>
                 </div>
-                <div class="detailDataOfUser bg-white shadow-4 rounded">
+
+                <div style="display: none" class="detailDataOfUser bg-white shadow-4 rounded">
                     <div>
+                        <div>Пол</div>
+                        <div id="genderUser"></div>
+                    </div>
+                    <div>
+                        <div>День рождения</div>
+                        <div id="birthdayUser"></div>
+                    </div>
+                    <div>
+                        <div>Соцстатус</div>
+                        <div id="socStatusUser"></div>
+                    </div>
+                    <div>
+                        <div>Страна</div>
+                        <div id="countryUser"></div>
+                    </div>
+                    <div>
+                        <div>Дата регистрации</div>
+                        <div id="dateRegUser">dsssd</div>
+                    </div>
+                    <div>
+                        <div>О себе</div>
+                        <div id="aboutMeUser">dsssd</div>
                     </div>
                 </div>
             </div>
@@ -324,6 +429,7 @@
     <!-- MDB -->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.2/mdb.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
     <script src="./src/main.js?<?=time()?>"></script>
 </body>
 </html>

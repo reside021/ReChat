@@ -211,7 +211,8 @@ function parseMessage(data) {
                 if (status === "SUCCESS")
                 {
                     let dataFS = JSON.parse(msg);
-                    deviceAuth(dataFS);
+                    console.dir(dataFS)
+                    deviceAuth(dataFS.dataUser);
                 }
                 if (status === "ERROR"){
                     $('.authUser').show();
@@ -240,7 +241,7 @@ function parseMessage(data) {
                             webSocket.send(jsonString);
                             $('#isVisibleUser').prop('checked', isVisible);
                             if(isVisible){
-                                $('#visibleStatus').text("(Виден всем)");
+                                $('#visibleStatus').text("(Онлайн для всех)");
                             }else{
                                 $('#visibleStatus').text("(Включен режим призрака)");
                             }
@@ -292,6 +293,49 @@ function parseMessage(data) {
                     {
                         let parseMsg = JSON.parse(msg);
                         updateCountMsg(parseMsg)
+                    }
+                    if (oper === "SOCSTATUS")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let newData = parseMsg.dataUpdatedString;
+                        localStorage.setItem('socStatus', newData);
+                        $("#socStatus").text(newData)
+                    }
+                    if (oper === "COUNTRY")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let newData = parseMsg.dataUpdatedString;
+                        localStorage.setItem('country', newData);
+                        $("#country").text(newData)
+                    }
+                    if (oper === "ABOUTME")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let newData = parseMsg.dataUpdatedString;
+                        localStorage.setItem('aboutMe', newData)
+                        $("#aboutMe").text(newData)
+                    }
+                    if (oper === "TITLEDIALOG")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let dialog_id = parseMsg.dialog_id;
+                        let dataUpdatedString = parseMsg.dataUpdatedString
+                        updateNameInUserChat(dialog_id, dataUpdatedString);
+                    }
+                    if (oper === "DLTUSERDLG")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let newData = parseMsg.dataUpdatedString;
+                    }
+                    if (oper === "DLTCHAT")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let newData = parseMsg.dataUpdatedString;
+                    }
+                    if (oper === "RANGUSER")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let newData = parseMsg.dataUpdatedString;
                     }
                 }
                 if (status === "ERROR")
@@ -431,6 +475,35 @@ function parseMessage(data) {
                             });
                         });
                         setBadgeNewMsg()
+                    }
+                    if (oper === "ALLINFOUSERS")
+                    {
+                        let parseMsg = JSON.parse(msg);
+                        let userData = parseMsg.dataUser
+                        switch(userData.gender){
+                            case 0:{
+                                $("#genderUser").text("Неизвестно");
+                                break;
+                            }
+                            case 1:{
+                                $("#genderUser").text("Мужской");
+                                break;
+                            }
+                            case 2:{
+                                $("#genderUser").text("Женский");
+                                break;
+                            }
+                            case 3:{
+                                $("#genderUser").text("Другой");
+                                break;
+                            }
+                        }
+                        $("#birthdayUser").text(userData.birthday)
+                        $("#socStatusUser").text(userData.socStatus)
+                        $("#countryUser").text(userData.country)
+                        $("#dateRegUser").text(userData.dateReg)
+                        $("#aboutMeUser").text(userData.aboutMe)
+                        $(".detailDataOfUser").show()
                     }
                 }
             }
@@ -736,13 +809,21 @@ function funcAuthUser() {
 
 function deviceAuth(dataFS) {
     $('.authUser').hide();
-    localStorage.setItem('isAvatar', dataFS.isAvatar);
+    let isAvatar = (dataFS.isAvatar === true)
+    localStorage.setItem('isAvatar', isAvatar);
     localStorage.setItem('nickname', dataFS.nickname);
     localStorage.setItem('tagUser', dataFS.tagUser);
     localStorage.setItem('isVisible', dataFS.isAvatar);
     localStorage.setItem('isAuth', true);
+    localStorage.setItem('isVisionData', dataFS.isVisionData);
+    localStorage.setItem('gender', dataFS.gender);
+    localStorage.setItem('birthday', dataFS.birthday);
+    localStorage.setItem('socStatus', dataFS.socStatus);
+    localStorage.setItem('country', dataFS.country);
+    localStorage.setItem('dateReg', dataFS.dateReg);
+    localStorage.setItem('aboutMe', dataFS.aboutMe)
     $('.mainContent').show();
-    if(dataFS.isAvatar){
+    if(isAvatar){
         $('#imageOfUser').attr("src",`http://imagerc.ddns.net:80/avatar/avatarImg/${dataFS.tagUser}.jpg?time=${Date.now()}`);
     }
     $('#nameOfUser').text(dataFS.nickname);
@@ -750,9 +831,15 @@ function deviceAuth(dataFS) {
     $('#visibleStatus').text("(Включен режим призрака)");
     if(dataFS.isVisible){
         $('#isVisibleUser').prop('checked', true);
-        $('#visibleStatus').text("(Виден всем)");
+        $('#visibleStatus').text("(Онлайн для всех)");
     }
-
+    $(`#selectVision option[value=${dataFS.isVisionData}]`).prop('selected', true);
+    $(`#selectGender option[value=${dataFS.gender}]`).prop('selected', true);
+    $('#birthday').datepicker("setDate", dataFS.birthday)
+    $('#socStatus').text(dataFS.socStatus)
+    $('#country').text(dataFS.country)
+    $('#dateReg').text(dataFS.dateReg)
+    $('#aboutMe')[0].textContent = dataFS.aboutMe
     let time = Date.now().toString();
     let platform = "Web";
     let tagUser = localStorage.getItem('tagUser');
@@ -775,25 +862,40 @@ function deviceAuth(dataFS) {
     });
 }
 function authorization(dataFS){
+    let dataUser = dataFS.dataUser
     $('.authUser').hide();
-    localStorage.setItem('isAvatar', dataFS.isAvatar);
-    localStorage.setItem('nickname', dataFS.nickname);
-    localStorage.setItem('tagUser', dataFS.tagUser);
+    let isAvatar = (dataUser.isAvatar === true)
+    localStorage.setItem('isAvatar', isAvatar);
+    localStorage.setItem('nickname', dataUser.nickname);
+    localStorage.setItem('tagUser', dataUser.tagUser);
     localStorage.setItem('token', dataFS.token);
-    localStorage.setItem('isVisible', dataFS.isVisible);
+    localStorage.setItem('isVisible', dataUser.isVisible);
     localStorage.setItem('isAuth', true);
+    localStorage.setItem('isVisionData', dataUser.isVisionData);
+    localStorage.setItem('gender', dataUser.gender);
+    localStorage.setItem('birthday', dataUser.birthday);
+    localStorage.setItem('socStatus', dataUser.socStatus);
+    localStorage.setItem('country', dataUser.country);
+    localStorage.setItem('dateReg', dataUser.dateReg);
+    localStorage.setItem('aboutMe', dataUser.aboutMe)
     $('.mainContent').show();
 
-    if(dataFS.isAvatar){
-        $('#imageOfUser').attr("src",`http://imagerc.ddns.net:80/avatar/avatarImg/${dataFS.tagUser}.jpg?time=${Date.now()}`);
+    if(isAvatar){
+        $('#imageOfUser').attr("src",`http://imagerc.ddns.net:80/avatar/avatarImg/${dataUser.tagUser}.jpg?time=${Date.now()}`);
     }
-    $('#nameOfUser').text(dataFS.nickname);
-    $('#tagOfUser').text(dataFS.tagUser);
+    $('#nameOfUser').text(dataUser.nickname);
+    $('#tagOfUser').text(dataUser.tagUser);
     $('#visibleStatus').text("(Включен режим призрака)");
-    if(dataFS.isVisible){
+    if(dataUser.isVisible){
         $('#isVisibleUser').prop('checked', true);
-        $('#visibleStatus').text("(Виден всем)");
+        $('#visibleStatus').text("(Онлайн для всех)");
     }
+
+    $('#birthday').datepicker("setDate", dataUser.birthday)
+    $('#socStatus').text(dataUser.socStatus)
+    $('#country').text(dataUser.country)
+    $('#dateReg').text(dataUser.dateReg)
+    $('#aboutMe')[0].textContent = dataUser.aboutMe
     let time = Date.now().toString();
     let platform = "Web";
     let tagUser = localStorage.getItem('tagUser');
@@ -803,9 +905,9 @@ function authorization(dataFS){
         let dataDB = {
             type : "AUTH::",
             confirmAuth : true,
-            nickname : dataFS.nickname,
-            tagUser : dataFS.tagUser,
-            isVisible : dataFS.isAvatar,
+            nickname : dataUser.nickname,
+            tagUser : dataUser.tagUser,
+            isVisible : dataUser.isAvatar,
             token : data
         };
         let jsonString = JSON.stringify(dataDB);
@@ -1635,6 +1737,7 @@ function onUserClick(obj) {
     let tagUser = id.slice(id.indexOf('_') + 1);
     let nameOfUser = $(obj).find('#nameUser')[0].textContent;
     let status = -1;
+    let isFriend = false;
     if (tagUser !== localStorage.getItem('tagUser'))
     {
         db.transaction(function(tx) {
@@ -1653,6 +1756,7 @@ function onUserClick(obj) {
                         statusFriend = 'Не в друзьях';
                         user[0].textContent = "Добавить в друзья"
                         user.addClass('add');
+                        isFriend = false;
                         break;
                     }
                     case 0:
@@ -1660,6 +1764,7 @@ function onUserClick(obj) {
                         statusFriend = 'Не подтверждено';
                         user[0].textContent = "Принять запрос"
                         user.addClass('confirm');
+                        isFriend = false;
                         break;
                     }
                     case 1:
@@ -1667,6 +1772,7 @@ function onUserClick(obj) {
                         statusFriend = 'Запрос отправлен';
                         user[0].textContent = "Ожидание"
                         user.addClass('wait');
+                        isFriend = false;
                         break;
                     }
                     case 2:
@@ -1674,6 +1780,7 @@ function onUserClick(obj) {
                         statusFriend = 'В друзьях';
                         user[0].textContent = "Удалить из друзей"
                         user.addClass('delete');
+                        isFriend = true;
                         break;
                     }
                 }
@@ -1681,6 +1788,15 @@ function onUserClick(obj) {
                 $('#user_nameOfUser')[0].textContent = nameOfUser;
                 $('#user_imageOfUser').attr("src", `http://imagerc.ddns.net:80/avatar/avatarImg/${tagUser}.jpg?time=${Date.now()}`)
                 $('#user_statusFriends')[0].textContent = statusFriend;
+                let data =
+                    {
+                        type : "DOWNLOAD::",
+                        table : "ALLINFOUSERS::",
+                        tagUser : tagUser,
+                        isFriend: isFriend
+                    };
+                let jsonString = JSON.stringify(data);
+                webSocket.send(jsonString);
                 $('.userProfile').show();
             }, null)
         });
@@ -1688,6 +1804,7 @@ function onUserClick(obj) {
 }
 function closeUserClick() {
     $('.userProfile').hide();
+    $('.detailDataOfUser').hide();
     let user = $('#user_ActionsFriends');
     user.removeClass('add');
     user.removeClass('confirm');
@@ -1884,4 +2001,108 @@ function updateCountMsg(parseMsg) {
         badge.hide()
         badge[0].textContent = "0"
     });
+}
+
+function editSocStatus(){
+    $('#socStatus').toggle()
+    $('#editSocStatus').toggle()
+}
+function editCountry() {
+    $('#country').toggle()
+    $('#editCountry').toggle()
+}
+function editAboutMe() {
+    $('#aboutMe').toggle()
+    $('#editAboutMe').toggle()
+}
+
+$( function() {
+    $.datepicker.regional['ru'] = {
+        closeText: 'Закрыть',
+        prevText: 'Предыдущий',
+        nextText: 'Следующий',
+        currentText: 'Сегодня',
+        monthNames: ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
+        monthNamesShort: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
+        dayNames: ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],
+        dayNamesShort: ['вск','пнд','втр','срд','чтв','птн','сбт'],
+        dayNamesMin: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
+        weekHeader: 'Не',
+        dateFormat: 'dd.mm.yy',
+        firstDay: 1,
+        isRTL: false,
+        showMonthAfterYear: false,
+        yearSuffix: '',
+        maxDate:"-1"
+    };
+    $.datepicker.setDefaults($.datepicker.regional['ru']);
+    $( "#birthday").datepicker({
+        onSelect: function (dateText) {
+            console.dir(dateText)
+            let data =
+                {
+                    type : "UPDATE::",
+                    objectUpdate : "BIRTHDAY::",
+                    dataUpdated : dateText
+                };
+            let jsonString = JSON.stringify(data);
+            webSocket.send(jsonString);
+        }
+    });
+} );
+
+$("#selectVision").change(function(){
+    let data =
+        {
+            type : "UPDATE::",
+            objectUpdate : "VISIONDATA::",
+            dataUpdated : $("#selectVision").val()
+        };
+    let jsonString = JSON.stringify(data);
+    webSocket.send(jsonString);
+});
+$("#selectGender").change(function(){
+    let data =
+        {
+            type : "UPDATE::",
+            objectUpdate : "GENDER::",
+            dataUpdated : $("#selectGender").val()
+        };
+    let jsonString = JSON.stringify(data);
+    webSocket.send(jsonString);
+});
+
+function saveSocStatus() {
+    let data =
+        {
+            type : "UPDATE::",
+            objectUpdate : "SOCSTATUS::",
+            dataUpdated : $("#editSocStatus input")[0].value
+        };
+    let jsonString = JSON.stringify(data);
+    webSocket.send(jsonString);
+    editSocStatus()
+}
+function saveCountry(){
+    let data =
+        {
+            type : "UPDATE::",
+            objectUpdate : "COUNTRY::",
+            dataUpdated : $("#editCountry input")[0].value
+        };
+    let jsonString = JSON.stringify(data);
+    webSocket.send(jsonString);
+    editCountry()
+}
+function saveAboutMe() {
+    let about = $("#editAboutMe textarea")[0].value
+    let data =
+        {
+            type : "UPDATE::",
+            objectUpdate : "ABOUTME::",
+            dataUpdated : about
+        };
+    let jsonString = JSON.stringify(data);
+    webSocket.send(jsonString);
+    editAboutMe()
 }

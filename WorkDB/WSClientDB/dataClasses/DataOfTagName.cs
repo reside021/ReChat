@@ -13,5 +13,6 @@ namespace WSClientDB.dataClasses
         public List<DataOfNickName> listOfData { get; set; }
         public string tagUser { get; set; }
         public string token { get; set; }
+        public List<DataUserInGroup> data { get; set; } 
     }
 }

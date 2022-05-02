@@ -80,8 +80,8 @@ class UserListFragment : Fragment(),
         listViewUsers.adapter = myAdapterForUsers
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onResume() {
+        super.onResume()
         fragmentSendDataListener?.onUserListLoadView()
     }
 

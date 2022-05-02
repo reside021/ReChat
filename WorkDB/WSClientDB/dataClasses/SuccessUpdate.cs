@@ -18,5 +18,6 @@ namespace WSClientDB.dataClasses
         public string needTagUser { get; set; }
         public int dataVisionOrGender { get; set; }
         public string dataUpdatedString { get; set; }
+        public List<string> needTagUsers { get; set; }
     }
 }

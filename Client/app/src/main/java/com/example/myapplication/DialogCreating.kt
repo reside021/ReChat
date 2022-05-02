@@ -7,6 +7,7 @@ import android.view.Menu
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.example.myapplication.ActivityMain.Companion.sqliteHelper
 import com.example.myapplication.ActivityMain.Companion.webSocketClient
 import com.example.myapplication.adapters.MyAdapterForCrtDlg
 import com.example.myapplication.dataClasses.NewUserDLGTable
@@ -30,7 +31,8 @@ class DialogCreating : AppCompatActivity(){
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowHomeEnabled(true)
         }
-        myAdapterForCrtDlg = MyAdapterForCrtDlg(tagUser)
+        val dataForAdapter = sqliteHelper.getAllFriends(tagUser).toList()
+        myAdapterForCrtDlg = MyAdapterForCrtDlg(dataForAdapter)
         listUserForDlg = mutableListOf()
         val listViewCreateDlg = findViewById<ListView>(R.id.listViewCreateDlg)
         listViewCreateDlg.adapter = myAdapterForCrtDlg
